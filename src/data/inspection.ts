@@ -19,6 +19,16 @@ export type InspectionMarker = {
   description?: string;
 };
 
+/**
+ * Narração gravada de um texto do painel (mesmas palavras de `overview` ou `description`).
+ * `cues` = início (s) de cada bloco do texto na ordem em que aparece (parágrafos de
+ * `description`, estágios de `markers`, parágrafos de `closing`): o bloco falado fica destacado.
+ */
+export type InspectionNarration = {
+  audioUrl: string;
+  cues?: number[];
+};
+
 export type InspectionItem = {
   id: string;
   /** Ordem na sequência (1 = primeira etapa). */
@@ -60,11 +70,8 @@ export type InspectionItem = {
   description?: string;
   /** Texto exibido depois da lista dos estágios (`markers`), no mesmo formato de `description`. */
   closing?: string;
-  /**
-   * Narração. Ainda não usada nesta versão: quando houver, `audioUrl` (arquivo gravado) ou
-   * `text` (voz sintetizada) poderão ser ligados à inspeção sem mudar o visualizador.
-   */
-  narration?: { audioUrl?: string; text?: string };
+  /** Narração do texto da etapa (controle na barra do painel de descrição). */
+  narration?: InspectionNarration;
 };
 
 export type InspectionSet = {
@@ -75,11 +82,16 @@ export type InspectionSet = {
    * Mesmo formato de `InspectionItem.description`.
    */
   overview?: string;
+  /** Narração da introdução. */
+  overviewNarration?: InspectionNarration;
   items: InspectionItem[];
 };
 
 // Textos: equipe da exposição (roteiro de 2026), divididos entre a introdução do conjunto e as
-// quatro etapas, sem alteração.
+// quatro etapas, sem alteração. Narração: gravação da equipe ("Narracoess/etapa1.aac", 120 s),
+// cortada nos silêncios entre as mesmas seções sem recodificar; os `cues` vêm da transcrição
+// com marcação de palavras (ver README, "Narração").
+const AUDIO = "/audio/inspection/formacao-do-solo";
 export const FORMACAO_DO_SOLO: InspectionSet = {
   id: "formacao-do-solo",
   title: "Formação do Solo",
@@ -96,6 +108,10 @@ Mas espera aí...
 Como uma rocha pode se transformar em solo???
 
 Vamos descobrir!`,
+  overviewNarration: {
+    audioUrl: `${AUDIO}/00-introducao.m4a`,
+    cues: [0, 1.94, 4.14, 11.34, 13.78, 14.86, 17.46],
+  },
   items: [
     {
       id: "caixa-01",
@@ -105,6 +121,7 @@ Vamos descobrir!`,
       model: { url: "/models/inspection/caixa_01_rocha_nao_alterada.glb", sizeBytes: 2_417_004 },
       container: { node: "Caixa_Madeira" },
       thumbnail: "/models/inspection/thumbs/caixa-01.webp",
+      narration: { audioUrl: `${AUDIO}/01-caixa-01.m4a`, cues: [0, 4.21, 12.05] },
       description: `Começamos pela primeira caixa: a rocha não alterada.
 
 Observe sua superfície e seu formato. Esta é a rocha original, que ainda não passou por transformações significativas.
@@ -120,6 +137,7 @@ Ela representa o ponto de partida para a formação do solo.`,
       model: { url: "/models/inspection/caixa_02_rocha_alterada.glb", sizeBytes: 2_598_556 },
       container: { node: "Caixa_Madeira_C02" },
       thumbnail: "/models/inspection/thumbs/caixa-02.webp",
+      narration: { audioUrl: `${AUDIO}/02-caixa-02.m4a`, cues: [0, 3.23, 4.63, 8.29] },
       description: `Agora, vamos para a segunda caixa: a rocha alterada.
 
 Percebeu a diferença?
@@ -137,6 +155,7 @@ Isso acontece devido ao intemperismo, que transforma o material gradualmente, ao
       model: { url: "/models/inspection/caixa_03_solo_formado.glb", sizeBytes: 3_179_780 },
       // Solo solto: não sai da caixa (sem `container`).
       thumbnail: "/models/inspection/thumbs/caixa-03.webp",
+      narration: { audioUrl: `${AUDIO}/03-caixa-03.m4a`, cues: [0, 3.02, 5.36, 15.7, 17.86] },
       description: `Vamos agora para a terceira caixa: o solo formado.
 
 Observe como o material mudou!
@@ -155,6 +174,7 @@ Essa transformação pode levar milhares de anos!`,
       shortTitle: "Maquete da formação do solo",
       model: { url: "/models/inspection/maquete_01_formacao_do_solo.glb", sizeBytes: 3_494_768 },
       thumbnail: "/models/inspection/thumbs/maquete-01.webp",
+      narration: { audioUrl: `${AUDIO}/04-maquete-01.m4a`, cues: [0, 2.06, 5.48, 9.22, 11.86, 18.92, 24.4, 29.46, 36.2, 42.28, 43.94, 47.46] },
       description: `Mas agora surge outra pergunta...
 
 Como será que aparecem as diferentes camadas do solo???

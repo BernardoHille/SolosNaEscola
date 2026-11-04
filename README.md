@@ -13,7 +13,7 @@ computadores e dispositivos móveis.
 > exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
 > com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
 > lado da porta, as três caixas e a maquete da **Formação do Solo** podem ser inspecionadas em 3D
-> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos. Narração e as
+> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos e narração. As
 > demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
@@ -342,6 +342,7 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Mostrar / ocultar a descrição | **I**, botão do livro ou **X** do painel | **Ler** / **Recolher** |
+| Ouvir / pausar a narração | **N** ou botão ▶ na barra do painel | botão ▶ |
 | Fechar | **Esc** ou **X** | **X** |
 
 **Tirar da caixa.** É o padrão para toda peça sólida guardada numa caixa: nas caixas 1 e 2, um
@@ -386,6 +387,39 @@ O painel se adapta à tela:
 Em todos os casos o modelo é enquadrado no espaço que sobra: a área do canvas desconta a largura do
 painel lateral ou a altura da gaveta. Com movimento reduzido no sistema, os parágrafos aparecem sem
 animação.
+
+**Narração.** A gravação da equipe diz exatamente os textos do painel, então fica no mesmo lugar:
+um botão redondo e discreto (▶ / ❚❚) na barra das abas, com um anel amarelo que mostra o progresso.
+Ele toca o trecho da aba aberta (Introdução ou a etapa atual) e continua visível com a gaveta
+recolhida. Enquanto toca:
+
+- o parágrafo falado fica destacado (fundo e contorno âmbar suaves) e o painel rola para mantê-lo à
+  vista;
+- na maquete, ao falar de um estágio, o item da lista e o **rótulo sobre o modelo** (R, A + R…)
+  acendem juntos;
+- ao avançar (“Ir para a etapa 1”, “Próxima etapa”, setas ou miniaturas), a narração da etapa
+  seguinte começa sozinha, como numa cena de jogo, até o visitante pausar. Nada toca sem um
+  primeiro clique (os navegadores bloqueiam áudio automático, e a visita pode ser silenciosa).
+
+Os áudios ficam em `public/audio/inspection/formacao-do-solo/` (5 arquivos M4A, ≈ 810 KB no
+total — o mesmo tamanho do original). Foram cortados da gravação única
+(`Narracoess/etapa1.aac`, AAC mono 24 kHz, 120,5 s, não alterada) nos silêncios entre as seções,
+**sem recodificar** (cópia dos quadros AAC para MP4, com `+faststart`):
+
+| Arquivo | Trecho da gravação | Duração |
+|---|---|---|
+| `00-introducao.m4a` | 0 – 18,69 s | 18,7 s |
+| `01-caixa-01.m4a` | 18,69 – 34,21 s | 15,5 s |
+| `02-caixa-02.m4a` | 34,21 – 48,30 s | 14,1 s |
+| `03-caixa-03.m4a` | 48,30 – 69,42 s | 21,2 s |
+| `04-maquete-01.m4a` | 69,42 s – fim | 51,2 s |
+
+Os cortes caem 0,15 s antes da primeira palavra de cada seção, dentro de silêncios de 0,4–0,8 s
+(`ffmpeg -af silencedetect=noise=-35dB:d=0.35`). Os `cues` (início de cada parágrafo) vêm de uma
+transcrição local com marcação de palavras (faster-whisper `small`, português), que coincidiu
+palavra por palavra com o roteiro; nada foi enviado a serviços externos. Para refazer com uma nova
+gravação: transcrever, localizar a primeira palavra de cada seção e de cada parágrafo, e cortar com
+`ffmpeg -ss <início> -to <fim> -i gravacao.aac -c copy -movflags +faststart trecho.m4a`.
 
 **Walk Mode suspenso, não recriado.** Abrir a inspeção não recarrega o SOG, não muda a câmera
 nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
@@ -465,9 +499,11 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
   “?”, “!” ou “...” ficam em destaque. Na maquete, cada estágio tem sua frase em
   `markers[].description` (lista exibida depois de `description`) e o fechamento fica em
   `closing`. Os textos atuais são o roteiro da equipe (2026), sem alteração.
-- **Narração (futuro):** o campo opcional `narration: { audioUrl?, text? }` já está no tipo
-  `InspectionItem`, mas ainda não é usado. Os áudios devem ir para `public/audio/…` (arquivos
-  estáticos; sem serviços pagos de voz).
+- **Narração:** `overviewNarration` no conjunto e `narration` em cada item, com
+  `{ audioUrl, cues }`. `cues` = início (s) de cada bloco do texto na ordem do painel (parágrafos de
+  `description`, estágios de `markers`, parágrafos de `closing`); o teste confere que há um por
+  bloco. Sem `narration`, o botão não aparece. Áudios estáticos em `public/audio/…` (sem serviços
+  pagos de voz).
 - **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto,
   `description` = frase do estágio no painel).
 - **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB). Use em
@@ -633,12 +669,13 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **13 de 13 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **14 de 14 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
 das caixas presentes nos GLBs (com conteúdo fora delas; só as caixas de rocha), miniaturas WebP
-e textos (introdução, as quatro etapas e os quatro estágios da maquete preenchidos). `typecheck`, `lint` e
+textos (introdução, as quatro etapas e os quatro estágios da maquete preenchidos) e narração
+(cinco arquivos MP4 presentes, um `cue` por bloco do texto, em ordem crescente). `typecheck`, `lint` e
 `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -667,8 +704,11 @@ emulação de celular 375×812), em 4/11/2026:
 | 19 | Descrição no celular em pé (emulação 375×812) | ✔ abre recolhida, com o ponto amarelo; **Ler** expande (o modelo continua visível acima); sem rolagem horizontal |
 | 20 | Descrição no celular deitado (emulação 812×375) e tablet (768×1024) | ✔ deitado: painel à direita e controles compactos, modelo visível; tablet: gaveta aberta acima dos controles |
 | 21 | Descrição em monitor 16:9 (emulação 1920×1080) e 1280×800 | ✔ 1920: modelo e controles no centro, painel maior à direita sem cobri-los; 1280: o modelo passa para a esquerda do painel |
+| 22 | Narração | ✔ ▶ na Introdução toca e destaca o parágrafo falado (aos 5 s, “Tudo começa…”); “Ir para a etapa 1” continua narrando a Caixa 1; na maquete, o estágio A + R acende na lista e sobre o modelo; **N** pausa; no celular (emulação), o botão cabe na barra da gaveta |
 
-Não verificado na inspeção: aparência num celular real (sombras e IBL dependem da GPU),
+Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
+foi confirmada pelo andamento do tempo, do anel de progresso e dos destaques), aparência num celular real
+(sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o
 pointer lock; a mira central foi validada com o cursor livre e no toque), toque real com pinça
 (apenas emulação, sem gestos multitoque), preferência de movimento reduzido, Safari/iOS e
@@ -696,7 +736,7 @@ celulares de entrada e o deploy na Vercel.
   exata do objeto.
 - Inspeção: o clique que tira a rocha da caixa usa as caixas delimitadoras das malhas (não os
   triângulos); perto das bordas da rocha o clique pode valer um pouco fora dela.
-- Inspeção: sem narração nesta etapa (por decisão do projeto); os textos são lidos no painel.
+- Inspeção: os destaques da narração seguem o início de cada parágrafo (não palavra por palavra).
 
 ---
 
@@ -747,7 +787,6 @@ Observações:
 
 ## Próximas etapas
 
-- Narração da inspeção (campo `narration`), a partir do mesmo roteiro dos textos.
 - Demais estantes da exposição como novos conjuntos de inspeção.
 - Percursos guiados.
 - Imagem de pôster durante o carregamento (`posterUrl`).

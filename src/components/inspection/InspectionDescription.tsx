@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { ChevronRightIcon, ChevronUpIcon, CloseIcon } from "@/components/ui/icons";
+import { ChevronRightIcon, ChevronUpIcon, CloseIcon, PauseIcon, PlayIcon } from "@/components/ui/icons";
 import type { InspectionItem, InspectionSet } from "@/data/inspection";
 
 export type DescriptionLayout = "docked" | "sheet";
@@ -15,6 +15,8 @@ type InspectionDescriptionProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNext: () => void;
+  /** Rótulo do estágio (`markers[].label`) sendo narrado agora, ou null. */
+  onSpeakingMarker?: (label: string | null) => void;
 };
 
 type Tab = "intro" | "item";
@@ -31,12 +33,19 @@ const paragraphs = (text?: string) =>
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
 
-function Lines({ text, start = 0 }: { text?: string; start?: number }) {
+/** Bloco que está sendo narrado: fundo e contorno âmbar suaves. */
+const blockBase = "-mx-2 rounded-md px-2 py-0.5 ring-1 transition-[background-color,box-shadow] duration-300";
+const blockState = (active: boolean) => (active ? "bg-[#FFD54A]/10 ring-[#FFD54A]/30" : "ring-transparent");
+
+type BlockProps = { start?: number; active: number };
+
+function Lines({ text, start = 0, active }: BlockProps & { text?: string }) {
   return paragraphs(text).map((p, i) =>
     isCallout(p) ? (
       <p
         key={i}
-        className="inspection-line text-[15px] font-semibold leading-snug text-[#FFE89A] sm:text-base xl:text-lg 2xl:text-xl"
+        data-block={start + i}
+        className={`inspection-line ${blockBase} ${blockState(active === start + i)} text-[15px] font-semibold leading-snug text-[#FFE89A] sm:text-base xl:text-lg 2xl:text-xl`}
         style={{ animationDelay: `${(start + i) * STAGGER_MS}ms` }}
       >
         {p}
@@ -44,7 +53,8 @@ function Lines({ text, start = 0 }: { text?: string; start?: number }) {
     ) : (
       <p
         key={i}
-        className="inspection-line text-sm leading-relaxed text-stone-200 xl:text-base 2xl:text-[17px]"
+        data-block={start + i}
+        className={`inspection-line ${blockBase} ${blockState(active === start + i)} text-sm leading-relaxed text-stone-200 xl:text-base 2xl:text-[17px]`}
         style={{ animationDelay: `${(start + i) * STAGGER_MS}ms` }}
       >
         {p}
@@ -53,18 +63,21 @@ function Lines({ text, start = 0 }: { text?: string; start?: number }) {
   );
 }
 
-function ItemBody({ item }: { item: InspectionItem }) {
+function ItemBody({ item, active }: { item: InspectionItem; active: number }) {
   const before = paragraphs(item.description).length;
   const stages = item.markers?.filter((m) => m.description) ?? [];
   return (
     <>
-      <Lines text={item.description} />
+      <Lines text={item.description} active={active} />
       {stages.length > 0 && (
         <ol className="space-y-2">
           {stages.map((m, i) => (
             <li
               key={m.node}
-              className="inspection-line flex gap-3 rounded-lg bg-white/[0.04] p-2.5 ring-1 ring-white/10"
+              data-block={before + i}
+              className={`inspection-line flex gap-3 rounded-lg p-2.5 ring-1 transition-[background-color,box-shadow] duration-300 ${
+                active === before + i ? "bg-[#FFD54A]/10 ring-[#FFD54A]/40" : "bg-white/[0.04] ring-white/10"
+              }`}
               style={{ animationDelay: `${(before + i) * STAGGER_MS}ms` }}
             >
               <span className="h-fit shrink-0 whitespace-nowrap rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#FFD54A] ring-1 ring-[#FFD54A]/40">
@@ -75,7 +88,7 @@ function ItemBody({ item }: { item: InspectionItem }) {
           ))}
         </ol>
       )}
-      <Lines text={item.closing} start={before + stages.length} />
+      <Lines text={item.closing} start={before + stages.length} active={active} />
     </>
   );
 }
@@ -86,6 +99,10 @@ function ItemBody({ item }: { item: InspectionItem }) {
  * parágrafos que entram em sequência e um botão "continuar" no fim. Em telas largas fica
  * encaixado à direita; nas estreitas vira uma gaveta acima dos controles, que pode ser
  * recolhida até sobrar só a barra do título.
+ *
+ * Narração: o botão redondo da barra (ou N) toca a gravação do texto da aba aberta; o bloco
+ * falado fica destacado e acompanha a rolagem. Depois de iniciada, a narração segue para o
+ * texto seguinte quando o visitante avança (até ele pausar).
  */
 export default function InspectionDescription({
   set,
@@ -94,6 +111,7 @@ export default function InspectionDescription({
   open,
   onOpenChange,
   onNext,
+  onSpeakingMarker,
 }: InspectionDescriptionProps) {
   const item = set.items[index];
   const hasIntro = !!set.overview;
@@ -116,6 +134,127 @@ export default function InspectionDescription({
     bodyRef.current?.scrollTo({ top: 0 });
   }, [contentKey]);
 
+  // Narração: um único elemento de áudio, trocado junto com o texto.
+  const narration = tab === "intro" ? set.overviewNarration : item.narration;
+  const url = narration?.audioUrl;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Verdadeiro desde que o visitante deu play até pausar: o próximo texto já começa narrado.
+  const narratingRef = useRef(false);
+  const [playing, setPlaying] = useState(false);
+  const [ended, setEnded] = useState(false);
+  const [time, setTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audioRef.current = audio;
+    const onTime = () => setTime(audio.currentTime);
+    const onPlay = () => {
+      setPlaying(true);
+      setEnded(false);
+    };
+    const onPause = () => setPlaying(false);
+    const onMeta = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const onEnded = () => {
+      setPlaying(false);
+      setEnded(true);
+    };
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("ended", onEnded);
+    return () => {
+      audio.pause();
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("ended", onEnded);
+      audio.removeAttribute("src");
+      audio.load();
+      audioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    setTime(0);
+    setEnded(false);
+    setDuration(0);
+    if (!url) {
+      audio.removeAttribute("src");
+      return;
+    }
+    audio.src = url;
+    if (narratingRef.current) {
+      audio.play().catch(() => {
+        narratingRef.current = false;
+      });
+    }
+  }, [url]);
+
+  const toggleNarration = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !url) return;
+    if (!audio.paused) {
+      narratingRef.current = false;
+      audio.pause();
+      return;
+    }
+    if (audio.ended) audio.currentTime = 0;
+    narratingRef.current = true;
+    audio.play().catch(() => {
+      narratingRef.current = false;
+    });
+  }, [url]);
+
+  // Tecla N: tocar / pausar.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey || e.repeat || (e.key !== "n" && e.key !== "N")) return;
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      toggleNarration();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toggleNarration]);
+
+  // Bloco falado agora (índice em `cues`); nenhum antes do play e depois do fim.
+  let active = -1;
+  if (narration?.cues && (playing || (time > 0 && !ended))) {
+    for (let i = 0; i < narration.cues.length; i++) if (narration.cues[i] <= time + 0.05) active = i;
+  }
+  const progress = ended ? 1 : duration > 0 ? Math.min(1, time / duration) : 0;
+
+  // Estágio da maquete sendo narrado: o rótulo correspondente sobre o modelo também acende.
+  let speakingMarker: string | null = null;
+  if (tab === "item" && playing && active >= 0) {
+    const stages = item.markers?.filter((m) => m.description) ?? [];
+    const k = active - paragraphs(item.description).length;
+    speakingMarker = stages[k]?.label ?? null;
+  }
+  useEffect(() => {
+    onSpeakingMarker?.(speakingMarker);
+  }, [onSpeakingMarker, speakingMarker]);
+
+  // Mantém o bloco falado à vista, rolando só o painel.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (active < 0 || !body) return;
+    const el = body.querySelector<HTMLElement>(`[data-block="${active}"]`);
+    if (!el) return;
+    const top = el.offsetTop;
+    const bottom = top + el.offsetHeight;
+    if (top >= body.scrollTop + 8 && bottom <= body.scrollTop + body.clientHeight - 8) return;
+    const smooth = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    body.scrollTo({ top: Math.max(0, top - body.clientHeight / 4), behavior: smooth ? "smooth" : "auto" });
+  }, [active, contentKey]);
+
   const id = useId();
   const titleId = `${id}-title`;
   const bodyId = `${id}-body`;
@@ -134,7 +273,7 @@ export default function InspectionDescription({
         setTab(value);
         if (!open) onOpenChange(true);
       }}
-      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] xl:px-3 xl:text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-amber-200 ${
+      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] xl:px-3 xl:text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-amber-200 ${
         tab === value ? "bg-[#FFD54A] text-stone-950" : "text-stone-300 hover:bg-white/10"
       }`}
     >
@@ -161,6 +300,39 @@ export default function InspectionDescription({
           {tabButton("item", stepLabel)}
         </div>
         <span className="min-w-0 flex-1" />
+        {url && (
+          <button
+            type="button"
+            onClick={toggleNarration}
+            aria-pressed={playing}
+            className={`relative inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-200 xl:size-9 ${
+              playing ? "text-[#FFE89A]" : "text-stone-300"
+            }`}
+            aria-label={playing ? "Pausar narração" : "Ouvir narração"}
+            title={playing ? "Pausar narração (N)" : "Ouvir narração (N)"}
+          >
+            {/* Anel de progresso da narração. */}
+            <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" />
+              <circle
+                cx="18"
+                cy="18"
+                r="15.5"
+                fill="none"
+                stroke="#FFD54A"
+                strokeWidth="2"
+                strokeLinecap="round"
+                pathLength={1}
+                strokeDasharray="1"
+                strokeDashoffset={1 - progress}
+                className={`transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none ${
+                  progress > 0 ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            </svg>
+            {playing ? <PauseIcon className="size-3.5 xl:size-4" /> : <PlayIcon className="size-3.5 translate-x-px xl:size-4" />}
+          </button>
+        )}
         {docked ? (
           <button
             type="button"
@@ -198,7 +370,7 @@ export default function InspectionDescription({
         role="tabpanel"
         hidden={!open}
         aria-live="polite"
-        className={`min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pt-3 xl:px-6 xl:pb-5 xl:pt-4 [scrollbar-color:rgba(255,213,74,0.4)_transparent] [scrollbar-width:thin] ${
+        className={`relative min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pt-3 xl:px-6 xl:pb-5 xl:pt-4 [scrollbar-color:rgba(255,213,74,0.4)_transparent] [scrollbar-width:thin] ${
           docked ? "flex-auto" : "max-h-[min(32vh,18rem)]"
         }`}
       >
@@ -207,7 +379,7 @@ export default function InspectionDescription({
         </h3>
         {/* A chave reinicia a entrada em sequência a cada texto novo. */}
         <div key={contentKey} className="mt-2 space-y-3 xl:mt-3 xl:space-y-4">
-          {tab === "intro" ? <Lines text={set.overview} /> : <ItemBody item={item} />}
+          {tab === "intro" ? <Lines text={set.overview} active={active} /> : <ItemBody item={item} active={active} />}
         </div>
 
         {/* "Continuar", como o indicador ▼ das caixas de diálogo. */}

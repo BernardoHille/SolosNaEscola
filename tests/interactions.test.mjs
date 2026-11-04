@@ -202,3 +202,25 @@ test("dados: textos da introdução, das etapas e dos estágios da maquete", () 
   assert.ok(positions.every((p) => p > 0), positions.join());
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
 });
+
+test("dados: narração (arquivos MP4/AAC e um cue por bloco do texto)", async () => {
+  const { FORMACAO_DO_SOLO: set } = await import("../src/data/inspection.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const entries = [
+    [set.overviewNarration, blocks(set.overview)],
+    ...set.items.map((it) => [
+      it.narration,
+      blocks(it.description) + (it.markers?.filter((m) => m.description).length ?? 0) + blocks(it.closing),
+    ]),
+  ];
+  assert.equal(entries.length, 5);
+  for (const [narration, count] of entries) {
+    assert.ok(narration, "narração ausente");
+    const buf = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(buf.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(buf.length < 400_000, narration.audioUrl);
+    assert.equal(narration.cues.length, count, narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1]);
+  }
+});

@@ -153,3 +153,21 @@ export function ChevronUpIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Reproduzir (narração). Preenchido, para ler bem em tamanho pequeno. */
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.6-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function PauseIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="6.5" y="5.5" width="3.6" height="13" rx="0.8" fill="currentColor" />
+      <rect x="13.9" y="5.5" width="3.6" height="13" rx="0.8" fill="currentColor" />
+    </svg>
+  );
+}

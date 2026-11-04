@@ -111,6 +111,8 @@ export default function InspectionOverlay({
   const [retry, setRetry] = useState(0);
   const [markers, setMarkers] = useState<MarkerPosition[]>([]);
   const [showMarkers, setShowMarkers] = useState(true);
+  // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
+  const [speakingMarker, setSpeakingMarker] = useState<string | null>(null);
   const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
   // Altura dos controles inferiores: o modelo é enquadrado no espaço acima deles.
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -303,8 +305,12 @@ export default function InspectionOverlay({
           {markers.map((m) => (
             <span
               key={m.label}
-              className={`absolute -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#FFD54A] ring-1 ring-[#FFD54A]/40 transition-opacity duration-200 sm:text-xs ${
+              className={`absolute origin-bottom -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ring-1 transition-[opacity,transform,background-color,color] duration-200 motion-reduce:transition-none sm:text-xs ${
                 m.visible ? "opacity-100" : "opacity-0"
+              } ${
+                speakingMarker === m.label
+                  ? "z-10 scale-125 bg-[#FFD54A] text-stone-950 ring-[#FFD54A] shadow-[0_0_16px_rgba(255,213,74,0.6)]"
+                  : "bg-black/70 text-[#FFD54A] ring-[#FFD54A]/40"
               }`}
               style={{ left: m.x, top: m.y - 6 }}
             >
@@ -382,6 +388,7 @@ export default function InspectionOverlay({
             open={descriptionOpen}
             onOpenChange={setDescriptionOpen}
             onNext={onNext}
+            onSpeakingMarker={setSpeakingMarker}
           />
         </div>
       )}
