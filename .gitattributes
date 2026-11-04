@@ -1,3 +1,4 @@
 # Modelos 3D: sempre binários (sem conversão de fim de linha)
 *.sog binary
 *.webp binary
+*.bin binary

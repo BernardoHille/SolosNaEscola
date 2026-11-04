@@ -4,12 +4,18 @@ type LoadingOverlayProps = {
   status: LoadStatus;
   /** Tamanho do modelo em bytes, para exibir o volume já baixado. */
   totalBytes: number;
+  /**
+   * Cena pronta, mas o Walk Mode ainda não foi ativado (colisão carregando). A tela
+   * continua cobrindo o viewer: não há navegação livre enquanto isso.
+   */
+  waitingForWalk?: boolean;
 };
 
 const megabytes = (bytes: number) =>
   (bytes / 1_000_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-function phaseLabel(status: LoadStatus): string {
+function phaseLabel(status: LoadStatus, waitingForWalk: boolean): string {
+  if (status.phase === "ready" && waitingForWalk) return "Preparando a área de visita…";
   switch (status.phase) {
     case "idle":
     case "initializing":
@@ -27,8 +33,8 @@ function phaseLabel(status: LoadStatus): string {
  * Tela de carregamento. O percentual exibido é o progresso real do download
  * informado pelo motor; não há valores simulados.
  */
-export default function LoadingOverlay({ status, totalBytes }: LoadingOverlayProps) {
-  const visible = status.phase !== "ready";
+export default function LoadingOverlay({ status, totalBytes, waitingForWalk = false }: LoadingOverlayProps) {
+  const visible = status.phase !== "ready" || waitingForWalk;
   const showBar = status.phase === "downloading" || status.phase === "processing";
   const progress = Math.max(0, Math.min(100, status.progress));
 
@@ -70,7 +76,7 @@ export default function LoadingOverlay({ status, totalBytes }: LoadingOverlayPro
             )}
           </div>
           <div className="mt-3 flex items-baseline justify-between gap-4 text-xs text-stone-400">
-            <span>{phaseLabel(status)}</span>
+            <span>{phaseLabel(status, waitingForWalk)}</span>
             {showBar && (
               <span className="tabular-nums text-stone-300">
                 {status.phase === "downloading"

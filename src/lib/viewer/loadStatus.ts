@@ -20,7 +20,7 @@ export type LoadPhase =
   | "error"
   | "unsupported";
 
-export type LoadErrorKind = "network" | "http" | "engine";
+export type LoadErrorKind = "network" | "http" | "engine" | "collision";
 
 export type LoadStatus = {
   phase: LoadPhase;

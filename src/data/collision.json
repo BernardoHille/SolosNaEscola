@@ -1,0 +1,13 @@
+{
+  "$comment": "Parâmetros compartilhados entre scripts/generate-collision.mjs e a aplicação. Coordenadas em metros, no espaço de mundo do viewer (Y para cima) já escalado por sceneScale.",
+  "modelFile": "models/museu_web.sog",
+  "voxelFile": "models/museu_web.voxel.json",
+  "sceneScale": 5.4,
+  "generation": {
+    "seedPosition": [-0.27, 0.9, -4.1],
+    "voxelSize": 0.05,
+    "voxelOpacity": 0.1,
+    "externalFill": 1.6,
+    "carveCapsule": { "height": 1.6, "radius": 0.2 }
+  }
+}

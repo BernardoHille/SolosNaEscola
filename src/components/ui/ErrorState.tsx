@@ -15,6 +15,13 @@ function describe(status: LoadStatus): { title: string; message: string; canRetr
     };
   }
   switch (status.errorKind) {
+    case "collision":
+      return {
+        title: "Não foi possível preparar a visita",
+        message:
+          "A exposição foi carregada, mas os dados que permitem caminhar pelo ambiente não ficaram disponíveis. Tente novamente.",
+        canRetry: true,
+      };
     case "network":
       return {
         title: "Não foi possível baixar a exposição",

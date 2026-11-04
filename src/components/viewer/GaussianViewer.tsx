@@ -19,11 +19,12 @@
 import "@playcanvas/supersplat-viewer/viewer.css";
 
 import { useEffect, useRef } from "react";
-import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
+import type { ViewerFlags, ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 import type { ExperienceSettings } from "@playcanvas/supersplat-viewer/settings";
 
 import { detectGraphicsSupport, isGraphicsSupported } from "@/lib/viewer/capabilities";
 import { type LoadStatus, ModelHttpError } from "@/lib/viewer/loadStatus";
+import { applySceneScale } from "@/lib/viewer/sceneScale";
 
 export type GaussianViewerProps = {
   /** URL pública do arquivo de splats (ex.: `/models/museu_web.sog`). */
@@ -32,6 +33,15 @@ export type GaussianViewerProps = {
   contentFilename: string;
   /** Experience Settings v2. */
   settings: ExperienceSettings;
+  /** Dados de colisão (`.voxel.json` com o `.voxel.bin` ao lado, ou `.glb`). */
+  collisionUrl?: string;
+  /** Escala uniforme aplicada ao splat em runtime (1 = sem escala). */
+  sceneScale?: number;
+  /**
+   * Chaves do viewer (`ui`, `noanim`, …). Deve ser um objeto estável (constante de
+   * módulo ou memoizado): mudar a identidade recria o motor.
+   */
+  options?: ViewerFlags;
   /** Recebe cada mudança de estado do carregamento. */
   onStatusChange?: (status: LoadStatus) => void;
   /** Recebe a instância do viewer quando criada, e `null` ao destruí-la. */
@@ -49,6 +59,9 @@ export default function GaussianViewer({
   contentUrl,
   contentFilename,
   settings,
+  collisionUrl,
+  sceneScale = 1,
+  options,
   onStatusChange,
   onViewerChange,
   className,
@@ -69,6 +82,7 @@ export default function GaussianViewer({
 
     let disposed = false;
     let handle: ViewerHandle | null = null;
+    let disposeScale: (() => void) | null = null;
     let current: LoadStatus = { phase: "idle", progress: 0 };
     const download = new AbortController();
 
@@ -112,17 +126,22 @@ export default function GaussianViewer({
       contents.catch(fail);
 
       const viewer = await createViewer({
+        ...options,
         container,
         settings,
         contentUrl,
         contentFilename,
         contents,
+        collisionUrl,
       });
 
       if (disposed) {
         viewer.destroy();
         return;
       }
+      // Registrado antes de qualquer outro await: o splat só é inserido na cena quando
+      // o download e a decodificação terminam.
+      disposeScale = applySceneScale(viewer.app, sceneScale);
       handle = viewer;
       viewerRef.current?.(viewer);
 
@@ -158,6 +177,7 @@ export default function GaussianViewer({
       download.abort();
       const viewer = handle;
       handle = null;
+      disposeScale?.();
       if (viewer) {
         viewer.destroy();
         viewerRef.current?.(null);
@@ -165,7 +185,7 @@ export default function GaussianViewer({
       // A próxima instância só começa depois que esta terminar de ser criada e destruída.
       previousTeardown = run.catch(() => undefined);
     };
-  }, [contentUrl, contentFilename, settings]);
+  }, [contentUrl, contentFilename, settings, collisionUrl, sceneScale, options]);
 
   return (
     <div

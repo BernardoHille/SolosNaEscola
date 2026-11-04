@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-const nextConfig: NextConfig = {
+const baseConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
@@ -29,4 +30,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Rotas internas de desenvolvimento usam a extensão `.dev.tsx` (ex.: a calibração em
+ * `src/app/dev/camera/page.dev.tsx`). Essa extensão só é reconhecida pelo servidor de
+ * desenvolvimento: no build de produção a rota não existe (404) e seu código não é
+ * incluído em nenhum pacote enviado ao navegador.
+ */
+export default function nextConfig(phase: string): NextConfig {
+  const pageExtensions = ["tsx", "ts", "jsx", "js"];
+  if (phase === PHASE_DEVELOPMENT_SERVER) pageExtensions.unshift("dev.tsx");
+  return { ...baseConfig, pageExtensions };
+}

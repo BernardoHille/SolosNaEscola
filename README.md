@@ -9,10 +9,10 @@ O objetivo é transformar uma exposição museológica, reconstruída por meio d
 **3D Gaussian Splatting (3DGS)**, em uma experiência web navegável diretamente no navegador, em
 computadores e dispositivos móveis.
 
-> **Estado atual (etapa 1 — fundação):** visualizador funcional com o modelo real da exposição
-> (~3 milhões de gaussianas), carregamento com progresso real, tratamento de erros e controles
-> de navegação oficiais do SuperSplat Viewer. Hotspots, textos das peças e percursos guiados
-> serão desenvolvidos nas próximas etapas.
+> **Estado atual (etapa 2 — visita em primeira pessoa):** o visitante começa na entrada da
+> exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
+> com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Hotspots,
+> textos das peças e percursos guiados serão desenvolvidos nas próximas etapas.
 
 ---
 
@@ -26,10 +26,11 @@ computadores e dispositivos móveis.
 | Estilos | [Tailwind CSS](https://tailwindcss.com/) | 4.3 |
 | Visualizador 3DGS | [`@playcanvas/supersplat-viewer`](https://github.com/playcanvas/supersplat-viewer) | 1.42.0 |
 | Motor gráfico | [PlayCanvas Engine](https://playcanvas.com/) (WebGPU com fallback WebGL 2) | 2.23.3 |
+| Geração da colisão | [`@playcanvas/splat-transform`](https://github.com/playcanvas/splat-transform) (via `npx`, versão fixada) | 3.10.3 |
 | Gerenciador de pacotes | npm | 10+ |
 | Hospedagem prevista | [Vercel](https://vercel.com/) | — |
 
-Não há banco de dados, autenticação, backend próprio nem variáveis de ambiente nesta etapa.
+Não há banco de dados, autenticação, backend próprio nem variáveis de ambiente.
 
 ---
 
@@ -45,13 +46,202 @@ Não há banco de dados, autenticação, backend próprio nem variáveis de ambi
 | Formato | SOG v2 (*Spatially Ordered Gaussians*): pacote ZIP com atributos quantizados em WebP |
 
 O SOG é a versão comprimida e otimizada exportada pelo SuperSplat. Ele é usado **sem
-reconversão, recompressão ou transformações adicionais**. Os arquivos-fonte de alta resolução
-(`.ply`, `.ssproj`) e os datasets de captura **não fazem parte do repositório** (ver
-`.gitignore`).
+reconversão, recompressão ou transformações adicionais** — inclusive nesta etapa: a escala e a
+colisão são aplicadas fora do arquivo (ver abaixo). Os arquivos-fonte de alta resolução (`.ply`,
+`.ssproj`) e os datasets de captura **não fazem parte do repositório** (ver `.gitignore`).
 
 **Orientação:** o viewer aplica ao splat a mesma rotação padrão do editor SuperSplat (180° no
-eixo Z, convenção de dados 3DGS). Nenhuma rotação compensatória é aplicada pela aplicação; a
-cena aparece como no editor.
+eixo Z, convenção de dados 3DGS). Nenhuma rotação compensatória é aplicada pela aplicação.
+
+---
+
+## Visita em primeira pessoa (etapa 2)
+
+### Por que o Walk Mode oficial
+
+O SuperSplat Viewer 1.42 já possui um modo de caminhada (*Walk Mode*) com gravidade, cápsula de
+colisão, subida de pequenos degraus e altura dos olhos constante em relação ao piso. A aplicação
+usa esse modo diretamente — não há controlador de câmera próprio nem um modo *Fly* apresentado
+como caminhada. A aplicação apenas:
+
+1. fornece a geometria de colisão (`collisionUrl`);
+2. coloca a câmera inicial na entrada da exposição;
+3. trava o viewer no Walk Mode e remove os outros modos e atalhos;
+4. oferece seus próprios controles de movimento (teclado e joystick) através da API pública
+   `setMoveInput(x, z)`.
+
+### Convenções de coordenadas e unidades
+
+Espaço de mundo do viewer, já com a escala da cena aplicada:
+
+| Item | Convenção |
+| --- | --- |
+| Unidade | metro (após `sceneScale`, ver abaixo) |
+| Eixo vertical | +Y para cima; piso da sala em y ≈ 0 a 0,1 |
+| Entrada | lado −Z; o interior da exposição se estende para +Z |
+| Yaw | graus em torno de Y: 0° olha para −Z, 90° para −X, 180° para +Z |
+| Pitch | graus; positivo olha para cima |
+
+O espaço do viewer corresponde ao espaço de dados do SOG rotacionado 180° em Z, isto é,
+`(x, y, z)_viewer = (−x, −y, z)_SOG`. As renderizações do SplatTransform usadas na calibração
+já são feitas nesse espaço.
+
+### Escala da cena (`sceneScale = 5,4`)
+
+O SOG exportado **não está em metros**: a distância piso→teto é ≈ 0,68 unidade. Como o Walk
+Mode usa medidas fixas em metros (olhos a 1,5 m do piso, cápsula de 0,2 m de raio), a cena
+precisa estar em escala métrica para que o visitante tenha proporções humanas.
+
+- **Estimativa:** o vão da porta de entrada mede ≈ 0,388 unidade de altura no próprio SOG
+  (medido em renderizações frontais da porta). Assumindo a altura padrão de porta de **2,10 m**,
+  o fator é 2,10 / 0,388 ≈ **5,4**.
+- **Aplicação:** a escala é uniforme e aplicada **em tempo de execução** na entidade do splat
+  ([`sceneScale.ts`](src/lib/viewer/sceneScale.ts)), de forma síncrona quando a entidade é
+  inserida na cena — antes de o viewer calcular limites e câmeras. O arquivo SOG não é alterado.
+- **A mesma escala** é usada na geração da colisão (`-s 5.4`), de modo que o modelo visual e a
+  colisão coincidem sem nenhuma transformação adicional em nenhum dos dois.
+- **Limitação:** é uma estimativa a partir de uma medida padrão, não uma medição em campo. Se a
+  altura real da porta for conhecida, basta atualizar `sceneScale` em
+  [`src/data/collision.json`](src/data/collision.json) e regenerar a colisão.
+
+### Colisão
+
+A colisão é um conjunto de **voxels** gerado a partir do próprio SOG com o SplatTransform:
+
+| Arquivo | Tamanho | Conteúdo |
+| --- | --- | --- |
+| `public/models/museu_web.voxel.json` | 666 B | metadados (formato 1.1, limites, resolução) |
+| `public/models/museu_web.voxel.bin` | 133.844 B | octree esparsa de voxels sólidos |
+
+Parâmetros (em [`src/data/collision.json`](src/data/collision.json), compartilhado pelo script e
+pela aplicação):
+
+| Parâmetro | Valor | Função |
+| --- | --- | --- |
+| `sceneScale` | 5,4 | mesma escala do modelo visual |
+| `voxelSize` | 0,05 m | resolução da grade |
+| `voxelOpacity` | 0,1 | opacidade mínima para um voxel ser considerado sólido |
+| `seedPosition` | (−0,27; 0,9; −4,1) | ponto no interior da sala usado para filtrar fragmentos soltos e para o preenchimento externo |
+| `externalFill` | 1,6 m | fecha o espaço exterior alcançável a partir da semente (impede sair pela porta) |
+| `carveCapsule` | 1,6 m × 0,2 m | escava o espaço livre por onde uma cápsula humana pode passar |
+
+Para regenerar (requer Node.js e acesso à internet para o `npx` baixar o SplatTransform):
+
+```bash
+npm run collision
+```
+
+O script [`scripts/generate-collision.mjs`](scripts/generate-collision.mjs) executa:
+
+```bash
+npx @playcanvas/splat-transform@3.10.3 -w public/models/museu_web.sog -s 5.4 \
+  --seed-pos -0.27,0.9,-4.1 --filter-cluster \
+  public/models/museu_web.voxel.json \
+  --voxel-size 0.05 --voxel-opacity 0.1 \
+  --voxel-external-fill 1.6 --voxel-carve 1.6,0.2
+```
+
+Arquivos necessários para reproduzir: `public/models/museu_web.sog`,
+`src/data/collision.json` e `scripts/generate-collision.mjs`. O SOG apenas é lido; seu SHA-256
+permanece o mesmo.
+
+**Verificação da área caminhável:** decodificando a octree e simulando a cápsula a partir da
+entrada, a área alcançável é de ≈ 52 m², contorna as duas ilhas de mesas expositivas e não
+escapa pela porta. A sobreposição de voxels pode ser inspecionada na rota de calibração
+(“Mostrar colisão”, requer WebGPU).
+
+### Ponto de partida
+
+Definido em [`src/data/visit.ts`](src/data/visit.ts):
+
+```ts
+export const ENTRANCE_SPAWN: SpawnPose = {
+  position: [-0.27, 1.5, -4.1],
+  yawDeg: 180,   // olhando para o interior (+Z)
+  pitchDeg: -5,
+  fov: 90,
+};
+```
+
+O ponto fica sobre o tapete cinza, no lado interno da porta, entre os armários brancos (objetos
+à esquerda, amostras de rochas à direita). Os valores foram **medidos em renderizações do próprio
+SOG** (vista superior e vista frontal da porta), não estimados à mão; o ajuste fino deve ser
+feito com a ferramenta de calibração.
+
+O botão **Voltar à entrada** chama `viewer.resetCamera()`: no Walk Mode, isso restaura a pose
+registrada ao entrar no modo — que é sempre a entrada, pois o visitante nunca sai do Walk Mode.
+Não recarrega o SOG nem a colisão.
+
+### Parâmetros físicos
+
+| Item | Valor | Origem |
+| --- | --- | --- |
+| Altura dos olhos | ≈ 1,5 m acima do piso (acompanha o piso) | fixo no WalkController 1.42 (`eyeHeight` 1,3 m + flutuação 0,2 m); não configurável pela API pública |
+| Cápsula | 1,5 m de altura × 0,2 m de raio | WalkController |
+| Campo de visão | 90° | fixo no WalkController durante a caminhada |
+| Inclinação vertical | ±90° | fixa no viewer; não pode ser limitada pela API pública |
+| Velocidade de caminhada | ≈ 1,15 m/s (`MOVEMENT.walk = 0,45`) | medida no navegador |
+| Velocidade com Shift | ≈ 1,9 m/s (`MOVEMENT.run = 0,75`) | medida no navegador |
+
+A especificação previa olhos a ~1,6–1,8 m; o valor real é o do viewer (1,5 m), mantido para não
+modificar código de terceiros.
+
+### O que foi bloqueado
+
+O visitante não pode sair do Walk Mode nem usar recursos que quebrem a sensação de visita:
+
+| Recurso | Como é bloqueado |
+| --- | --- |
+| Orbit, Fly, Frame, animação, troca de modo | `ui: false` (sem barra do viewer) e `noanim: true`; o viewer é colocado em `walk` e qualquer mudança de `cameraMode` é revertida |
+| Atalhos 1/2/3, F, R, G, V, H, Espaço (pulo), Esc | `state.inputEnabled = false` desativa os atalhos e a entrada de teclado do próprio viewer; o movimento por teclado é da aplicação |
+| Controles de jogo (pulo por toque) | `state.gamingControls = false`, reimposto se alterado |
+| Roda do mouse (zoom/deslocamento), botão direito/meio | bloqueados na fase de captura sobre o contêiner |
+
+Continua disponível: arrastar para olhar ao redor (mouse ou um dedo) e clicar/tocar no piso para
+caminhar até o ponto — comportamentos do próprio Walk Mode, que permanecem no modo de caminhada.
+
+### Controles
+
+| Ação | Computador | Tela de toque |
+| --- | --- | --- |
+| Andar | **W A S D** ou setas | joystick no canto inferior esquerdo |
+| Andar mais rápido | segurar **Shift** | inclinar o joystick até a borda |
+| Olhar ao redor | clicar e arrastar | arrastar um dedo na tela |
+| Ir até um ponto | clicar no piso | tocar no piso |
+| Voltar ao início | botão **Voltar à entrada** | idem |
+
+Teclado e joystick são combinados em [`moveInput.ts`](src/lib/viewer/moveInput.ts) e enviados
+por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o foco da janela e
+ao ocultar a aba — nunca fica “preso”. A interface mínima tem identificação do projeto, ajuda
+(aberta automaticamente na primeira visita), tela cheia e o botão de retorno.
+
+---
+
+## Calibração da entrada (somente desenvolvimento)
+
+Rota: **`/dev/camera`** (apenas com `npm run dev`).
+
+O painel mostra, em tempo real: modo da câmera, `walkAllowed`, posição X/Y/Z, yaw/pitch, FOV e
+altura sobre o piso de referência. Ações:
+
+- **Copiar configuração** — copia o trecho `ENTRANCE_SPAWN` pronto para colar em
+  `src/data/visit.ts`;
+- **Aplicar como entrada** — salva a pose atual como entrada de teste (apenas neste navegador,
+  `localStorage`) e reinicia o viewer já no Walk Mode a partir dela; a página inicial em
+  desenvolvimento também passa a usá-la;
+- **Testar Walk aqui / Sair do Walk** — alterna entre caminhada e Fly para posicionar a câmera;
+- **Restaurar padrão** — descarta a entrada de teste;
+- **Mostrar colisão** — sobrepõe os voxels de colisão (WebGPU).
+
+Procedimento: use Fly (tecla 2) para ir ao tapete da entrada, aponte para o interior, clique em
+**Aplicar como entrada**, confira caminhando e, se estiver bom, **Copiar configuração** e cole em
+`src/data/visit.ts`. A pose de teste nunca é usada em produção.
+
+**Indisponível em produção:** o arquivo da rota é `src/app/dev/camera/page.dev.tsx`, e a extensão
+`.dev.tsx` só é registrada como página pelo servidor de desenvolvimento
+([`next.config.ts`](next.config.ts)). No build de produção a rota não existe (HTTP 404) e o código
+da ferramenta não é incluído em nenhum pacote enviado ao navegador. A página ainda chama
+`notFound()` em produção como segunda barreira.
 
 ---
 
@@ -59,30 +249,35 @@ cena aparece como no editor.
 
 ```
 SolosNaEscola/
-├── public/
-│   ├── models/
-│   │   └── museu_web.sog          # modelo 3DGS (servido estaticamente)
-│   └── images/                    # imagens futuras (pôster, ícones)
+├── public/models/
+│   ├── museu_web.sog              # modelo 3DGS (servido estaticamente, não modificado)
+│   ├── museu_web.voxel.json       # colisão: metadados
+│   └── museu_web.voxel.bin        # colisão: octree de voxels
+├── scripts/
+│   └── generate-collision.mjs     # npm run collision
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx             # metadados, viewport, fonte
 │   │   ├── page.tsx               # rota "/" → exposição
-│   │   └── globals.css
+│   │   └── dev/camera/page.dev.tsx  # calibração (somente dev)
 │   ├── components/
 │   │   ├── viewer/
-│   │   │   ├── GaussianViewer.tsx # integração React do SuperSplat Viewer
-│   │   │   └── Exhibition.tsx     # tela principal: viewer + sobreposições
-│   │   └── ui/
-│   │       ├── LoadingOverlay.tsx # progresso real do download
-│   │       ├── ErrorState.tsx     # erro amigável + "Tentar novamente"
-│   │       └── ProjectBadge.tsx   # identificação discreta do projeto
+│   │   │   ├── GaussianViewer.tsx # integração React do SuperSplat Viewer (+ escala e colisão)
+│   │   │   ├── Exhibition.tsx     # tela principal da visita
+│   │   │   └── useWalkVisit.ts    # trava no Walk, teclado, joystick, retorno à entrada
+│   │   ├── dev/CameraCalibration.tsx
+│   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
 │   ├── data/
-│   │   └── experience.ts          # modelo, câmera inicial e Experience Settings v2
-│   └── lib/
-│       └── viewer/
-│           ├── capabilities.ts    # detecção de WebGL 2 / WebGPU
-│           └── loadStatus.ts      # fases de carregamento
-├── next.config.ts                 # cabeçalhos de cache do modelo
+│   │   ├── collision.json         # escala e parâmetros de colisão (script + app)
+│   │   ├── visit.ts               # entrada, velocidades, convenções
+│   │   └── experience.ts          # modelo e Experience Settings v2
+│   └── lib/viewer/
+│       ├── sceneScale.ts          # escala uniforme em runtime
+│       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
+│       ├── moveInput.ts           # combinação teclado + joystick → setMoveInput
+│       ├── keyboardMovement.ts    # WASD/setas/Shift
+│       ├── cameraPose.ts          # leitura da pose da câmera (calibração)
+│       └── spawnOverride.ts       # entrada de teste (somente dev)
+├── next.config.ts                 # cache dos modelos; rotas .dev.tsx só em dev
 └── package.json
 ```
 
@@ -96,69 +291,53 @@ integração nativa do pacote oficial
 [referência da API](https://github.com/playcanvas/supersplat-viewer/blob/main/docs/api.md)):
 
 ```ts
-import { createViewer } from "@playcanvas/supersplat-viewer/viewer";
-import "@playcanvas/supersplat-viewer/viewer.css";
-
-const viewer = await createViewer({ container, settings, contentUrl, contentFilename, contents });
+const viewer = await createViewer({
+  container, settings, contentUrl, contentFilename, contents,
+  collisionUrl, ui: false, noanim: true,
+});
 ```
 
-Decisões principais:
-
-- **Somente no cliente.** O módulo do viewer é importado dinamicamente dentro de `useEffect`;
-  nada do motor executa durante o SSR/prerender, evitando erros de hidratação.
-- **Uma instância por vez.** A criação é adiada um *tick* (o React StrictMode monta, desmonta e
-  monta novamente em desenvolvimento) e cada nova instância aguarda a destruição da anterior.
-- **Limpeza.** Ao desmontar, o download é cancelado (`AbortController`) e `viewer.destroy()`
-  libera a aplicação PlayCanvas, o contexto gráfico e os listeners.
-- **Download direto da URL estática.** A aplicação faz o `fetch` de `/models/museu_web.sog` e
-  entrega o `Response` ao viewer (`contents`). O motor lê o corpo em *streaming*. Não há Base64
-  nem função serverless intermediária.
-- **Progresso real.** O percentual vem do evento `progress:changed` do viewer (bytes recebidos /
-  `Content-Length`). A interface distingue:
-  1. *Preparando o visualizador* (módulo e dispositivo gráfico);
-  2. *Baixando a exposição* (0–99%);
-  3. *Download concluído · preparando a cena* (decodificação e envio à GPU);
-  4. *Pronto* — `loaded:changed`, primeiro quadro completo renderizado.
-- **Erros.** Falhas de rede, respostas HTTP de erro e falhas do motor (eventos `error` do
-  registro de assets) levam a uma tela amigável com **Tentar novamente**, que recria o viewer do
-  zero. Navegadores sem WebGL 2/WebGPU recebem uma mensagem de dispositivo incompatível.
-- **Redimensionamento e orientação.** O contêiner ocupa `100dvh × 100%`; o viewer acompanha o
-  tamanho com um `ResizeObserver` interno.
-
-### Configuração da experiência
-
-[`src/data/experience.ts`](src/data/experience.ts) concentra os parâmetros editáveis, separados
-do componente de renderização:
-
-- `MODEL` — URL, nome, tamanho e número de gaussianas do SOG;
-- `INITIAL_CAMERA_SOURCE` — câmera inicial derivada da última vista salva no projeto SuperSplat
-  (`focalPoint`, azimute 172,5°, elevação −10,3°, FOV 85°), recuada `distance = 1,6` unidades ao
-  longo da mesma direção de visada;
-- `EXPERIENCE_SETTINGS` — *Experience Settings* v2 (tonemapping, fundo, pós-processamento,
-  câmeras, anotações).
+- **Somente no cliente.** O módulo do viewer é importado dinamicamente dentro de `useEffect`.
+- **Uma instância por vez.** A criação é adiada um *tick* (StrictMode) e cada nova instância
+  aguarda a destruição da anterior; ao desmontar, o download é cancelado e `viewer.destroy()`
+  libera recursos.
+- **Download direto da URL estática** com progresso real (`progress:changed`).
+- **Erros.** Falhas de rede, HTTP, motor ou **colisão** (arquivo ausente ou Walk Mode não liberado
+  em 45 s) levam a uma tela amigável com **Tentar novamente**. Sem colisão não há visita, então a
+  falha não é silenciosa.
+- **Ordem de inicialização.** Carregamento do SOG → cena pronta (`loaded`) → colisão anexada
+  (`walkAllowed`) → entrada no Walk Mode. A interface da visita só aparece depois disso
+  (“Preparando a área de visita…”).
 
 ---
 
-## Navegação
+## Testes realizados
 
-Os controles são os do SuperSplat Viewer (barra inferior direita; ajuda pelo ícone de teclado).
+Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de produção), em
+3/11/2026:
 
-| Recurso | Disponível | Observação |
+| # | Teste | Resultado |
 | --- | --- | --- |
-| Orbit | Sim | arrastar com o mouse / um dedo |
-| Pan | Sim | gesto indicado no painel de ajuda / dois dedos |
-| Zoom | Sim | roda do mouse / pinça |
-| Fly | Sim | WASD + mouse; Shift/Ctrl para correr/andar devagar; joystick do viewer em telas de toque |
-| Definir foco / voar até ponto | Sim | gestos de clique indicados no painel de ajuda |
-| Enquadrar cena | Sim | tecla **F** |
-| Reset (câmera inicial) | Sim | tecla **R** |
-| Animação de câmera | Sim | ao abrir, o viewer reproduz um movimento suave automático (comportamento padrão quando não há trilha de animação); qualquer interação ou o botão de pausa o interrompe |
-| Tela cheia | Sim | botão na barra inferior |
-| **Walk** | **Não** | depende de dados de colisão (malha `.glb` ou voxels) ainda inexistentes; o viewer oculta o modo automaticamente (`walkAllowed = false`). Quando houver colisão, basta informar `collisionUrl` ao `createViewer` |
+| A | Início na entrada, olhando para o interior, já em Walk | ✔ posição (−0,27; 1,6; −4,1), direção (0; −0,09; 1,0), `cameraMode = walk` |
+| B | Caminhada, altura e colisão | ✔ W/A/S/D corretos; olhos entre 1,59 e 1,74 m durante o percurso; para ao encontrar as mesas (z ≈ −1,15); para atrás antes da porta (z ≈ −4,45) — não sai da sala |
+| C | Bloqueios | ✔ teclas 1, 2, 3, F, R, G, V, Espaço, E, Q, Esc, roda do mouse e botão direito não mudam o modo nem movem a câmera; arrastar só gira |
+| D | Voltar à entrada | ✔ retorna exatamente à pose inicial, continua em Walk, nenhuma nova requisição do SOG ou da colisão |
+| E | Móvel (emulação 375×812 retrato; 812×375 paisagem) | ✔ joystick aparece em modo toque, anda para frente e para ao soltar; sem rolagem/overflow; ajuda adaptada ao toque |
+| F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 
-O desempenho varia conforme o dispositivo. Em celulares e tablets o viewer inicia no nível de
-qualidade *performance* (orçamento de splats menor e meia resolução); o usuário pode ajustar em
-⚙️ → Quality.
+Não verificado: aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
+celulares de entrada e o deploy na Vercel.
+
+## Limitações conhecidas
+
+- A escala (5,4) é estimada a partir da altura padrão de porta (2,10 m).
+- A pose de entrada foi medida em renderizações do SOG; recomenda-se confirmar com a rota
+  `/dev/camera`.
+- Altura dos olhos (1,5 m), FOV (90°) e limite de inclinação são fixos no viewer 1.42.
+- A colisão por voxels tem resolução de 5 cm; superfícies muito finas ou com baixa opacidade no
+  splat podem não bloquear (ou bloquear um pouco antes) o visitante.
+- Clicar/tocar no piso leva o visitante até o ponto (recurso do Walk Mode), inclusive até áreas
+  livres distantes.
 
 ---
 
@@ -168,7 +347,7 @@ Requisitos: **Node.js ≥ 20.9** e npm.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:3000  (calibração: /dev/camera)
 ```
 
 Outros scripts:
@@ -178,11 +357,11 @@ npm run typecheck    # gera os tipos de rotas e roda o TypeScript
 npm run lint         # ESLint
 npm run build        # build de produção
 npm run start        # serve o build de produção
+npm run collision    # regenera os voxels de colisão a partir do SOG
 ```
 
 > WebGPU só está disponível em contexto seguro (HTTPS ou `localhost`). Acessando o servidor de
-> desenvolvimento pelo IP da rede local (ex.: `http://192.168.x.x:3000`), o viewer usa WebGL 2
-> automaticamente.
+> desenvolvimento pelo IP da rede local, o viewer usa WebGL 2 automaticamente.
 
 ---
 
@@ -192,35 +371,31 @@ O projeto usa a configuração padrão de Next.js e não exige variáveis de amb
 
 1. Acesse [vercel.com/new](https://vercel.com/new) e importe o repositório
    `BernardoHille/SolosNaEscola` (GitHub).
-2. *Framework Preset*: **Next.js** (detectado automaticamente). Mantenha os comandos padrão
-   (`npm install`, `next build`) e o diretório raiz do repositório.
+2. *Framework Preset*: **Next.js** (detectado automaticamente). Mantenha os comandos padrão.
 3. Clique em **Deploy**. Cada *push* na `main` gera um novo deploy de produção.
 
 Observações:
 
-- O SOG é servido como arquivo estático da CDN da Vercel a partir de `public/models/`, com
+- SOG e voxels são servidos como arquivos estáticos de `public/models/`, com
   `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` (ver `next.config.ts`).
-  Ao substituir o modelo, prefira um novo nome de arquivo para evitar versões antigas em cache.
-- O arquivo tem ~45,7 MB, abaixo do limite de 100 MB por arquivo do GitHub (por isso não foi
-  usado Git LFS). Verifique, após o primeiro deploy, se o arquivo é entregue com status 200 e o
-  cabeçalho `Content-Length`, necessário para o percentual de progresso.
-- A transferência do modelo conta para a cota de banda do plano da Vercel (~45,7 MB por visitante
-  sem cache).
+  Ao substituir o modelo, prefira um novo nome de arquivo.
+- O SOG tem ~45,7 MB, abaixo do limite de 100 MB por arquivo do GitHub (sem Git LFS). Verifique,
+  após o deploy, se o arquivo é entregue com status 200 e `Content-Length`.
+- A transferência do modelo conta para a cota de banda do plano da Vercel.
 
 ---
 
-## Próximas etapas (fora do escopo desta versão)
+## Próximas etapas
 
 - Hotspots/anotações das peças (o Experience Settings já suporta `annotations`).
 - Textos educativos e percursos guiados.
-- Geometria de colisão para o modo Walk.
 - Imagem de pôster durante o carregamento (`posterUrl`).
-- Medição de desempenho de referência em diferentes dispositivos antes de avaliar LOD ou nova
-  compressão.
+- Testes em aparelhos reais e medição de desempenho de referência.
 
 ---
 
 ## Créditos
 
 Visualização baseada no [SuperSplat Viewer](https://github.com/playcanvas/supersplat-viewer) e no
-[PlayCanvas Engine](https://github.com/playcanvas/engine), ambos sob licença MIT.
+[PlayCanvas Engine](https://github.com/playcanvas/engine), ambos sob licença MIT. Colisão gerada
+com o [SplatTransform](https://github.com/playcanvas/splat-transform) (MIT).
