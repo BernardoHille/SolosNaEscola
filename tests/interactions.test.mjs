@@ -160,7 +160,8 @@ const glbJson = (file) => {
 test("dados: recipientes (caixas) existem nos GLBs e há conteúdo fora deles", () => {
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
   const items = [...source.matchAll(/url: "(\/models\/inspection\/[^"]+\.glb)"[^\n]*\n\s*container: \{ node: "([^"]+)" \}/g)];
-  assert.equal(items.length, 3);
+  // Só as rochas (caixas 1 e 2); o solo da caixa 3 não sai da caixa.
+  assert.equal(items.length, 2);
   for (const [, url, node] of items) {
     const gltf = glbJson(resolve(root, "public", url.slice(1)));
     const index = gltf.nodes.findIndex((n) => n.name === node);

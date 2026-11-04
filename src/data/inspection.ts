@@ -42,6 +42,10 @@ export type InspectionItem = {
   /**
    * Recipiente do objeto (nó do GLB, ex.: a caixa de madeira). Clicar no conteúdo esmaece o
    * recipiente e enquadra só o conteúdo (a rocha); clicar de novo o devolve.
+   *
+   * Regra: usar sempre que o conteúdo é uma peça sólida que pode ser tirada da caixa (rochas,
+   * fragmentos). Não usar com material solto (terra, solo, areia): sem a caixa ele não se
+   * sustenta, então o item fica sem esse recurso.
    */
   container?: { node: string };
   /** Miniatura da faixa de navegação (imagem gerada a partir do próprio modelo). */
@@ -91,7 +95,7 @@ export const FORMACAO_DO_SOLO: InspectionSet = {
       title: "Caixa 3 | Solo formado",
       shortTitle: "Solo formado",
       model: { url: "/models/inspection/caixa_03_solo_formado.glb", sizeBytes: 3_179_780 },
-      container: { node: "Caixa_Madeira_C03" },
+      // Solo solto: não sai da caixa (sem `container`).
       thumbnail: "/models/inspection/thumbs/caixa-03.webp",
       view: { rotationDeg: [0, 0, 0], yawDeg: -28, pitchDeg: 24 },
     },

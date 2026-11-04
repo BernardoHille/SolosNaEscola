@@ -298,7 +298,7 @@ export default function InspectionOverlay({
           }`}
           aria-hidden={!container.available || container.detached}
         >
-          {touch ? "Toque no material para tirá-lo da caixa" : "Clique no material para tirá-lo da caixa"}
+          {touch ? "Toque na rocha para tirá-la da caixa" : "Clique na rocha para tirá-la da caixa"}
         </p>
         <p className="pointer-events-none text-center text-[11px] text-stone-400 sm:text-xs">
           {touch

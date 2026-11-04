@@ -338,17 +338,18 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Zoom | roda do mouse, **+** / **−**, botões | pinça |
 | Deslocar | arrastar com botão direito ou com **Shift** | arrastar com dois dedos |
 | Restaurar a vista | **R**, duplo clique ou botão | botão |
-| Tirar da caixa / devolver | clique na rocha (ou no solo), **C** ou botão da caixa | toque na rocha ou botão |
+| Tirar da caixa / devolver | clique na rocha, **C** ou botão da caixa | toque na rocha ou botão |
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Fechar | **Esc** ou **X** | **X** |
 
-**Tirar da caixa.** Nas caixas 1, 2 e 3, um clique no material (a rocha, os fragmentos ou o
-solo) esmaece a caixa de madeira em 0,28 s e reenquadra só o material, para girá-lo e examiná-lo
-por baixo; outro clique (ou **C**, ou o botão) devolve a caixa. O clique só conta se o material
+**Tirar da caixa.** É o padrão para toda peça sólida guardada numa caixa: nas caixas 1 e 2, um
+clique na rocha (ou nos fragmentos) esmaece a caixa de madeira em 0,28 s e reenquadra só a rocha,
+para girá-la e examiná-la por baixo; outro clique (ou **C**, ou o botão) devolve a caixa. O clique só conta se o material
 for o primeiro objeto atingido — clicar numa parede da caixa não a tira. O cursor vira “mão” sobre
-o material. A caixa é o nó do GLB indicado em `container` (`Caixa_Madeira…`); nada é alterado nos
-arquivos.
+a rocha. A caixa é o nó do GLB indicado em `container` (`Caixa_Madeira…`); nada é alterado nos
+arquivos. Material solto, como o solo da caixa 3, não sai da caixa: esse item não tem `container`,
+e o botão e a dica não aparecem.
 
 **Faixa de etapas.** Abaixo dos botões, as quatro peças do conjunto aparecem como miniaturas
 numeradas, com o título curto; a atual fica destacada em amarelo, e um clique leva direto a
@@ -435,8 +436,9 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
   `narration: { audioUrl?, text? }` já estão no tipo `InspectionItem`, mas ainda não são exibidos.
   Os áudios devem ir para `public/audio/…` (arquivos estáticos; sem serviços pagos de voz).
 - **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto).
-- **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB); sem o
-  campo, o item não tem esse recurso (ex.: a maquete).
+- **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB). Use em
+  todo item cujo conteúdo é uma peça sólida (rochas, fragmentos); não use com material solto
+  (terra, solo, areia) nem em peças sem caixa (ex.: a maquete).
 - **Miniatura:** `thumbnail`. Para gerar de novo, abra a inspeção em desenvolvimento, vá à etapa e
   rode no console `__SOLOS_INSPECTION__.snapshot()` (PNG do quadro atual, fundo transparente);
   recorte, deixe quadrada, reduza para 192 px e salve em WebP.
@@ -601,7 +603,7 @@ Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o T
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
-das caixas presentes nos GLBs (com conteúdo fora delas) e miniaturas WebP. `typecheck`, `lint` e
+das caixas presentes nos GLBs (com conteúdo fora delas; só as caixas de rocha) e miniaturas WebP. `typecheck`, `lint` e
 `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
