@@ -13,6 +13,8 @@ export type InspectionState = {
   close: () => void;
   next: () => void;
   previous: () => void;
+  /** Vai direto a uma etapa (miniaturas). */
+  goTo: (index: number) => void;
 };
 
 /**
@@ -33,9 +35,13 @@ export function useInspection(): InspectionState {
     [count],
   );
   const previous = useCallback(() => setState((s) => (s && s.index > 0 ? { ...s, index: s.index - 1 } : s)), []);
+  const goTo = useCallback(
+    (index: number) => setState((s) => (s && index >= 0 && index < count && index !== s.index ? { ...s, index } : s)),
+    [count],
+  );
 
   return useMemo(
-    () => ({ set, index: state?.index ?? 0, open, close, next, previous }),
-    [set, state?.index, open, close, next, previous],
+    () => ({ set, index: state?.index ?? 0, open, close, next, previous, goTo }),
+    [set, state?.index, open, close, next, previous, goTo],
   );
 }

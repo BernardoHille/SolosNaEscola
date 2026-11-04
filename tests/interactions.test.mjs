@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  castRay,
   convexHull,
   distanceToVolume,
   isInFront,
@@ -69,6 +70,15 @@ test("só interage pela frente, dentro do cone de visão", () => {
   assert.ok(!isInFront([1.1, 0, 0.17], v)); // quase de lado (~81°), através da lateral do móvel
 });
 
+test("bloqueador na frente impede a seleção; atrás, não", () => {
+  const v = box({ maxDistance: 5 });
+  const wall = { id: "w", position: [0, 0, 2], rotationDeg: [0, 0, 0], size: [2, 2, 0.1] };
+  const behind = { id: "b", position: [0, 0, -2], rotationDeg: [0, 0, 0], size: [2, 2, 0.1] };
+  assert.equal(castRay([0, 0, 4], [0, 0, -1], [v]), v);
+  assert.equal(castRay([0, 0, 4], [0, 0, -1], [v], [wall]), null);
+  assert.equal(castRay([0, 0, 4], [0, 0, -1], [v], [behind]), v);
+});
+
 test("distância até a superfície do volume", () => {
   const v = box();
   close(distanceToVolume([0, 0, 2], v), 1.5);
@@ -118,6 +128,11 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     assert.ok(v.size.every((n) => n > 0));
     assert.ok(v.maxDistance > 0);
   }
+  const occluders = json("src/data/interactions.json").occluders ?? [];
+  for (const o of occluders) {
+    assert.equal(o.position.length, 3);
+    assert.ok(o.size.every((n) => n > 0), o.id);
+  }
   assert.deepEqual(
     volumes.map((v) => v.order),
     [1, 2, 3, 4],
@@ -132,5 +147,42 @@ test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF biná
     const file = resolve(root, "public", url.slice(1));
     assert.equal(statSync(file).size, Number(size.replaceAll("_", "")), url);
     assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", url);
+  }
+});
+
+/** JSON de um GLB (primeiro bloco). */
+const glbJson = (file) => {
+  const buf = readFileSync(file);
+  const length = buf.readUInt32LE(12);
+  return JSON.parse(buf.subarray(20, 20 + length).toString("utf8"));
+};
+
+test("dados: recipientes (caixas) existem nos GLBs e há conteúdo fora deles", () => {
+  const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
+  const items = [...source.matchAll(/url: "(\/models\/inspection\/[^"]+\.glb)"[^\n]*\n\s*container: \{ node: "([^"]+)" \}/g)];
+  assert.equal(items.length, 3);
+  for (const [, url, node] of items) {
+    const gltf = glbJson(resolve(root, "public", url.slice(1)));
+    const index = gltf.nodes.findIndex((n) => n.name === node);
+    assert.ok(index >= 0, `${node} ausente em ${url}`);
+    // Algum nó com malha fora da caixa (a rocha / o solo).
+    const inside = new Set();
+    const walk = (i) => {
+      inside.add(i);
+      for (const c of gltf.nodes[i].children ?? []) walk(c);
+    };
+    walk(index);
+    assert.ok(gltf.nodes.some((n, i) => n.mesh !== undefined && !inside.has(i)), url);
+  }
+});
+
+test("dados: miniaturas existem e são WebP", () => {
+  const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
+  const thumbs = [...source.matchAll(/thumbnail: "(\/models\/inspection\/thumbs\/[^"]+\.webp)"/g)].map((m) => m[1]);
+  assert.equal(thumbs.length, 4);
+  for (const url of thumbs) {
+    const buf = readFileSync(resolve(root, "public", url.slice(1)));
+    assert.equal(buf.subarray(0, 4).toString("latin1"), "RIFF", url);
+    assert.equal(buf.subarray(8, 12).toString("latin1"), "WEBP", url);
   }
 });

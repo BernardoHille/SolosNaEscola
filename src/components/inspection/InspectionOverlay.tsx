@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  BoxIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -12,7 +13,7 @@ import {
   ZoomOutIcon,
 } from "@/components/ui/icons";
 import { INSPECTION_DIM_OPACITY, type InspectionSet } from "@/data/inspection";
-import type { InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
+import type { ContainerState, InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
 import { IS_DEV } from "@/lib/viewer/spawnOverride";
 
 type InspectionOverlayProps = {
@@ -21,6 +22,8 @@ type InspectionOverlayProps = {
   inputMode: "desktop" | "touch";
   onNext: () => void;
   onPrevious: () => void;
+  /** Vai direto a uma etapa (miniaturas). */
+  onGoTo: (index: number) => void;
   /** Chamado quando o visitante pede para fechar; o fechamento ocorre após o esmaecimento. */
   onClose: () => void;
 };
@@ -44,7 +47,15 @@ const iconButton =
  * e o modelo 3D da etapa atual aparece no centro, com iluminação própria, para girar,
  * aproximar e comparar. Setas navegam pela sequência; Esc ou o botão fecha.
  */
-export default function InspectionOverlay({ set, index, inputMode, onNext, onPrevious, onClose }: InspectionOverlayProps) {
+export default function InspectionOverlay({
+  set,
+  index,
+  inputMode,
+  onNext,
+  onPrevious,
+  onGoTo,
+  onClose,
+}: InspectionOverlayProps) {
   const item = set.items[index];
   const count = set.items.length;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,6 +69,18 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
   const [retry, setRetry] = useState(0);
   const [markers, setMarkers] = useState<MarkerPosition[]>([]);
   const [showMarkers, setShowMarkers] = useState(true);
+  const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
+  // Altura dos controles inferiores: o modelo é enquadrado no espaço acima deles.
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [controlsHeight, setControlsHeight] = useState(0);
+
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setControlsHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Entrada suave (o primeiro quadro é desenhado transparente).
   useEffect(() => {
@@ -79,7 +102,7 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
       .then(({ InspectionViewer }) => {
         const canvas = canvasRef.current;
         if (disposed || !canvas) return;
-        viewer = new InspectionViewer(canvas, { onMarkers: setMarkers });
+        viewer = new InspectionViewer(canvas, { onMarkers: setMarkers, onContainer: setContainer });
         viewerRef.current = viewer;
         // Desenvolvimento: handle no console para testes manuais.
         if (IS_DEV) (window as unknown as Record<string, unknown>).__SOLOS_INSPECTION__ = viewer;
@@ -122,7 +145,7 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
     return () => previous?.focus?.();
   }, []);
 
-  // Teclado: Esc fecha, setas navegam, R restaura, + e − aproximam.
+  // Teclado: Esc fecha, setas navegam, R restaura, C tira/devolve a caixa, + e − aproximam.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -145,6 +168,10 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
         case "r":
         case "R":
           viewer?.reset();
+          break;
+        case "c":
+        case "C":
+          viewer?.setDetached();
           break;
         case "+":
         case "=":
@@ -185,9 +212,10 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
 
       {/* Área de manipulação do modelo. */}
       <div
-        className={`absolute inset-0 transition-[opacity,transform] duration-[260ms] ease-out motion-reduce:transition-none ${
+        className={`absolute inset-x-0 top-0 transition-[opacity,transform] duration-[260ms] ease-out motion-reduce:transition-none ${
           visible && !loading ? "scale-100 opacity-100" : "scale-[0.97] opacity-0"
         }`}
+        style={{ bottom: controlsHeight }}
       >
         <canvas
           ref={canvasRef}
@@ -259,7 +287,19 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
       </button>
 
       {/* Controles inferiores. */}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-6">
+      <div
+        ref={controlsRef}
+        className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-6"
+      >
+        {/* Sempre ocupa o espaço (a altura dos controles não muda entre as etapas). */}
+        <p
+          className={`pointer-events-none rounded-full bg-black/55 px-3 py-1 text-center text-xs text-[#FFE89A] ring-1 ring-[#FFD54A]/30 backdrop-blur-sm transition-opacity duration-200 sm:text-[13px] ${
+            container.available && !container.detached && !loading ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden={!container.available || container.detached}
+        >
+          {touch ? "Toque no material para tirá-lo da caixa" : "Clique no material para tirá-lo da caixa"}
+        </p>
         <p className="pointer-events-none text-center text-[11px] text-stone-400 sm:text-xs">
           {touch
             ? "Arraste para girar · Dois dedos para aproximar e deslocar"
@@ -303,6 +343,18 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
           >
             <ZoomInIcon />
           </button>
+          {container.available && (
+            <button
+              type="button"
+              onClick={() => viewerRef.current?.setDetached()}
+              aria-pressed={container.detached}
+              className={`${iconButton} ${container.detached ? "bg-[#FFD54A]/25 text-[#FFE89A]" : ""}`}
+              aria-label={container.detached ? "Pôr de volta na caixa" : "Tirar da caixa"}
+              title={container.detached ? "Pôr de volta na caixa (C)" : "Tirar da caixa (C)"}
+            >
+              <BoxIcon />
+            </button>
+          )}
           {hasMarkers && (
             <button
               type="button"
@@ -326,6 +378,55 @@ export default function InspectionOverlay({ set, index, inputMode, onNext, onPre
             <ChevronRightIcon />
           </button>
         </div>
+
+        {/* Sequência do conjunto: ir direto a qualquer etapa. */}
+        <nav aria-label={`Etapas de ${set.title}`} className="w-full max-w-md">
+          <ol className="flex justify-center gap-2 sm:gap-3">
+            {set.items.map((it, i) => {
+              const active = i === index;
+              return (
+                <li key={it.id} className="min-w-0 flex-1 sm:flex-none">
+                  <button
+                    type="button"
+                    onClick={() => onGoTo(i)}
+                    aria-current={active ? "step" : undefined}
+                    aria-label={`Etapa ${i + 1}: ${it.title}`}
+                    title={it.title}
+                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 sm:w-24 ${
+                      active ? "bg-[#FFD54A]/15" : "hover:bg-white/10"
+                    }`}
+                  >
+                    <span
+                      className={`relative block aspect-square w-full max-w-16 overflow-hidden rounded-lg bg-black/45 ring-1 transition-[box-shadow,opacity] sm:max-w-none ${
+                        active ? "ring-2 ring-[#FFD54A]" : "opacity-75 ring-white/15 group-hover:opacity-100"
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- miniaturas estáticas pequenas */}
+                      <img
+                        src={it.thumbnail}
+                        alt=""
+                        width={96}
+                        height={96}
+                        draggable={false}
+                        className="size-full object-contain"
+                      />
+                      <span className="absolute left-1 top-1 rounded bg-black/65 px-1 font-mono text-[10px] leading-4 text-stone-100">
+                        {i + 1}
+                      </span>
+                    </span>
+                    <span
+                      className={`w-full truncate text-center text-[10px] leading-tight sm:text-[11px] ${
+                        active ? "text-[#FFE89A]" : "text-stone-300"
+                      }`}
+                    >
+                      {it.shortTitle}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </div>
     </div>
   );

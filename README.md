@@ -312,7 +312,8 @@ Primeira interação 3D: inspeção de objetos no estilo de jogos de aventura. A
 lado da porta de entrada guarda, no nível superior, as caixas 1, 2 e 3 e a maquete da formação do
 solo. Ao se aproximar e olhar para uma delas, o objeto recebe um contorno amarelo (`#FFD54A`) e
 aparece o indicador **[E] Inspecionar** (no toque, o botão **Inspecionar**). **E** ou um clique no
-objeto abre a sequência **Formação do Solo**, sempre a partir da Caixa 1:
+objeto abre a sequência **Formação do Solo**, sempre a partir da Caixa 1 — as quatro peças só
+fazem sentido juntas, então a sequência começa no início qualquer que seja a peça escolhida:
 
 | # | Objeto | Modelo |
 | --- | --- | --- |
@@ -324,19 +325,34 @@ objeto abre a sequência **Formação do Solo**, sempre a partir da Caixa 1:
 Os GLBs foram copiados sem alteração da pasta de origem *Inspecionar objetos* (já eram glTF
 binário, em metros, Y para cima e frente em +Z); **não houve conversão nem recompressão**. O GLB
 do conjunto (11,6 MB) não é usado: cada objeto é carregado sozinho, e o próximo da sequência é
-pré-carregado.
+pré-carregado. As miniaturas da faixa de navegação ficam em `public/models/inspection/thumbs/`
+(WebP 192 px, ≈ 5 KB cada).
 
 **Durante a inspeção** o museu continua renderizado por trás, escurecido (opacidade 0,70), e o
-objeto aparece num visualizador próprio. Comandos:
+objeto aparece num visualizador próprio, enquadrado no espaço acima dos controles. A interface
+da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada”) sai de cena. Comandos:
 
 | Ação | Computador | Toque |
 | --- | --- | --- |
 | Girar | arrastar | arrastar um dedo |
 | Zoom | roda do mouse, **+** / **−**, botões | pinça |
-| Deslocar | arrastar com botão direito ou com **Shift** | — |
+| Deslocar | arrastar com botão direito ou com **Shift** | arrastar com dois dedos |
 | Restaurar a vista | **R**, duplo clique ou botão | botão |
+| Tirar da caixa / devolver | clique na rocha (ou no solo), **C** ou botão da caixa | toque na rocha ou botão |
 | Anterior / próximo | **←** / **→** ou botões | botões |
+| Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Fechar | **Esc** ou **X** | **X** |
+
+**Tirar da caixa.** Nas caixas 1, 2 e 3, um clique no material (a rocha, os fragmentos ou o
+solo) esmaece a caixa de madeira em 0,28 s e reenquadra só o material, para girá-lo e examiná-lo
+por baixo; outro clique (ou **C**, ou o botão) devolve a caixa. O clique só conta se o material
+for o primeiro objeto atingido — clicar numa parede da caixa não a tira. O cursor vira “mão” sobre
+o material. A caixa é o nó do GLB indicado em `container` (`Caixa_Madeira…`); nada é alterado nos
+arquivos.
+
+**Faixa de etapas.** Abaixo dos botões, as quatro peças do conjunto aparecem como miniaturas
+numeradas, com o título curto; a atual fica destacada em amarelo, e um clique leva direto a
+qualquer uma.
 
 Na maquete, o botão de camadas mostra ou esconde os rótulos dos estágios (R, A + R, A + C + R,
 A + B + C + R), posicionados a partir dos nós do próprio GLB. A inspeção não tem narração nem
@@ -357,10 +373,20 @@ amarelo. Cada objeto tem um **volume invisível** (caixa orientada) em
 1. lança um raio pelo centro da tela (cursor capturado ou toque) ou pelo cursor (cursor livre);
 2. testa o raio contra os volumes (*slab test* em caixa orientada) e fica com o mais próximo;
 3. exige distância até a câmera menor que `maxDistance` (2,5 m) e que a câmera esteja **na frente**
-   do volume, num cone de 70° em torno da sua frente (+Z local) — é a oclusão possível sem
-   geometria: não se interage pelas laterais nem por trás da estante;
-4. projeta as arestas do volume na tela (com recorte no plano da câmera) e desenha o casco
+   do volume, num cone de 70° em torno da sua frente (+Z local);
+3. descarta o alvo se um **bloqueador** (`occluders` em `interactions.json`, caixas invisíveis no
+   lugar das laterais da estante) for atingido antes dele — é a oclusão possível sem geometria por
+   objeto: da porta de entrada, olhando a lateral da estante, a maquete não acende através dela;
+5. projeta as arestas do volume na tela (com recorte no plano da câmera) e desenha o casco
    convexo como contorno amarelo num SVG sobreposto ao canvas, com brilho e transição de 220 ms.
+
+**Posição dos volumes.** Medida no próprio SOG (vistas de cima, de frente e de lado do nível
+superior da estante, a partir das posições das gaussianas): a frente da estante fica em
+z ≈ −4,27 m; a face frontal das caixas, em z ≈ −4,31 m (caixas de ≈ 19,5 cm, centros em
+x = 0,84 / 1,04 / 1,24 m); e a maquete está **girada ≈ 26°** no fundo do nível (ajuste de reta
+pelas divisórias brancas: z = 0,491·x − 5,297, resíduo 7 mm), com o lado direito mais à frente. Os
+volumes da primeira versão estavam ≈ 14 cm à frente das caixas e a maquete sem rotação, por isso o
+contorno “saía” da estante.
 
 A geometria é pura ([`geometry.ts`](src/lib/interaction/geometry.ts)) e coberta por testes. Com o
 cursor livre, um clique no objeto abre a inspeção em vez de levar o visitante até o ponto; um
@@ -370,9 +396,20 @@ arrasto a partir do objeto continua girando a câmera.
 
 [`inspectionViewer.ts`](src/lib/inspection/inspectionViewer.ts) cria um segundo `Application` do
 PlayCanvas (o mesmo motor do viewer, carregado sob demanda) num canvas transparente sobre o museu.
-Renderiza só quando algo muda; usa luz própria (principal, preenchimento, contorno e ambiente) e
-*tone mapping* linear — o *neutral* deixava a madeira das caixas laranja e saturada (cor medida
-no canvas comparada com a textura). O modelo é centralizado pela caixa envolvente e enquadrado
+Renderiza só quando algo muda. A iluminação imita um estúdio fotográfico, sem arquivos extras:
+
+- **ambiente procedural (IBL):** um panorama gerado em código (teto claro, horizonte médio, chão
+  escuro e uma janela de luz grande e suave no alto) vira o atlas de iluminação do motor
+  (`EnvLighting`), que dá luz difusa com direção e reflexos suaves aos materiais PBR dos GLBs;
+- **luz principal com sombras suaves** (PCF 5×5, mapa de 2048 px, distância de sombra ajustada ao
+  objeto), vinda do alto, da esquerda e da frente: a rocha sombreia o fundo e as paredes da caixa;
+  o viés de sombra é baixo (0,008) porque os objetos têm ≈ 30 cm — com o padrão a sombra sumia;
+- **contraluz fria** para separar o contorno do fundo escuro;
+- *tone mapping* **ACES 2**: comprime os brancos (divisórias e etiqueta da maquete) e dá contraste
+  de foto sem a saturação do ACES clássico. Escolhido comparando capturas do próprio canvas com
+  linear, neutro e ACES.
+
+As luzes ficam paradas e o objeto gira, como numa mesa giratória. O modelo é centralizado pela caixa envolvente e enquadrado
 pela esfera envolvente; a rotação usa quatérnios nos eixos da tela, com amortecimento e limites de
 zoom e deslocamento. Ao fechar, a aplicação é destruída e o contexto WebGL é liberado
 (`WEBGL_lose_context`), pois o motor não o libera sozinho: 12 aberturas seguidas liberaram 12
@@ -386,7 +423,7 @@ coordenadas, e um painel permite ajustar posição, rotação, tamanho e distân
 volume para a mira (1,2 m à frente da câmera) e mover todos juntos em passos de 5 cm. **Copiar
 JSON** copia o arquivo completo: cole em `src/data/interactions.json`. As alterações do painel
 valem só na aba aberta. O parâmetro também funciona no site publicado (só desenha e copia; não
-grava nada).
+grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON (`occluders`).
 
 ### Editar textos, narração e sequência
 
@@ -398,6 +435,11 @@ grava nada).
   `narration: { audioUrl?, text? }` já estão no tipo `InspectionItem`, mas ainda não são exibidos.
   Os áudios devem ir para `public/audio/…` (arquivos estáticos; sem serviços pagos de voz).
 - **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto).
+- **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB); sem o
+  campo, o item não tem esse recurso (ex.: a maquete).
+- **Miniatura:** `thumbnail`. Para gerar de novo, abra a inspeção em desenvolvimento, vá à etapa e
+  rode no console `__SOLOS_INSPECTION__.snapshot()` (PNG do quadro atual, fundo transparente);
+  recorte, deixe quadrada, reduza para 192 px e salve em WebP.
 - **Rótulo do indicador:** `label` do volume em `interactions.json`.
 
 ### Adicionar uma nova estante
@@ -405,9 +447,11 @@ grava nada).
 1. Copie os GLBs para `public/models/inspection/` (nomes em minúsculas, sem espaços).
 2. Em `inspection.ts`, crie um `InspectionSet` (id, título e itens) e inclua-o em
    `INSPECTION_SETS`.
-3. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
-   `order` na sequência; calibre com `?debugInteractions=1`.
-4. Rode `npm test` (ids, ordem, arquivos e tamanhos) e confira no navegador.
+3. Gere as miniaturas (acima) em `public/models/inspection/thumbs/`.
+4. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
+   `order` na sequência; calibre com `?debugInteractions=1`. Se outro móvel puder ser visto
+   através de uma lateral, acrescente um bloqueador em `occluders`.
+5. Rode `npm test` (ids, ordem, arquivos, tamanhos, caixas e miniaturas) e confira no navegador.
 
 Os testes de dados atuais esperam o conjunto `formacao-do-solo` com ordens 1–4; ajuste-os ao
 acrescentar outros conjuntos.
@@ -553,10 +597,11 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **9 de 9 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
-mais próximo, de dentro), rotação dos eixos, frente e cone de 70°, distância, contorno projetado
-(e volume atrás da câmera), casco convexo, consistência entre `interactions.json` e
-`inspection.ts`, e existência, tamanho e cabeçalho glTF dos quatro GLBs. `typecheck`, `lint` e
+`geometry.ts` diretamente): **12 de 12 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
+mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
+de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
+`interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
+das caixas presentes nos GLBs (com conteúdo fora delas) e miniaturas WebP. `typecheck`, `lint` e
 `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -576,8 +621,14 @@ emulação de celular 375×812), em 4/11/2026:
 | 10 | Walk suspenso | ✔ **W** durante a inspeção: 0 m; **S** depois de fechar: 0,69 m |
 | 11 | 12 aberturas e fechamentos seguidos | ✔ 12 contextos WebGL liberados; canvas do museu nunca perdeu o contexto; câmera parada. Heap JS 47 → 68 MB (sem coleta de lixo forçada; não conclusivo) |
 | 12 | Celular (emulação 375×812) | ✔ contorno na Caixa 2 e botão **Inspecionar**; abre na Caixa 1; controles cabem na largura (sem rolagem); **X** fecha e o visitante continua no lugar |
+| 13 | Volumes corrigidos (frente e de baixo, como nas capturas da equipe) | ✔ contorno da Caixa 1 sobre a caixa e a rocha; contorno da maquete girado junto com ela, dentro da estante |
+| 14 | Bloqueadores | ✔ da entrada (−0,27; 1,5; −4,1) nenhum volume é selecionado (sem os bloqueadores a maquete seria); de frente, os quatro continuam selecionáveis |
+| 15 | Tirar da caixa | ✔ clique na rocha esmaece a caixa e reenquadra a rocha; novo clique devolve; clique na parede frontal não alterna; no celular (emulação), toque na rocha funciona |
+| 16 | Miniaturas | ✔ quatro miniaturas abaixo dos botões; clique na 4 vai direto à maquete (e volta à 1); cabem em 375 px (82 px cada) |
+| 17 | Iluminação | ✔ sombras da rocha dentro das caixas e da moldura na maquete; comparadas capturas do canvas (linear, neutro, ACES, ACES 2) antes da escolha |
 
-Não verificado na inspeção: **E** com o mouse realmente capturado (o painel de testes recusa o
+Não verificado na inspeção: aparência num celular real (sombras e IBL dependem da GPU),
+**E** com o mouse realmente capturado (o painel de testes recusa o
 pointer lock; a mira central foi validada com o cursor livre e no toque), toque real com pinça
 (apenas emulação, sem gestos multitoque), preferência de movimento reduzido, Safari/iOS e
 desempenho em aparelhos de entrada.
@@ -600,8 +651,10 @@ celulares de entrada e o deploy na Vercel.
 - Inspeção: a oclusão é aproximada (distância e cone de 70° em frente ao volume). Um objeto pode
   ser destacado através de algo que esteja entre ele e o visitante dentro desse cone; na estante
   atual isso não ocorre, pois os objetos ficam no nível superior, na frente.
-- Inspeção: os volumes foram calibrados visualmente no splat; o contorno é a caixa do volume, não
-  a silhueta exata do objeto.
+- Inspeção: os volumes foram medidos no splat; o contorno é a caixa do volume, não a silhueta
+  exata do objeto.
+- Inspeção: o clique que tira a rocha da caixa usa as caixas delimitadoras das malhas (não os
+  triângulos); perto das bordas da rocha o clique pode valer um pouco fora dela.
 - Inspeção: sem narração nem texto explicativo nesta etapa (por decisão do projeto).
 
 ---

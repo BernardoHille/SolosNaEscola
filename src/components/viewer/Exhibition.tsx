@@ -179,20 +179,25 @@ export default function Exhibition() {
 
       {visiting && (
         <>
-          <ProjectBadge>
-            <FpsCounter viewer={viewer} />
-          </ProjectBadge>
-          <VisitControls
-            onReturnToEntrance={walk.returnToEntrance}
-            onHelp={() => setHelpOpen(true)}
-            fullscreen={{ supported: fullscreenSupported, active: isFullscreen, toggle: toggleFullscreen }}
-            quality={{
-              level: quality.level,
-              onChange: quality.setLevel,
-              open: qualityOpen,
-              onOpenChange: setQualityOpen,
-            }}
-          />
+          {/* Na inspeção, a interface da visita sai de cena (a inspeção tem a sua). */}
+          {!inspecting && (
+            <>
+              <ProjectBadge>
+                <FpsCounter viewer={viewer} />
+              </ProjectBadge>
+              <VisitControls
+                onReturnToEntrance={walk.returnToEntrance}
+                onHelp={() => setHelpOpen(true)}
+                fullscreen={{ supported: fullscreenSupported, active: isFullscreen, toggle: toggleFullscreen }}
+                quality={{
+                  level: quality.level,
+                  onChange: quality.setLevel,
+                  open: qualityOpen,
+                  onOpenChange: setQualityOpen,
+                }}
+              />
+            </>
+          )}
           {stage && viewer && (
             <InteractionLayer
               viewer={viewer}
@@ -229,6 +234,7 @@ export default function Exhibition() {
               inputMode={walk.inputMode}
               onNext={inspection.next}
               onPrevious={inspection.previous}
+              onGoTo={inspection.goTo}
               onClose={inspection.close}
             />
           )}

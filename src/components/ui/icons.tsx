@@ -113,6 +113,19 @@ export function ZoomOutIcon({ className }: IconProps) {
   );
 }
 
+/** Caixa aberta (tirar o conteúdo da caixa / devolver). */
+export function BoxIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M3.5 9.5 12 13l8.5-3.5" />
+      <path d="M3.5 9.5V17l8.5 3.5 8.5-3.5V9.5" />
+      <path d="M12 13v7.5" />
+      <path d="m3.5 9.5 3-4.5 8.5 3.5-3 4.5" />
+      <path d="m20.5 9.5-3-4.5-8.5 3.5" />
+    </svg>
+  );
+}
+
 export function LayersIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>

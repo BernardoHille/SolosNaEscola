@@ -18,11 +18,12 @@
 import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 import type { CameraComponent } from "playcanvas";
 
-import type { InteractionVolume, Vec3 } from "@/data/interactions";
+import { INTERACTION_OCCLUDERS, type InteractionVolume, type Occluder, type Vec3 } from "@/data/interactions";
 
 import {
   add,
   BOX_EDGES,
+  castRay,
   distanceToVolume,
   invert,
   isInFront,
@@ -31,7 +32,6 @@ import {
   projectPoint,
   projectSegment,
   rayThroughPixel,
-  rayVolume,
   scale,
   volumeAxes,
   volumeCorners,
@@ -58,6 +58,7 @@ const pathFrom = (points: [number, number][]) =>
 
 export class InteractionManager {
   private volumes: InteractionVolume[] = [];
+  private occluders: Occluder[] = INTERACTION_OCCLUDERS;
   private enabled = true;
   private aimMode: AimMode = "center";
   private pointer: [number, number] | null = null;
@@ -109,6 +110,11 @@ export class InteractionManager {
 
   setVolumes(volumes: InteractionVolume[]) {
     this.volumes = volumes;
+    this.update();
+  }
+
+  setOccluders(occluders: Occluder[]) {
+    this.occluders = occluders;
     this.update();
   }
 
@@ -194,17 +200,7 @@ export class InteractionManager {
   }
 
   private cast(origin: Vec3, dir: Vec3): InteractionVolume | null {
-    let best: InteractionVolume | null = null;
-    let bestT = Infinity;
-    for (const v of this.volumes) {
-      if (!isInFront(origin, v) || distanceToVolume(origin, v) > v.maxDistance) continue;
-      const t = rayVolume(origin, dir, v);
-      if (t !== null && t < bestT) {
-        best = v;
-        bestT = t;
-      }
-    }
-    return best;
+    return castRay(origin, dir, this.volumes, this.occluders);
   }
 
   private readView() {
@@ -257,6 +253,11 @@ export class InteractionManager {
       el.setAttribute("stroke-width", String(w));
       this.debugLayer.appendChild(el);
     };
+    // Bloqueadores em vermelho, só arestas.
+    for (const o of this.occluders) {
+      const corners = volumeCorners(o);
+      for (const [i, j] of BOX_EDGES) line(corners[i], corners[j], "rgba(248,113,113,0.7)", 1);
+    }
     for (const v of this.volumes) {
       const selected = v.id === this.selectedId;
       const corners = volumeCorners(v);

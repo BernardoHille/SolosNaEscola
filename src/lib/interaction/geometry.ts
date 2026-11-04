@@ -5,7 +5,7 @@
  *
  * Matrizes 4×4 em ordem de colunas (convenção do PlayCanvas/WebGL).
  */
-import type { InteractionVolume, Vec3 } from "@/data/interactions";
+import type { InteractionVolume, Occluder, OrientedBox, Vec3 } from "@/data/interactions";
 
 export type Mat4 = ArrayLike<number>;
 export type Vec2 = [number, number];
@@ -31,7 +31,7 @@ export function volumeAxes(v: Pick<InteractionVolume, "rotationDeg">): [Vec3, Ve
 }
 
 /** Os 8 cantos do volume no mundo (índice: bit 0 = X, bit 1 = Y, bit 2 = Z). */
-export function volumeCorners(v: InteractionVolume): Vec3[] {
+export function volumeCorners(v: OrientedBox): Vec3[] {
   const axes = volumeAxes(v);
   const half = scale(v.size, 0.5);
   const corners: Vec3[] = [];
@@ -50,7 +50,7 @@ export const BOX_EDGES: [number, number][] = [
   [0, 4], [1, 5], [2, 6], [3, 7],
 ];
 
-const toLocal = (p: Vec3, v: InteractionVolume, axes = volumeAxes(v)): Vec3 => {
+const toLocal = (p: Vec3, v: OrientedBox, axes = volumeAxes(v)): Vec3 => {
   const d = sub(p, v.position);
   return [dot(d, axes[0]), dot(d, axes[1]), dot(d, axes[2])];
 };
@@ -59,7 +59,7 @@ const toLocal = (p: Vec3, v: InteractionVolume, axes = volumeAxes(v)): Vec3 => {
  * Distância ao longo do raio até a entrada no volume (0 se a origem estiver dentro), ou
  * null se o raio não o atinge. `dir` deve ser unitário.
  */
-export function rayVolume(origin: Vec3, dir: Vec3, v: InteractionVolume): number | null {
+export function rayVolume(origin: Vec3, dir: Vec3, v: OrientedBox): number | null {
   const axes = volumeAxes(v);
   const o = toLocal(origin, v, axes);
   const d: Vec3 = [dot(dir, axes[0]), dot(dir, axes[1]), dot(dir, axes[2])];
@@ -82,7 +82,7 @@ export function rayVolume(origin: Vec3, dir: Vec3, v: InteractionVolume): number
 }
 
 /** Distância do ponto à superfície do volume (0 dentro dele). */
-export function distanceToVolume(p: Vec3, v: InteractionVolume): number {
+export function distanceToVolume(p: Vec3, v: OrientedBox): number {
   const l = toLocal(p, v);
   const out: Vec3 = [0, 1, 2].map((k) => Math.max(0, Math.abs(l[k]) - v.size[k] / 2)) as Vec3;
   return length(out);
@@ -97,10 +97,38 @@ export const MAX_VIEW_ANGLE_DEG = 70;
  * objetos ficam dentro de nichos de expositor, então não se interage com eles por trás nem
  * de lado, através das laterais e do fundo do móvel.
  */
-export function isInFront(p: Vec3, v: InteractionVolume): boolean {
+export function isInFront(p: Vec3, v: OrientedBox): boolean {
   const l = toLocal(p, v);
   if (l[2] <= v.size[2] / 2) return false;
   return Math.atan2(Math.hypot(l[0], l[1]), l[2]) <= MAX_VIEW_ANGLE_DEG * DEG;
+}
+
+/**
+ * Volume selecionado por um raio: o mais próximo atingido, com a origem à frente dele e a
+ * menos de `maxDistance`, e sem nenhum bloqueador atingido antes.
+ */
+export function castRay(
+  origin: Vec3,
+  dir: Vec3,
+  volumes: readonly InteractionVolume[],
+  occluders: readonly Occluder[] = [],
+): InteractionVolume | null {
+  let best: InteractionVolume | null = null;
+  let bestT = Infinity;
+  for (const v of volumes) {
+    if (!isInFront(origin, v) || distanceToVolume(origin, v) > v.maxDistance) continue;
+    const t = rayVolume(origin, dir, v);
+    if (t !== null && t < bestT) {
+      best = v;
+      bestT = t;
+    }
+  }
+  if (!best) return null;
+  for (const o of occluders) {
+    const t = rayVolume(origin, dir, o);
+    if (t !== null && t < bestT) return null;
+  }
+  return best;
 }
 
 /** Ponto multiplicado pela matriz (resultado em coordenadas de recorte). */
@@ -159,7 +187,7 @@ export function convexHull(points: Vec2[]): Vec2[] {
 }
 
 /** Contorno do volume na tela: casco convexo das arestas recortadas e projetadas. */
-export function projectedOutline(viewProj: Mat4, v: InteractionVolume, width: number, height: number): Vec2[] {
+export function projectedOutline(viewProj: Mat4, v: OrientedBox, width: number, height: number): Vec2[] {
   const corners = volumeCorners(v);
   const points: Vec2[] = [];
   for (const [i, j] of BOX_EDGES) {
