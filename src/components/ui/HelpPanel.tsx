@@ -53,10 +53,8 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
               <strong className="text-stone-50">Andar:</strong> use o controle circular no canto inferior esquerdo.
             </li>
             <li>
-              <strong className="text-stone-50">Olhar ao redor:</strong> arraste um dedo na tela.
-            </li>
-            <li>
-              <strong className="text-stone-50">Ir até um ponto:</strong> toque no piso.
+              <strong className="text-stone-50">Olhar ao redor:</strong> arraste um dedo na tela; a câmera
+              segue o dedo.
             </li>
           </ul>
         ) : (

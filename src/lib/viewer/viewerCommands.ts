@@ -31,10 +31,12 @@ export function toggleCollisionOverlay(viewer: ViewerHandle) {
  * a captura (tecla Esc) e então volta `gamingControls` para false.
  *
  * Deve ser chamado dentro de um gesto do usuário (tecla ou clique): o navegador recusa
- * a captura fora disso. Em telas de toque o modo de jogo nunca é ligado.
+ * a captura fora disso. Em telas de toque não faz nada: lá o modo de jogo fica sempre
+ * ligado (ver `walkLock`).
  */
 export function setMouseCapture(viewer: ViewerHandle, captured: boolean) {
   const { state } = viewer;
-  if (captured && (!state.loaded || state.cameraMode !== "walk" || state.inputMode !== "desktop")) return;
+  if (state.inputMode !== "desktop") return;
+  if (captured && (!state.loaded || state.cameraMode !== "walk")) return;
   if (state.gamingControls !== captured) state.gamingControls = captured;
 }

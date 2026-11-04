@@ -9,10 +9,11 @@
  * 2. `state.inputEnabled = false` — desliga o teclado e o gamepad do viewer (atalhos,
  *    WASD/QE, Espaço = pulo). O teclado passa a ser tratado pela aplicação e entregue
  *    via `setMoveInput`, que só desloca no plano horizontal.
- * 3. `state.gamingControls` (modo de jogo) começa desligado: olhar arrastando o
- *    mouse/dedo. Em computadores ele é ligado pela aplicação quando o visitante começa a
- *    andar com o teclado (captura do mouse, ver `setMouseCapture`); em telas de toque é
- *    sempre desligado, pois lá o modo de jogo faz "toque = pulo".
+ * 3. `state.gamingControls` (modo de jogo). Em computadores começa desligado (olhar
+ *    arrastando o mouse) e é ligado pela aplicação quando o visitante começa a andar com o
+ *    teclado (captura do mouse, ver `setMouseCapture`). Em telas de toque fica sempre
+ *    ligado: o olhar acompanha o dedo, como em jogos para celular, em vez de "arrastar o
+ *    cenário". O "toque = pulo" desse modo é neutralizado por `attachTouchTapFilter`.
  * 4. Bloqueio, no contêiner (fase de captura do DOM), da roda do mouse e dos botões
  *    direito/do meio: no Walk Mode a roda empurra o corpo e o arrasto com botão
  *    direito gera "pan" com componente vertical, que o WalkController interpreta como
@@ -20,10 +21,12 @@
  * 5. Guarda de modo: se `cameraMode` sair de "walk" por qualquer caminho, volta para
  *    "walk" (sem loop: só reage a valores diferentes de "walk").
  *
- * Cliques/toques no piso continuam ativos: no Walk Mode eles caminham até o ponto
- * escolhido pelo sistema de colisão, sem trocar de modo.
+ * No computador, com o cursor livre, cliques no piso continuam ativos: no Walk Mode eles
+ * caminham até o ponto escolhido pelo sistema de colisão, sem trocar de modo.
  */
 import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
+
+import { attachTouchTapFilter } from "./touchTapFilter";
 
 export type WalkLockOptions = {
   /** Chamado quando o Walk Mode é ativado pela primeira vez. */
@@ -36,7 +39,7 @@ export function lockToWalk(viewer: ViewerHandle, container: HTMLElement, options
   let walkActive = false;
 
   state.inputEnabled = false;
-  state.gamingControls = false;
+  state.gamingControls = state.inputMode === "touch";
 
   const enterWalk = () => {
     if (disposed) return;
@@ -54,10 +57,14 @@ export function lockToWalk(viewer: ViewerHandle, container: HTMLElement, options
     console.warn(`lockToWalk: cameraMode mudou para "${mode}"; retornando ao Walk Mode.`);
     queueMicrotask(enterWalk);
   };
-  // Modo de jogo só no computador (captura do mouse); nunca em telas de toque.
-  const enforceGamingControls = () => {
-    if (state.gamingControls && state.inputMode !== "desktop") {
-      queueMicrotask(() => !disposed && (state.gamingControls = false));
+  // Toque: modo de jogo sempre ligado. Ao passar para o mouse, começa desligado (cursor
+  // livre) até o visitante andar com o teclado.
+  const onInputMode = (mode: string) => {
+    queueMicrotask(() => !disposed && (state.gamingControls = mode === "touch"));
+  };
+  const onGamingControls = (value: boolean) => {
+    if (!value && state.inputMode === "touch") {
+      queueMicrotask(() => !disposed && state.inputMode === "touch" && (state.gamingControls = true));
     }
   };
   const onInputEnabled = (value: boolean) => {
@@ -68,8 +75,8 @@ export function lockToWalk(viewer: ViewerHandle, container: HTMLElement, options
     events.on("loaded:changed", enterWalk),
     events.on("walkAllowed:changed", enterWalk),
     events.on("cameraMode:changed", onCameraMode),
-    events.on("gamingControls:changed", enforceGamingControls),
-    events.on("inputMode:changed", enforceGamingControls),
+    events.on("gamingControls:changed", onGamingControls),
+    events.on("inputMode:changed", onInputMode),
     events.on("inputEnabled:changed", onInputEnabled),
   ];
 
@@ -90,6 +97,7 @@ export function lockToWalk(viewer: ViewerHandle, container: HTMLElement, options
   for (const [type, listener] of domListeners) {
     container.addEventListener(type, listener, { capture: true, passive: false });
   }
+  const disposeTapFilter = attachTouchTapFilter(container);
 
   enterWalk();
 
@@ -99,6 +107,7 @@ export function lockToWalk(viewer: ViewerHandle, container: HTMLElement, options
     if (document.pointerLockElement && container.contains(document.pointerLockElement)) {
       document.exitPointerLock();
     }
+    disposeTapFilter();
     for (const handle of handles) handle.off();
     for (const [type, listener] of domListeners) {
       container.removeEventListener(type, listener, { capture: true });
