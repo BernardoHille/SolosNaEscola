@@ -187,3 +187,18 @@ test("dados: miniaturas existem e são WebP", () => {
     assert.equal(buf.subarray(8, 12).toString("latin1"), "WEBP", url);
   }
 });
+
+test("dados: textos da introdução, das etapas e dos estágios da maquete", () => {
+  const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
+  // Introdução do conjunto.
+  assert.match(source, /overview: `Você já parou para pensar/);
+  // Um texto por etapa (4) e um por estágio da maquete (4), mais o fechamento.
+  const descriptions = [...source.matchAll(/^\s+description:\s*[`"]/gm)];
+  assert.equal(descriptions.length, 8);
+  assert.match(source, /closing: `Cada horizonte/);
+  // A ordem acompanha a sequência do roteiro.
+  const order = ["primeira caixa", "segunda caixa", "terceira caixa", "maquete da formação do solo"];
+  const positions = order.map((t) => source.indexOf(t));
+  assert.ok(positions.every((p) => p > 0), positions.join());
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+});

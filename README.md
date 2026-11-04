@@ -13,8 +13,8 @@ computadores e dispositivos móveis.
 > exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
 > com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
 > lado da porta, as três caixas e a maquete da **Formação do Solo** podem ser inspecionadas em 3D
-> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)). Textos educativos, narração e as
-> demais estantes serão desenvolvidos nas próximas etapas.
+> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos. Narração e as
+> demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -341,6 +341,7 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Tirar da caixa / devolver | clique na caixa ou na rocha, **C** ou botão da caixa | toque na caixa ou na rocha, ou botão |
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
+| Mostrar / ocultar a descrição | **I**, botão do livro ou **X** do painel | **Ler** / **Recolher** |
 | Fechar | **Esc** ou **X** | **X** |
 
 **Tirar da caixa.** É o padrão para toda peça sólida guardada numa caixa: nas caixas 1 e 2, um
@@ -355,8 +356,32 @@ numeradas, com o título curto; a atual fica destacada em amarelo, e um clique l
 qualquer uma.
 
 Na maquete, o botão de camadas mostra ou esconde os rótulos dos estágios (R, A + R, A + C + R,
-A + B + C + R), posicionados a partir dos nós do próprio GLB. A inspeção não tem narração nem
-texto explicativo nesta etapa (decisão do projeto); os campos já existem nos dados (abaixo).
+A + B + C + R), posicionados a partir dos nós do próprio GLB.
+
+**Descrição.** Um painel no estilo das caixas de texto de jogos (fundo escuro translúcido, filete
+âmbar, cantos de moldura) traz o roteiro da equipe, dividido em duas abas: **Introdução** (o
+texto geral do conjunto, que abre a sequência) e **Etapa N** (o texto da peça atual). Os
+parágrafos entram em sequência, como falas; as frases curtas de pergunta ou exclamação (“Percebeu
+a diferença?”) aparecem em destaque amarelo; e um botão no fim continua a história (“Ir para a
+etapa 1”, “Próxima etapa”). Ao trocar de peça, o painel passa ao texto dela. Na maquete, os quatro
+estágios aparecem como uma lista com os mesmos rótulos amarelos do modelo, entre a introdução e o
+fechamento.
+
+O painel se adapta à tela:
+
+- **tela deitada** (computador, tablet ou celular na horizontal, ≥ 640 px de largura): encaixado à
+  direita, do tamanho do texto (rola se faltar altura); o modelo e os controles ocupam o espaço à
+  esquerda. Fecha no **X** do painel ou com **I**, e volta pelo botão do livro;
+- **tela em pé** (celular, tablet na vertical): gaveta logo acima dos controles, com altura máxima
+  de 32 % da tela. Em telas pequenas (< 640 px de largura ou < 740 px de altura) começa
+  **recolhida**, só com a barra das abas e um ponto amarelo pulsante avisando que há texto novo;
+  **Ler** abre e **Recolher** fecha;
+- **tela baixa** (≤ 500 px de altura, celular deitado): os controles ficam compactos (sem a linha
+  de dicas e com miniaturas menores, sem legenda) para sobrar altura para o modelo.
+
+Em todos os casos o modelo é enquadrado no espaço que sobra: a área do canvas desconta a largura do
+painel lateral ou a altura da gaveta. Com movimento reduzido no sistema, os parágrafos aparecem sem
+animação.
 
 **Walk Mode suspenso, não recriado.** Abrir a inspeção não recarrega o SOG, não muda a câmera
 nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
@@ -431,10 +456,16 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
   `FORMACAO_DO_SOLO`. Cada item tem `title` (cabeçalho), `shortTitle`, `model.url`,
   `model.sizeBytes` (o teste confere com o arquivo) e `view` (orientação inicial: `yawDeg`,
   `pitchDeg` e `rotationDeg` para corrigir a orientação do GLB).
-- **Texto e narração (futuro):** os campos opcionais `description` e
-  `narration: { audioUrl?, text? }` já estão no tipo `InspectionItem`, mas ainda não são exibidos.
-  Os áudios devem ir para `public/audio/…` (arquivos estáticos; sem serviços pagos de voz).
-- **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto).
+- **Textos:** `overview` no conjunto (aba Introdução) e `description` em cada item (aba da
+  etapa); parágrafos separados por uma linha em branco. Frases de até 64 caracteres terminadas em
+  “?”, “!” ou “...” ficam em destaque. Na maquete, cada estágio tem sua frase em
+  `markers[].description` (lista exibida depois de `description`) e o fechamento fica em
+  `closing`. Os textos atuais são o roteiro da equipe (2026), sem alteração.
+- **Narração (futuro):** o campo opcional `narration: { audioUrl?, text? }` já está no tipo
+  `InspectionItem`, mas ainda não é usado. Os áudios devem ir para `public/audio/…` (arquivos
+  estáticos; sem serviços pagos de voz).
+- **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto,
+  `description` = frase do estágio no painel).
 - **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB). Use em
   todo item cujo conteúdo é uma peça sólida (rochas, fragmentos); não use com material solto
   (terra, solo, areia) nem em peças sem caixa (ex.: a maquete).
@@ -598,11 +629,12 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **12 de 12 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **13 de 13 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
-das caixas presentes nos GLBs (com conteúdo fora delas; só as caixas de rocha) e miniaturas WebP. `typecheck`, `lint` e
+das caixas presentes nos GLBs (com conteúdo fora delas; só as caixas de rocha), miniaturas WebP
+e textos (introdução, as quatro etapas e os quatro estágios da maquete preenchidos). `typecheck`, `lint` e
 `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -627,6 +659,9 @@ emulação de celular 375×812), em 4/11/2026:
 | 15 | Tirar da caixa | ✔ clique na caixa ou na rocha esmaece a caixa e reenquadra a rocha; clique na rocha devolve; caixa 3 (solo) e maquete sem o recurso; no celular (emulação), toque na rocha funciona |
 | 16 | Miniaturas | ✔ quatro miniaturas abaixo dos botões; clique na 4 vai direto à maquete (e volta à 1); cabem em 375 px (82 px cada) |
 | 17 | Iluminação | ✔ sombras da rocha dentro das caixas e da moldura na maquete; comparadas capturas do canvas (linear, neutro, ACES, ACES 2) antes da escolha |
+| 18 | Descrição no computador (janela ≈ 980×850) | ✔ painel à direita abre na Introdução; “Ir para a etapa 1” troca de aba; miniatura 4 leva à maquete com a lista dos estágios (rola); **I** fecha e o modelo volta ao centro, **I** reabre |
+| 19 | Descrição no celular em pé (emulação 375×812) | ✔ abre recolhida, com o ponto amarelo; **Ler** expande (o modelo continua visível acima); sem rolagem horizontal |
+| 20 | Descrição no celular deitado (emulação 812×375) e tablet (768×1024) | ✔ deitado: painel à direita e controles compactos, modelo visível; tablet: gaveta aberta acima dos controles |
 
 Não verificado na inspeção: aparência num celular real (sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o
@@ -656,7 +691,7 @@ celulares de entrada e o deploy na Vercel.
   exata do objeto.
 - Inspeção: o clique que tira a rocha da caixa usa as caixas delimitadoras das malhas (não os
   triângulos); perto das bordas da rocha o clique pode valer um pouco fora dela.
-- Inspeção: sem narração nem texto explicativo nesta etapa (por decisão do projeto).
+- Inspeção: sem narração nesta etapa (por decisão do projeto); os textos são lidos no painel.
 
 ---
 
@@ -707,7 +742,7 @@ Observações:
 
 ## Próximas etapas
 
-- Narração e textos educativos da inspeção (campos `narration` e `description`).
+- Narração da inspeção (campo `narration`), a partir do mesmo roteiro dos textos.
 - Demais estantes da exposição como novos conjuntos de inspeção.
 - Percursos guiados.
 - Imagem de pôster durante o carregamento (`posterUrl`).

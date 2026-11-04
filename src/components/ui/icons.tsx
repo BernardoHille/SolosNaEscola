@@ -135,3 +135,21 @@ export function LayersIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Livro aberto (painel de descrição). */
+export function BookIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 6.5C10.3 5.2 7.8 4.5 4 4.5v13c3.8 0 6.3.7 8 2 1.7-1.3 4.2-2 8-2v-13c-3.8 0-6.3.7-8 2Z" />
+      <path d="M12 6.5v13" />
+    </svg>
+  );
+}
+
+export function ChevronUpIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m6 15 6-6 6 6" />
+    </svg>
+  );
+}

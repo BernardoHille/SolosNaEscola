@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import InspectionDescription, { type DescriptionLayout } from "@/components/inspection/InspectionDescription";
 import {
+  BookIcon,
   BoxIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -39,6 +41,33 @@ const isTyping = (target: EventTarget | null) =>
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/**
+ * Onde fica o painel de descrição: à direita em telas deitadas (computador, tablet ou celular na
+ * horizontal), onde sobra largura; nas em pé, numa gaveta acima dos controles.
+ */
+const DOCKED_QUERY = "(min-width: 640px) and (orientation: landscape), (min-width: 1280px)";
+
+/** Tela baixa (celular deitado): controles compactos, para sobrar altura para o modelo. */
+const SHORT_QUERY = "(max-height: 500px)";
+
+const useMedia = (query: string) =>
+  useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+
+/** A gaveta começa recolhida em telas pequenas (o modelo fica com o espaço todo). */
+const startsOpen = () =>
+  window.matchMedia(DOCKED_QUERY).matches || (window.innerWidth >= 640 && window.innerHeight >= 740);
+
+/** Distância do painel lateral até a borda direita (px). */
+const DOCK_GAP = 16;
+
 const iconButton =
   "inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-stone-100 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200";
 
@@ -73,6 +102,14 @@ export default function InspectionOverlay({
   // Altura dos controles inferiores: o modelo é enquadrado no espaço acima deles.
   const controlsRef = useRef<HTMLDivElement>(null);
   const [controlsHeight, setControlsHeight] = useState(0);
+  // Painel de descrição: lateral (largura reservada à direita) ou gaveta (altura reservada embaixo).
+  const docked = useMedia(DOCKED_QUERY);
+  const short = useMedia(SHORT_QUERY);
+  const layout: DescriptionLayout = docked ? "docked" : "sheet";
+  const [descriptionOpen, setDescriptionOpen] = useState(startsOpen);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const hasDescriptionPanel = !!(set.overview || set.items.some((it) => it.description));
+  const [descriptionSize, setDescriptionSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const el = controlsRef.current;
@@ -81,6 +118,17 @@ export default function InspectionOverlay({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) {
+      setDescriptionSize({ width: 0, height: 0 });
+      return;
+    }
+    const observer = new ResizeObserver(() => setDescriptionSize({ width: el.offsetWidth, height: el.offsetHeight }));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasDescriptionPanel]);
 
   // Entrada suave (o primeiro quadro é desenhado transparente).
   useEffect(() => {
@@ -173,6 +221,10 @@ export default function InspectionOverlay({
         case "C":
           viewer?.setDetached();
           break;
+        case "i":
+        case "I":
+          setDescriptionOpen((v) => !v);
+          break;
         case "+":
         case "=":
           viewer?.zoomBy(0.8);
@@ -190,6 +242,10 @@ export default function InspectionOverlay({
   const visible = shown && !closing;
   const touch = inputMode === "touch";
   const hasMarkers = !!item.markers?.length;
+  const hasDescription = hasDescriptionPanel;
+  const showDock = hasDescription && docked && descriptionOpen;
+  const rightInset = showDock ? descriptionSize.width + DOCK_GAP : 0;
+  const sheetHeight = hasDescription && !docked ? descriptionSize.height : 0;
 
   return (
     <div
@@ -215,7 +271,7 @@ export default function InspectionOverlay({
         className={`absolute inset-x-0 top-0 transition-[opacity,transform] duration-[260ms] ease-out motion-reduce:transition-none ${
           visible && !loading ? "scale-100 opacity-100" : "scale-[0.97] opacity-0"
         }`}
-        style={{ bottom: controlsHeight }}
+        style={{ bottom: controlsHeight + sheetHeight, right: rightInset }}
       >
         <canvas
           ref={canvasRef}
@@ -264,11 +320,14 @@ export default function InspectionOverlay({
       )}
 
       {/* Cabeçalho: conjunto, objeto e etapa. */}
-      <header className="pointer-events-none absolute left-4 top-4 right-16 sm:left-6 sm:top-6">
+      <header
+        className="pointer-events-none absolute left-4 top-4 sm:left-6 sm:top-6"
+        style={{ right: Math.max(64, rightInset) }}
+      >
         <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/80 sm:text-[11px]">
           {set.title}
         </p>
-        <h2 id="inspection-title" className="mt-1 text-lg font-semibold leading-tight text-stone-50 sm:text-2xl">
+        <h2 id="inspection-title" className={`mt-1 text-lg font-semibold leading-tight text-stone-50 ${short ? "" : "sm:text-2xl"}`}>
           {item.title}
         </h2>
         <p className="mt-1 font-mono text-xs text-stone-400" aria-label={`Etapa ${index + 1} de ${count}`}>
@@ -286,10 +345,38 @@ export default function InspectionOverlay({
         <CloseIcon />
       </button>
 
+      {/* Descrição: painel lateral ou gaveta acima dos controles. */}
+      {/* Fica montado mesmo oculto, para manter a aba escolhida. */}
+      {hasDescription && (
+        <div
+          ref={descriptionRef}
+          className={
+            docked
+              ? `pointer-events-none absolute bottom-4 top-16 w-[clamp(17rem,30vw,24rem)] flex-col sm:bottom-6 ${
+                  descriptionOpen ? "flex" : "hidden"
+                }`
+              : "pointer-events-none absolute inset-x-0 mx-auto flex max-w-xl px-3 pb-1"
+          }
+          style={docked ? { right: DOCK_GAP } : { bottom: controlsHeight }}
+        >
+          <InspectionDescription
+            set={set}
+            index={index}
+            layout={layout}
+            open={descriptionOpen}
+            onOpenChange={setDescriptionOpen}
+            onNext={onNext}
+          />
+        </div>
+      )}
+
       {/* Controles inferiores. */}
       <div
         ref={controlsRef}
-        className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-6"
+        style={{ right: rightInset }}
+        className={`absolute bottom-0 left-0 flex flex-col items-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+          short ? "gap-1.5" : "gap-2 sm:pb-6"
+        }`}
       >
         {/* Sempre ocupa o espaço (a altura dos controles não muda entre as etapas). */}
         <p
@@ -300,7 +387,7 @@ export default function InspectionOverlay({
         >
           {touch ? "Toque na caixa ou na rocha para tirar a rocha da caixa" : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
         </p>
-        <p className="pointer-events-none text-center text-[11px] text-stone-400 sm:text-xs">
+        <p className={`pointer-events-none text-center text-[11px] text-stone-400 sm:text-xs ${short ? "hidden" : ""}`}>
           {touch
             ? "Arraste para girar · Dois dedos para aproximar e deslocar"
             : "Arraste para girar · Roda do mouse para aproximar · Botão direito para deslocar · Duplo clique ou R para restaurar"}
@@ -355,6 +442,18 @@ export default function InspectionOverlay({
               <BoxIcon />
             </button>
           )}
+          {hasDescription && docked && (
+            <button
+              type="button"
+              onClick={() => setDescriptionOpen((v) => !v)}
+              aria-pressed={descriptionOpen}
+              className={`${iconButton} ${descriptionOpen ? "bg-[#FFD54A]/25 text-[#FFE89A]" : ""}`}
+              aria-label="Mostrar descrição"
+              title="Descrição (I)"
+            >
+              <BookIcon />
+            </button>
+          )}
           {hasMarkers && (
             <button
               type="button"
@@ -392,7 +491,7 @@ export default function InspectionOverlay({
                     aria-current={active ? "step" : undefined}
                     aria-label={`Etapa ${i + 1}: ${it.title}`}
                     title={it.title}
-                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 sm:w-24 ${
+                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${short ? "sm:w-14" : "sm:w-24"} ${
                       active ? "bg-[#FFD54A]/15" : "hover:bg-white/10"
                     }`}
                   >
@@ -417,7 +516,7 @@ export default function InspectionOverlay({
                     <span
                       className={`w-full truncate text-center text-[10px] leading-tight sm:text-[11px] ${
                         active ? "text-[#FFE89A]" : "text-stone-300"
-                      }`}
+                      } ${short ? "sr-only" : ""}`}
                     >
                       {it.shortTitle}
                     </span>
