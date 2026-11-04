@@ -9,10 +9,12 @@ O objetivo é transformar uma exposição museológica, reconstruída por meio d
 **3D Gaussian Splatting (3DGS)**, em uma experiência web navegável diretamente no navegador, em
 computadores e dispositivos móveis.
 
-> **Estado atual (etapa 2 — visita em primeira pessoa):** o visitante começa na entrada da
+> **Estado atual (etapa 3 — primeira interação 3D):** o visitante começa na entrada da
 > exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
-> com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Hotspots,
-> textos das peças e percursos guiados serão desenvolvidos nas próximas etapas.
+> com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
+> lado da porta, as três caixas e a maquete da **Formação do Solo** podem ser inspecionadas em 3D
+> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)). Textos educativos, narração e as
+> demais estantes serão desenvolvidos nas próximas etapas.
 
 ---
 
@@ -231,6 +233,7 @@ permanecem no modo de caminhada.
 | Ir até um ponto | clicar no piso (cursor livre) | — |
 | Voltar ao início | botão **Voltar à entrada** | idem |
 | Qualidade | botão ao lado da tela cheia: Alto, Médio, Baixo, Muito baixo | idem |
+| Inspecionar objeto destacado | **E** ou clique no objeto | botão **Inspecionar** |
 
 **Captura do mouse (estilo jogo em primeira pessoa).** No computador, a primeira tecla de
 movimento liga o modo de jogo do próprio viewer (`state.gamingControls = true`), que usa a
@@ -303,6 +306,114 @@ o mesmo que o viewer fazia antes. A escolha fica salva no navegador (`localStora
 
 ---
 
+## Inspeção de objetos (etapa 3)
+
+Primeira interação 3D: inspeção de objetos no estilo de jogos de aventura. A estante cinza ao
+lado da porta de entrada guarda, no nível superior, as caixas 1, 2 e 3 e a maquete da formação do
+solo. Ao se aproximar e olhar para uma delas, o objeto recebe um contorno amarelo (`#FFD54A`) e
+aparece o indicador **[E] Inspecionar** (no toque, o botão **Inspecionar**). **E** ou um clique no
+objeto abre a sequência **Formação do Solo**, sempre a partir da Caixa 1:
+
+| # | Objeto | Modelo |
+| --- | --- | --- |
+| 1 | Caixa 1 · Rocha não alterada | `public/models/inspection/caixa_01_rocha_nao_alterada.glb` (2,4 MB) |
+| 2 | Caixa 2 · Rocha alterada | `public/models/inspection/caixa_02_rocha_alterada.glb` (2,6 MB) |
+| 3 | Caixa 3 · Solo formado | `public/models/inspection/caixa_03_solo_formado.glb` (3,2 MB) |
+| 4 | Maquete · Formação do solo | `public/models/inspection/maquete_01_formacao_do_solo.glb` (3,5 MB) |
+
+Os GLBs foram copiados sem alteração da pasta de origem *Inspecionar objetos* (já eram glTF
+binário, em metros, Y para cima e frente em +Z); **não houve conversão nem recompressão**. O GLB
+do conjunto (11,6 MB) não é usado: cada objeto é carregado sozinho, e o próximo da sequência é
+pré-carregado.
+
+**Durante a inspeção** o museu continua renderizado por trás, escurecido (opacidade 0,70), e o
+objeto aparece num visualizador próprio. Comandos:
+
+| Ação | Computador | Toque |
+| --- | --- | --- |
+| Girar | arrastar | arrastar um dedo |
+| Zoom | roda do mouse, **+** / **−**, botões | pinça |
+| Deslocar | arrastar com botão direito ou com **Shift** | — |
+| Restaurar a vista | **R**, duplo clique ou botão | botão |
+| Anterior / próximo | **←** / **→** ou botões | botões |
+| Fechar | **Esc** ou **X** | **X** |
+
+Na maquete, o botão de camadas mostra ou esconde os rótulos dos estágios (R, A + R, A + C + R,
+A + B + C + R), posicionados a partir dos nós do próprio GLB. A inspeção não tem narração nem
+texto explicativo nesta etapa (decisão do projeto); os campos já existem nos dados (abaixo).
+
+**Walk Mode suspenso, não recriado.** Abrir a inspeção não recarrega o SOG, não muda a câmera
+nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
+captura do mouse é liberada e o joystick some. Ao fechar, o visitante está exatamente onde estava
+e continua em Walk.
+
+### Como o destaque funciona sobre o Gaussian Splat
+
+O splat é uma nuvem de gaussianas sem objetos separados, então não há malha para pintar de
+amarelo. Cada objeto tem um **volume invisível** (caixa orientada) em
+[`src/data/interactions.json`](src/data/interactions.json). A cada quadro renderizado pelo viewer
+(evento `postrender`), a [camada de interação](src/lib/interaction/interactionManager.ts):
+
+1. lança um raio pelo centro da tela (cursor capturado ou toque) ou pelo cursor (cursor livre);
+2. testa o raio contra os volumes (*slab test* em caixa orientada) e fica com o mais próximo;
+3. exige distância até a câmera menor que `maxDistance` (2,5 m) e que a câmera esteja **na frente**
+   do volume, num cone de 70° em torno da sua frente (+Z local) — é a oclusão possível sem
+   geometria: não se interage pelas laterais nem por trás da estante;
+4. projeta as arestas do volume na tela (com recorte no plano da câmera) e desenha o casco
+   convexo como contorno amarelo num SVG sobreposto ao canvas, com brilho e transição de 220 ms.
+
+A geometria é pura ([`geometry.ts`](src/lib/interaction/geometry.ts)) e coberta por testes. Com o
+cursor livre, um clique no objeto abre a inspeção em vez de levar o visitante até o ponto; um
+arrasto a partir do objeto continua girando a câmera.
+
+### Visualizador de inspeção
+
+[`inspectionViewer.ts`](src/lib/inspection/inspectionViewer.ts) cria um segundo `Application` do
+PlayCanvas (o mesmo motor do viewer, carregado sob demanda) num canvas transparente sobre o museu.
+Renderiza só quando algo muda; usa luz própria (principal, preenchimento, contorno e ambiente) e
+*tone mapping* linear — o *neutral* deixava a madeira das caixas laranja e saturada (cor medida
+no canvas comparada com a textura). O modelo é centralizado pela caixa envolvente e enquadrado
+pela esfera envolvente; a rotação usa quatérnios nos eixos da tela, com amortecimento e limites de
+zoom e deslocamento. Ao fechar, a aplicação é destruída e o contexto WebGL é liberado
+(`WEBGL_lose_context`), pois o motor não o libera sozinho: 12 aberturas seguidas liberaram 12
+contextos, sem afetar o canvas do museu.
+
+### Calibração dos volumes (`?debugInteractions=1`)
+
+Abra a visita com **`?debugInteractions=1`** (ex.: `http://localhost:3000/?debugInteractions=1`).
+Os volumes aparecem em ciano, com eixos locais (X vermelho, Y verde, Z azul = frente) e
+coordenadas, e um painel permite ajustar posição, rotação, tamanho e distância máxima, trazer o
+volume para a mira (1,2 m à frente da câmera) e mover todos juntos em passos de 5 cm. **Copiar
+JSON** copia o arquivo completo: cole em `src/data/interactions.json`. As alterações do painel
+valem só na aba aberta. O parâmetro também funciona no site publicado (só desenha e copia; não
+grava nada).
+
+### Editar textos, narração e sequência
+
+- **Títulos, ordem e modelos:** [`src/data/inspection.ts`](src/data/inspection.ts), conjunto
+  `FORMACAO_DO_SOLO`. Cada item tem `title` (cabeçalho), `shortTitle`, `model.url`,
+  `model.sizeBytes` (o teste confere com o arquivo) e `view` (orientação inicial: `yawDeg`,
+  `pitchDeg` e `rotationDeg` para corrigir a orientação do GLB).
+- **Texto e narração (futuro):** os campos opcionais `description` e
+  `narration: { audioUrl?, text? }` já estão no tipo `InspectionItem`, mas ainda não são exibidos.
+  Os áudios devem ir para `public/audio/…` (arquivos estáticos; sem serviços pagos de voz).
+- **Rótulos da maquete:** `markers` (`node` = nome do nó no GLB, `label` = texto).
+- **Rótulo do indicador:** `label` do volume em `interactions.json`.
+
+### Adicionar uma nova estante
+
+1. Copie os GLBs para `public/models/inspection/` (nomes em minúsculas, sem espaços).
+2. Em `inspection.ts`, crie um `InspectionSet` (id, título e itens) e inclua-o em
+   `INSPECTION_SETS`.
+3. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
+   `order` na sequência; calibre com `?debugInteractions=1`.
+4. Rode `npm test` (ids, ordem, arquivos e tamanhos) e confira no navegador.
+
+Os testes de dados atuais esperam o conjunto `formacao-do-solo` com ordens 1–4; ajuste-os ao
+acrescentar outros conjuntos.
+
+---
+
 ## Calibração da entrada (somente desenvolvimento)
 
 Rota: **`/dev/camera`** (apenas com `npm run dev`).
@@ -338,7 +449,8 @@ SolosNaEscola/
 ├── public/models/
 │   ├── museu_web.sog              # modelo 3DGS (servido estaticamente, não modificado)
 │   ├── museu_web.voxel.json       # colisão: metadados
-│   └── museu_web.voxel.bin        # colisão: octree de voxels
+│   ├── museu_web.voxel.bin        # colisão: octree de voxels
+│   └── inspection/*.glb           # objetos inspecionáveis (caixas 1–3 e maquete)
 ├── scripts/
 │   ├── generate-collision.mjs     # npm run collision
 │   └── offset-collision.mjs       # alinha o piso da colisão ao piso visível
@@ -352,13 +464,27 @@ SolosNaEscola/
 │   │   │   ├── Exhibition.tsx     # tela principal da visita
 │   │   │   ├── useWalkVisit.ts    # trava no Walk, teclado, joystick, retorno à entrada
 │   │   │   └── useRenderQuality.ts # modo de qualidade escolhido e aplicado
+│   │   ├── interaction/
+│   │   │   ├── InteractionLayer.tsx      # contorno, mira, indicador [E] e cliques/toques
+│   │   │   └── InteractionCalibrator.tsx # painel de ?debugInteractions=1
+│   │   ├── inspection/
+│   │   │   ├── InspectionOverlay.tsx     # sobreposição, cabeçalho, navegação e atalhos
+│   │   │   └── useInspection.ts          # estado da sequência (sempre começa no item 1)
 │   │   ├── dev/CameraCalibration.tsx
 │   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
 │   ├── data/
 │   │   ├── collision.json         # escala e parâmetros de colisão (script + app)
 │   │   ├── visit.ts               # entrada, velocidades, convenções
 │   │   ├── quality.ts             # modos de qualidade (escala de resolução)
-│   │   └── experience.ts          # modelo e Experience Settings v2
+│   │   ├── experience.ts          # modelo e Experience Settings v2
+│   │   ├── interactions.json      # volumes de interação (calibrados)
+│   │   ├── interactions.ts        # tipos e serialização dos volumes
+│   │   └── inspection.ts          # conjuntos, itens, títulos, modelos e vistas
+│   ├── lib/interaction/
+│   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
+│   │   └── interactionManager.ts  # alvo, distância, destaque SVG e modo de calibração
+│   ├── lib/inspection/
+│   │   └── inspectionViewer.ts    # visualizador PlayCanvas do objeto
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
@@ -369,6 +495,7 @@ SolosNaEscola/
 │       ├── keyboardMovement.ts    # WASD/setas/Shift
 │       ├── cameraPose.ts          # leitura da pose da câmera (calibração)
 │       └── spawnOverride.ts       # entrada de teste (somente dev)
+├── tests/interactions.test.mjs    # npm test
 ├── next.config.ts                 # cache dos modelos; rotas .dev.tsx só em dev
 └── package.json
 ```
@@ -423,6 +550,40 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 | G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 
+### Inspeção de objetos (etapa 3)
+
+Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
+`geometry.ts` diretamente): **9 de 9 passaram** em 4/11/2026. Cobrem raio × volume (acerto, erro,
+mais próximo, de dentro), rotação dos eixos, frente e cone de 70°, distância, contorno projetado
+(e volume atrás da câmera), casco convexo, consistência entre `interactions.json` e
+`inspection.ts`, e existência, tamanho e cabeçalho glTF dos quatro GLBs. `typecheck`, `lint` e
+`build` sem erros.
+
+Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
+emulação de celular 375×812), em 4/11/2026:
+
+| # | Teste | Resultado |
+| --- | --- | --- |
+| 1 | Volumes alinhados aos objetos (`?debugInteractions=1`) | ✔ caixas 1–3 e maquete sobre o nível superior da estante |
+| 2 | Destaque e indicador ao olhar de frente | ✔ contorno amarelo e “[E] Inspecionar · Caixa 1 · Rocha não alterada” |
+| 3 | Sem destaque de lado/de longe | ✔ da entrada, olhando a lateral da estante (≈ 82° da frente): sem contorno nem indicador |
+| 4 | **E** abre na Caixa 1 | ✔ |
+| 5 | Clique em outro objeto (maquete) abre na Caixa 1, sem andar até o ponto | ✔ |
+| 6 | Girar, zoom (roda) e **R** | ✔ |
+| 7 | Sequência com **→**/**←** e botões | ✔ 4 itens, “01 / 04” … “04 / 04”, botões desativados nas pontas; não passa do último |
+| 8 | Rótulos dos estágios da maquete | ✔ |
+| 9 | **Esc** e **X** fecham com a câmera na mesma pose | ✔ posição e direção idênticas; um único canvas; continua em Walk |
+| 10 | Walk suspenso | ✔ **W** durante a inspeção: 0 m; **S** depois de fechar: 0,69 m |
+| 11 | 12 aberturas e fechamentos seguidos | ✔ 12 contextos WebGL liberados; canvas do museu nunca perdeu o contexto; câmera parada. Heap JS 47 → 68 MB (sem coleta de lixo forçada; não conclusivo) |
+| 12 | Celular (emulação 375×812) | ✔ contorno na Caixa 2 e botão **Inspecionar**; abre na Caixa 1; controles cabem na largura (sem rolagem); **X** fecha e o visitante continua no lugar |
+
+Não verificado na inspeção: **E** com o mouse realmente capturado (o painel de testes recusa o
+pointer lock; a mira central foi validada com o cursor livre e no toque), toque real com pinça
+(apenas emulação, sem gestos multitoque), preferência de movimento reduzido, Safari/iOS e
+desempenho em aparelhos de entrada.
+
+### Visita (etapa 2)
+
 Não verificado: captura real do mouse em um navegador comum (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
 celulares de entrada e o deploy na Vercel.
 
@@ -436,6 +597,12 @@ celulares de entrada e o deploy na Vercel.
   splat podem não bloquear (ou bloquear um pouco antes) o visitante.
 - Clicar/tocar no piso leva o visitante até o ponto (recurso do Walk Mode), inclusive até áreas
   livres distantes.
+- Inspeção: a oclusão é aproximada (distância e cone de 70° em frente ao volume). Um objeto pode
+  ser destacado através de algo que esteja entre ele e o visitante dentro desse cone; na estante
+  atual isso não ocorre, pois os objetos ficam no nível superior, na frente.
+- Inspeção: os volumes foram calibrados visualmente no splat; o contorno é a caixa do volume, não
+  a silhueta exata do objeto.
+- Inspeção: sem narração nem texto explicativo nesta etapa (por decisão do projeto).
 
 ---
 
@@ -453,6 +620,7 @@ Outros scripts:
 ```bash
 npm run typecheck    # gera os tipos de rotas e roda o TypeScript
 npm run lint         # ESLint
+npm test             # testes da interação e dos dados da inspeção (Node ≥ 22.18)
 npm run build        # build de produção
 npm run start        # serve o build de produção
 npm run collision    # regenera os voxels de colisão a partir do SOG
@@ -485,8 +653,9 @@ Observações:
 
 ## Próximas etapas
 
-- Hotspots/anotações das peças (o Experience Settings já suporta `annotations`).
-- Textos educativos e percursos guiados.
+- Narração e textos educativos da inspeção (campos `narration` e `description`).
+- Demais estantes da exposição como novos conjuntos de inspeção.
+- Percursos guiados.
 - Imagem de pôster durante o carregamento (`posterUrl`).
 - Testes em aparelhos reais e medição de desempenho de referência.
 

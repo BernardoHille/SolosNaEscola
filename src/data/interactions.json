@@ -1,0 +1,93 @@
+{
+  "$comment": "Volumes invisíveis de interação no espaço de mundo do viewer (metros, Y para cima, após sceneScale). position = centro; rotationDeg = rotação em X, Y e Z; size = largura (X), altura (Y) e profundidade (Z) locais; a frente do volume é o seu +Z local, voltada para o visitante. maxDistance = distância máxima da câmera até o volume. Calibre com ?debugInteractions=1 e cole aqui o JSON copiado.",
+  "volumes": [
+    {
+      "id": "caixa-01",
+      "label": "Caixa 1 · Rocha não alterada",
+      "setId": "formacao-do-solo",
+      "order": 1,
+      "position": [
+        0.84,
+        1.59,
+        -4.27
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.2,
+        0.14,
+        0.2
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "caixa-02",
+      "label": "Caixa 2 · Rocha alterada",
+      "setId": "formacao-do-solo",
+      "order": 2,
+      "position": [
+        1.04,
+        1.59,
+        -4.27
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.2,
+        0.14,
+        0.2
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "caixa-03",
+      "label": "Caixa 3 · Solo formado",
+      "setId": "formacao-do-solo",
+      "order": 3,
+      "position": [
+        1.24,
+        1.59,
+        -4.27
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.2,
+        0.14,
+        0.2
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "maquete-01",
+      "label": "Maquete · Formação do solo",
+      "setId": "formacao-do-solo",
+      "order": 4,
+      "position": [
+        1.52,
+        1.665,
+        -4.3
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.48,
+        0.27,
+        0.18
+      ],
+      "maxDistance": 2.5
+    }
+  ]
+}

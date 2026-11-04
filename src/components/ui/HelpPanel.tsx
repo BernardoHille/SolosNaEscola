@@ -56,6 +56,10 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
               <strong className="text-stone-50">Olhar ao redor:</strong> arraste um dedo na tela; a câmera
               segue o dedo.
             </li>
+            <li>
+              <strong className="text-stone-50">Objetos:</strong> mire nos objetos destacados em amarelo e toque
+              em “Inspecionar”.
+            </li>
           </ul>
         ) : (
           <ul className="mt-4 space-y-2.5 leading-snug">
@@ -78,6 +82,10 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
             <li>
               <strong className="text-stone-50">Com o cursor livre:</strong> arraste para olhar ou clique no piso
               para ir até ele.
+            </li>
+            <li className="flex flex-wrap items-center gap-1.5">
+              <strong className="text-stone-50">Objetos:</strong> quando um objeto ficar destacado em amarelo,
+              tecle <Key>E</Key> ou clique nele para inspecionar.
             </li>
           </ul>
         )}

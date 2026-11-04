@@ -22,11 +22,19 @@ export function attachKeyboardMovement(
   speeds: { walk: number; run: number },
   /** Chamado a cada nova tecla de movimento pressionada (dentro do gesto do usuário). */
   onMoveKey?: () => void,
+  /** Enquanto retornar true (ex.: inspeção aberta), o teclado não move o visitante. */
+  isSuspended: () => boolean = () => false,
 ) {
   const pressed = new Set<string>();
   let run = false;
 
   const update = () => {
+    if (isSuspended()) {
+      pressed.clear();
+      run = false;
+      mixer.set("keyboard", 0, 0);
+      return;
+    }
     const has = (keys: Set<string>) => [...keys].some((k) => pressed.has(k));
     let x = (has(RIGHT) ? 1 : 0) - (has(LEFT) ? 1 : 0);
     let z = (has(FORWARD) ? 1 : 0) - (has(BACKWARD) ? 1 : 0);
@@ -41,6 +49,10 @@ export function attachKeyboardMovement(
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.ctrlKey || event.altKey || event.metaKey || isTyping(event.target)) return;
+    if (isSuspended()) {
+      update();
+      return;
+    }
     if (event.key === "Shift") {
       run = true;
       update();

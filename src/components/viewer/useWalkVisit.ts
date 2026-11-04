@@ -30,6 +30,12 @@ export type WalkVisit = {
 export type WalkVisitOptions = {
   /** Se falso, andar com o teclado não captura o mouse (ex.: painel aberto). */
   captureAllowed: boolean;
+  /**
+   * Locomoção suspensa (ex.: inspeção de um objeto): teclado e joystick não movem o
+   * visitante, o movimento em curso para e o cursor é devolvido. Posição e orientação
+   * ficam como estão.
+   */
+  suspended?: boolean;
 };
 
 /**
@@ -41,7 +47,7 @@ export function useWalkVisit(
   container: HTMLElement | null,
   collisionUrl: string,
   onCollisionError: (detail: string) => void,
-  { captureAllowed }: WalkVisitOptions = { captureAllowed: true },
+  { captureAllowed, suspended = false }: WalkVisitOptions = { captureAllowed: true },
 ): WalkVisit {
   const [walkActive, setWalkActive] = useState(false);
   // Tipo de entrada observado diretamente no estado do viewer.
@@ -72,8 +78,10 @@ export function useWalkVisit(
     () => false,
   );
   const captureAllowedRef = useRef(captureAllowed);
+  const suspendedRef = useRef(suspended);
   useEffect(() => {
     captureAllowedRef.current = captureAllowed;
+    suspendedRef.current = suspended;
   });
   const mixerRef = useRef<MoveInputMixer | null>(null);
   const errorRef = useRef(onCollisionError);
@@ -90,9 +98,14 @@ export function useWalkVisit(
     // Ao começar a andar pelo teclado, o mouse é capturado e passa a controlar a câmera
     // (estilo jogo em primeira pessoa). Esc devolve o cursor; a próxima tecla de
     // movimento captura de novo.
-    const disposeKeyboard = attachKeyboardMovement(mixer, MOVEMENT, () => {
-      if (captureAllowedRef.current) setMouseCapture(viewer, true);
-    });
+    const disposeKeyboard = attachKeyboardMovement(
+      mixer,
+      MOVEMENT,
+      () => {
+        if (captureAllowedRef.current && !suspendedRef.current) setMouseCapture(viewer, true);
+      },
+      () => suspendedRef.current,
+    );
 
     // O viewer zera a entrada ao trocar de modo; a interface acompanha.
     const modeHandle = viewer.events.on("cameraMode:changed", () => mixer.clear());
@@ -136,6 +149,13 @@ export function useWalkVisit(
     };
   }, [viewer, container, collisionUrl]);
 
+  // Suspensão: para o movimento em curso e devolve o cursor (sem mexer na câmera).
+  useEffect(() => {
+    if (!suspended || !viewer) return;
+    mixerRef.current?.clear();
+    setMouseCapture(viewer, false);
+  }, [suspended, viewer]);
+
   const releaseMouse = useCallback(() => {
     if (viewer) setMouseCapture(viewer, false);
   }, [viewer]);
@@ -143,7 +163,9 @@ export function useWalkVisit(
   return {
     walkActive,
     inputMode,
-    setJoystick: (x, z) => mixerRef.current?.set("joystick", x, z),
+    setJoystick: (x, z) => {
+      if (!suspendedRef.current) mixerRef.current?.set("joystick", x, z);
+    },
     returnToEntrance: () => {
       if (!viewer || viewer.state.cameraMode !== "walk") return;
       mixerRef.current?.clear();

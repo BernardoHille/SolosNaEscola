@@ -2,3 +2,4 @@
 *.sog binary
 *.webp binary
 *.bin binary
+*.glb binary
