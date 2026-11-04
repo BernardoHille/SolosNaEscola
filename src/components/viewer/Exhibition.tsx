@@ -6,6 +6,7 @@ import type { ViewerFlags, ViewerHandle } from "@playcanvas/supersplat-viewer/vi
 import ErrorState from "@/components/ui/ErrorState";
 import HelpPanel from "@/components/ui/HelpPanel";
 import LoadingOverlay from "@/components/ui/LoadingOverlay";
+import MouseCaptureHint from "@/components/ui/MouseCaptureHint";
 import ProjectBadge from "@/components/ui/ProjectBadge";
 import TouchJoystick from "@/components/ui/TouchJoystick";
 import VisitControls from "@/components/ui/VisitControls";
@@ -60,7 +61,13 @@ export default function Exhibition() {
     );
   }, []);
 
-  const walk = useWalkVisit(viewer, stage, MODEL.collisionUrl, onCollisionError);
+  const walk = useWalkVisit(viewer, stage, MODEL.collisionUrl, onCollisionError, { captureAllowed: !helpOpen });
+
+  // Painel de ajuda aberto: devolve o cursor para que o visitante possa usá-lo.
+  const { releaseMouse } = walk;
+  useEffect(() => {
+    if (helpOpen) releaseMouse();
+  }, [helpOpen, releaseMouse]);
 
   // Desenvolvimento: expõe o handle no console para inspeção e testes manuais.
   useEffect(() => {
@@ -148,6 +155,7 @@ export default function Exhibition() {
               <TouchJoystick onMove={walk.setJoystick} maxSpeed={MOVEMENT.run} />
             </div>
           )}
+          {walk.mouseCaptured && <MouseCaptureHint />}
           {helpOpen && <HelpPanel inputMode={walk.inputMode} onClose={closeHelp} />}
         </>
       )}

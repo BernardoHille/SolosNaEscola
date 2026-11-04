@@ -71,10 +71,15 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
               <strong className="text-stone-50">Mais rápido:</strong> segure <Key>Shift</Key>
             </li>
             <li>
-              <strong className="text-stone-50">Olhar ao redor:</strong> clique e arraste com o mouse.
+              <strong className="text-stone-50">Olhar ao redor:</strong> ao começar a andar, o cursor some e
+              o mouse passa a girar a câmera.
+            </li>
+            <li className="flex flex-wrap items-center gap-1.5">
+              <strong className="text-stone-50">Liberar o cursor:</strong> <Key>Esc</Key>
             </li>
             <li>
-              <strong className="text-stone-50">Ir até um ponto:</strong> clique no piso.
+              <strong className="text-stone-50">Com o cursor livre:</strong> arraste para olhar ou clique no piso
+              para ir até ele.
             </li>
           </ul>
         )}

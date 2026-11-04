@@ -194,7 +194,7 @@ O visitante não pode sair do Walk Mode nem usar recursos que quebrem a sensaç�
 | --- | --- |
 | Orbit, Fly, Frame, animação, troca de modo | `ui: false` (sem barra do viewer) e `noanim: true`; o viewer é colocado em `walk` e qualquer mudança de `cameraMode` é revertida |
 | Atalhos 1/2/3, F, R, G, V, H, Espaço (pulo), Esc | `state.inputEnabled = false` desativa os atalhos e a entrada de teclado do próprio viewer; o movimento por teclado é da aplicação |
-| Controles de jogo (pulo por toque) | `state.gamingControls = false`, reimposto se alterado |
+| Controles de jogo em telas de toque (toque = pulo) | `state.gamingControls` é mantido desligado quando `inputMode = touch` |
 | Roda do mouse (zoom/deslocamento), botão direito/meio | bloqueados na fase de captura sobre o contêiner |
 
 Continua disponível: arrastar para olhar ao redor (mouse ou um dedo) e clicar/tocar no piso para
@@ -206,9 +206,19 @@ caminhar até o ponto — comportamentos do próprio Walk Mode, que permanecem n
 | --- | --- | --- |
 | Andar | **W A S D** ou setas | joystick no canto inferior esquerdo |
 | Andar mais rápido | segurar **Shift** | inclinar o joystick até a borda |
-| Olhar ao redor | clicar e arrastar | arrastar um dedo na tela |
+| Olhar ao redor | ao começar a andar, o cursor some e o mouse gira a câmera; com o cursor livre, clicar e arrastar | arrastar um dedo na tela |
+| Liberar o cursor | **Esc** | — |
 | Ir até um ponto | clicar no piso | tocar no piso |
 | Voltar ao início | botão **Voltar à entrada** | idem |
+
+**Captura do mouse (estilo jogo em primeira pessoa).** No computador, a primeira tecla de
+movimento liga o modo de jogo do próprio viewer (`state.gamingControls = true`), que usa a
+Pointer Lock API: o cursor desaparece e o movimento do mouse — sem precisar segurar botão —
+gira a câmera. **Esc** devolve o cursor (o navegador encerra a captura e o viewer desliga o
+modo de jogo); a próxima tecla de movimento captura de novo. Enquanto o mouse está capturado, um
+aviso discreto no topo indica “Esc libera o cursor”. O painel de ajuda libera o cursor ao abrir
+e impede a captura enquanto estiver aberto. Em telas de toque nada muda (joystick + arrastar).
+Com o cursor capturado, cliques não levam até um ponto (comportamento do modo de jogo do viewer).
 
 Teclado e joystick são combinados em [`moveInput.ts`](src/lib/viewer/moveInput.ts) e enviados
 por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o foco da janela e
@@ -324,8 +334,9 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | D | Voltar à entrada | ✔ retorna exatamente à pose inicial, continua em Walk, nenhuma nova requisição do SOG ou da colisão |
 | E | Móvel (emulação 375×812 retrato; 812×375 paisagem) | ✔ joystick aparece em modo toque, anda para frente e para ao soltar; sem rolagem/overflow; ajuda adaptada ao toque |
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
+| G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 
-Não verificado: aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
+Não verificado: captura real do mouse em um navegador comum (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
 celulares de entrada e o deploy na Vercel.
 
 ## Limitações conhecidas

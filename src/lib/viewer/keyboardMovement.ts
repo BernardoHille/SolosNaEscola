@@ -17,7 +17,12 @@ const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
-export function attachKeyboardMovement(mixer: MoveInputMixer, speeds: { walk: number; run: number }) {
+export function attachKeyboardMovement(
+  mixer: MoveInputMixer,
+  speeds: { walk: number; run: number },
+  /** Chamado a cada nova tecla de movimento pressionada (dentro do gesto do usuário). */
+  onMoveKey?: () => void,
+) {
   const pressed = new Set<string>();
   let run = false;
 
@@ -47,6 +52,7 @@ export function attachKeyboardMovement(mixer: MoveInputMixer, speeds: { walk: nu
     if (event.repeat && pressed.has(event.code)) return;
     pressed.add(event.code);
     update();
+    if (!event.repeat) onMoveKey?.();
   };
 
   const onKeyUp = (event: KeyboardEvent) => {

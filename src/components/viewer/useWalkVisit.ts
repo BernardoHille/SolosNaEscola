@@ -6,6 +6,7 @@ import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 import { MOVEMENT } from "@/data/visit";
 import { attachKeyboardMovement } from "@/lib/viewer/keyboardMovement";
 import { MoveInputMixer } from "@/lib/viewer/moveInput";
+import { setMouseCapture } from "@/lib/viewer/viewerCommands";
 import { lockToWalk } from "@/lib/viewer/walkLock";
 
 /** Tempo máximo, após a cena estar pronta, para a colisão ser anexada. */
@@ -20,6 +21,15 @@ export type WalkVisit = {
   setJoystick: (x: number, z: number) => void;
   /** Volta à entrada sem sair do Walk Mode e sem recarregar a cena. */
   returnToEntrance: () => void;
+  /** Mouse capturado: o cursor está oculto e o mouse gira a câmera (computador). */
+  mouseCaptured: boolean;
+  /** Devolve o cursor (ex.: ao abrir um painel). */
+  releaseMouse: () => void;
+};
+
+export type WalkVisitOptions = {
+  /** Se falso, andar com o teclado não captura o mouse (ex.: painel aberto). */
+  captureAllowed: boolean;
 };
 
 /**
@@ -31,6 +41,7 @@ export function useWalkVisit(
   container: HTMLElement | null,
   collisionUrl: string,
   onCollisionError: (detail: string) => void,
+  { captureAllowed }: WalkVisitOptions = { captureAllowed: true },
 ): WalkVisit {
   const [walkActive, setWalkActive] = useState(false);
   // Tipo de entrada observado diretamente no estado do viewer.
@@ -45,6 +56,25 @@ export function useWalkVisit(
     () => viewer?.state.inputMode ?? "desktop",
     () => "desktop" as const,
   );
+  // Captura do mouse = modo de jogo do viewer ligado no computador.
+  const mouseCaptured = useSyncExternalStore(
+    useCallback(
+      (notify: () => void) => {
+        const handles = [
+          viewer?.events.on("gamingControls:changed", notify),
+          viewer?.events.on("inputMode:changed", notify),
+        ];
+        return () => handles.forEach((handle) => handle?.off());
+      },
+      [viewer],
+    ),
+    () => !!viewer && viewer.state.gamingControls && viewer.state.inputMode === "desktop",
+    () => false,
+  );
+  const captureAllowedRef = useRef(captureAllowed);
+  useEffect(() => {
+    captureAllowedRef.current = captureAllowed;
+  });
   const mixerRef = useRef<MoveInputMixer | null>(null);
   const errorRef = useRef(onCollisionError);
   useEffect(() => {
@@ -57,7 +87,12 @@ export function useWalkVisit(
     mixerRef.current = mixer;
 
     const disposeLock = lockToWalk(viewer, container, { onWalkActive: () => setWalkActive(true) });
-    const disposeKeyboard = attachKeyboardMovement(mixer, MOVEMENT);
+    // Ao começar a andar pelo teclado, o mouse é capturado e passa a controlar a câmera
+    // (estilo jogo em primeira pessoa). Esc devolve o cursor; a próxima tecla de
+    // movimento captura de novo.
+    const disposeKeyboard = attachKeyboardMovement(mixer, MOVEMENT, () => {
+      if (captureAllowedRef.current) setMouseCapture(viewer, true);
+    });
 
     // O viewer zera a entrada ao trocar de modo; a interface acompanha.
     const modeHandle = viewer.events.on("cameraMode:changed", () => mixer.clear());
@@ -101,6 +136,10 @@ export function useWalkVisit(
     };
   }, [viewer, container, collisionUrl]);
 
+  const releaseMouse = useCallback(() => {
+    if (viewer) setMouseCapture(viewer, false);
+  }, [viewer]);
+
   return {
     walkActive,
     inputMode,
@@ -116,5 +155,7 @@ export function useWalkVisit(
         // Viewer destruído entre o clique e a chamada: nada a fazer.
       }
     },
+    mouseCaptured,
+    releaseMouse,
   };
 }

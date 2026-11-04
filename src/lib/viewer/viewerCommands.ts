@@ -23,3 +23,18 @@ export function toggleCollisionOverlay(viewer: ViewerHandle) {
   const { state } = viewer;
   if (state.hasCollisionOverlay) state.collisionOverlayEnabled = !state.collisionOverlayEnabled;
 }
+
+/**
+ * Captura (ou libera) o mouse no Walk Mode em computadores: liga o modo de jogo do
+ * viewer (`gamingControls`), que usa a Pointer Lock API — o cursor some e o movimento
+ * do mouse gira a câmera. O viewer libera o cursor sozinho quando o navegador encerra
+ * a captura (tecla Esc) e então volta `gamingControls` para false.
+ *
+ * Deve ser chamado dentro de um gesto do usuário (tecla ou clique): o navegador recusa
+ * a captura fora disso. Em telas de toque o modo de jogo nunca é ligado.
+ */
+export function setMouseCapture(viewer: ViewerHandle, captured: boolean) {
+  const { state } = viewer;
+  if (captured && (!state.loaded || state.cameraMode !== "walk" || state.inputMode !== "desktop")) return;
+  if (state.gamingControls !== captured) state.gamingControls = captured;
+}
