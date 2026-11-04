@@ -218,7 +218,7 @@ movimento liga o modo de jogo do próprio viewer (`state.gamingControls = true`)
 Pointer Lock API: o cursor desaparece e o movimento do mouse — sem precisar segurar botão —
 gira a câmera. **Esc** devolve o cursor (o navegador encerra a captura e o viewer desliga o
 modo de jogo); a próxima tecla de movimento captura de novo. Enquanto o mouse está capturado, um
-aviso discreto no topo indica “Esc libera o cursor”. O painel de ajuda libera o cursor ao abrir
+aviso discreto no topo indica “Esc libera o cursor” por 2 segundos e some (reaparece a cada nova captura). O painel de ajuda libera o cursor ao abrir
 e impede a captura enquanto estiver aberto.
 Com o cursor capturado, cliques não levam até um ponto (comportamento do modo de jogo do viewer).
 
@@ -236,6 +236,12 @@ Teclado e joystick são combinados em [`moveInput.ts`](src/lib/viewer/moveInput.
 por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o foco da janela e
 ao ocultar a aba — nunca fica “preso”. A interface mínima tem identificação do projeto, ajuda
 (aberta automaticamente na primeira visita), qualidade, tela cheia e o botão de retorno.
+
+**Contador de FPS.** Abaixo da identificação do projeto, um contador discreto mostra os quadros
+por segundo que o viewer realmente renderizou no último segundo (evento `postrender` do motor, que só dispara quando há render,
+[`FpsCounter.tsx`](src/components/ui/FpsCounter.tsx)). O viewer renderiza sob demanda: com a
+câmera parada e nada mudando, não desenha quadros novos, e o contador mostra “—” em vez de um
+número baixo que pareceria lentidão.
 
 ### Qualidade
 
@@ -378,6 +384,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | E | Móvel (emulação 375×812 retrato; 812×375 paisagem) | ✔ joystick aparece em modo toque, anda para frente e para ao soltar; sem rolagem/overflow; ajuda adaptada ao toque |
 | H | Olhar no toque (eventos de toque simulados) | ✔ modo de jogo ligado em `inputMode = touch`; arrastar 120 px para a direita gira ≈ 40° para a direita; toque rápido e arrasto de 10 px não movem a câmera nem fazem pular (altura dos olhos constante); joystick continua andando; ao usar o mouse o modo de jogo desliga e volta ao tocar |
 | I | Qualidade | ✔ os quatro modos mudam o backbuffer para 100/75/50/25% (771×846 → 579×635 → 386×423 → 193×212 no computador) mantendo a imagem na tela inteira; nível nativo do viewer fica em `default`; clique no piso com 50% chega ao canvas na posição relativa certa (0,749; 0,8 para um clique em 75%; 80%); escolha salva e restaurada; celular (emulação) começa em Baixo, com a mesma resolução de antes; menu fecha ao tocar fora; olhar por toque inalterado |
+| J | Aviso do mouse e FPS | ✔ aviso visível 0,7 s após a captura e oculto aos 2,6 s; some com Esc; reaparece numa nova captura (pointer lock simulado); contador mostra “— fps” com a cena parada, ≈ 100 fps andando no painel de testes (sobe de 78 para 100 no primeiro segundo) e volta a “—” ao parar |
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 | G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 

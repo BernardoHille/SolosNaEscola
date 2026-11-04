@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ViewerFlags, ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 
 import ErrorState from "@/components/ui/ErrorState";
+import FpsCounter from "@/components/ui/FpsCounter";
 import HelpPanel from "@/components/ui/HelpPanel";
 import LoadingOverlay from "@/components/ui/LoadingOverlay";
 import MouseCaptureHint from "@/components/ui/MouseCaptureHint";
@@ -149,7 +150,9 @@ export default function Exhibition() {
 
       {visiting && (
         <>
-          <ProjectBadge />
+          <ProjectBadge>
+            <FpsCounter viewer={viewer} />
+          </ProjectBadge>
           <VisitControls
             onReturnToEntrance={walk.returnToEntrance}
             onHelp={() => setHelpOpen(true)}
