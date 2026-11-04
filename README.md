@@ -338,16 +338,15 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Zoom | roda do mouse, **+** / **−**, botões | pinça |
 | Deslocar | arrastar com botão direito ou com **Shift** | arrastar com dois dedos |
 | Restaurar a vista | **R**, duplo clique ou botão | botão |
-| Tirar da caixa / devolver | clique na rocha, **C** ou botão da caixa | toque na rocha ou botão |
+| Tirar da caixa / devolver | clique na caixa ou na rocha, **C** ou botão da caixa | toque na caixa ou na rocha, ou botão |
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Fechar | **Esc** ou **X** | **X** |
 
 **Tirar da caixa.** É o padrão para toda peça sólida guardada numa caixa: nas caixas 1 e 2, um
-clique na rocha (ou nos fragmentos) esmaece a caixa de madeira em 0,28 s e reenquadra só a rocha,
-para girá-la e examiná-la por baixo; outro clique (ou **C**, ou o botão) devolve a caixa. O clique só conta se o material
-for o primeiro objeto atingido — clicar numa parede da caixa não a tira. O cursor vira “mão” sobre
-a rocha. A caixa é o nó do GLB indicado em `container` (`Caixa_Madeira…`); nada é alterado nos
+clique na caixa ou na rocha (ou nos fragmentos) esmaece a caixa de madeira em 0,28 s e reenquadra
+só a rocha, para girá-la e examiná-la por baixo; com a caixa fora, um clique na rocha (ou **C**, ou o botão) a devolve. O
+cursor vira “mão” sobre a caixa e a rocha. A caixa é o nó do GLB indicado em `container` (`Caixa_Madeira…`); nada é alterado nos
 arquivos. Material solto, como o solo da caixa 3, não sai da caixa: esse item não tem `container`,
 e o botão e a dica não aparecem.
 
@@ -625,7 +624,7 @@ emulação de celular 375×812), em 4/11/2026:
 | 12 | Celular (emulação 375×812) | ✔ contorno na Caixa 2 e botão **Inspecionar**; abre na Caixa 1; controles cabem na largura (sem rolagem); **X** fecha e o visitante continua no lugar |
 | 13 | Volumes corrigidos (frente e de baixo, como nas capturas da equipe) | ✔ contorno da Caixa 1 sobre a caixa e a rocha; contorno da maquete girado junto com ela, dentro da estante |
 | 14 | Bloqueadores | ✔ da entrada (−0,27; 1,5; −4,1) nenhum volume é selecionado (sem os bloqueadores a maquete seria); de frente, os quatro continuam selecionáveis |
-| 15 | Tirar da caixa | ✔ clique na rocha esmaece a caixa e reenquadra a rocha; novo clique devolve; clique na parede frontal não alterna; no celular (emulação), toque na rocha funciona |
+| 15 | Tirar da caixa | ✔ clique na caixa ou na rocha esmaece a caixa e reenquadra a rocha; clique na rocha devolve; caixa 3 (solo) e maquete sem o recurso; no celular (emulação), toque na rocha funciona |
 | 16 | Miniaturas | ✔ quatro miniaturas abaixo dos botões; clique na 4 vai direto à maquete (e volta à 1); cabem em 375 px (82 px cada) |
 | 17 | Iluminação | ✔ sombras da rocha dentro das caixas e da moldura na maquete; comparadas capturas do canvas (linear, neutro, ACES, ACES 2) antes da escolha |
 

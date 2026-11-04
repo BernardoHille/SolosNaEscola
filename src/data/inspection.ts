@@ -40,8 +40,8 @@ export type InspectionItem = {
   /** Rótulos opcionais sobre partes do modelo (ex.: estágios da maquete). */
   markers?: InspectionMarker[];
   /**
-   * Recipiente do objeto (nó do GLB, ex.: a caixa de madeira). Clicar no conteúdo esmaece o
-   * recipiente e enquadra só o conteúdo (a rocha); clicar de novo o devolve.
+   * Recipiente do objeto (nó do GLB, ex.: a caixa de madeira). Clicar no recipiente ou no
+   * conteúdo esmaece o recipiente e enquadra só o conteúdo (a rocha); clicar na rocha o devolve.
    *
    * Regra: usar sempre que o conteúdo é uma peça sólida que pode ser tirada da caixa (rochas,
    * fragmentos). Não usar com material solto (terra, solo, areia): sem a caixa ele não se

@@ -13,8 +13,8 @@
  * - Arrastar gira o objeto livremente (eixos da tela); roda/pinça aproxima dentro de limites
  *   que impedem a câmera de entrar no objeto; botão direito, Shift+arrastar ou dois dedos
  *   deslocam a vista de forma limitada; duplo clique restaura a orientação inicial.
- * - Itens com recipiente (`container`): clicar/tocar no conteúdo (a rocha) esmaece a caixa e
- *   reenquadra só o conteúdo; clicar de novo devolve a caixa.
+ * - Itens com recipiente (`container`): clicar/tocar na caixa ou no conteúdo (a rocha) esmaece a
+ *   caixa e reenquadra só o conteúdo; clicar na rocha de novo devolve a caixa.
  * - Modelos carregados sob demanda e guardados enquanto a inspeção está aberta (voltar a uma
  *   etapa não baixa de novo); `destroy()` libera tudo.
  */
@@ -524,24 +524,21 @@ export class InspectionViewer {
     this.callbacks.onMarkers?.(markers);
   }
 
-  /** O ponto da tela (px do canvas) está sobre o conteúdo do recipiente (ex.: a rocha)? */
+  /**
+   * O ponto da tela (px do canvas) está sobre um item com recipiente: a caixa (enquanto
+   * visível) ou o conteúdo (a rocha)? Testa as caixas delimitadoras das malhas — as paredes
+   * são malhas separadas, com caixas justas.
+   */
   private hitsContent(x: number, y: number) {
     const c = this.current;
     const camera = this.camera.camera;
-    if (!c?.content || !camera) return false;
+    if (!c?.content || !c.container || !camera) return false;
     const near = camera.screenToWorld(x, y, camera.nearClip);
     const far = camera.screenToWorld(x, y, camera.farClip);
     const ray = new Ray(near, far.sub(near).normalize());
-    const hit = new Vec3();
-    // Distância da primeira caixa delimitadora atingida (as paredes são malhas separadas, com
-    // caixas justas; a da rocha é maior que a rocha, mas fica dentro das paredes).
-    const nearest = (meshes: MeshInstance[]) =>
-      meshes.reduce((best, mi) => (mi.aabb.intersectsRay(ray, hit) ? Math.min(best, hit.distance(near)) : best), Infinity);
-    const content = nearest(c.contentMeshes);
-    if (content === Infinity) return false;
-    // Com a caixa visível, uma parede na frente da rocha recebe o clique (não alterna).
-    const wall = c.container && !this.detached ? nearest(meshInstancesOf(c.container)) : Infinity;
-    return content <= wall;
+    // Sem a caixa, só a rocha recebe o clique (que devolve a caixa).
+    const meshes = this.detached ? c.contentMeshes : [...c.contentMeshes, ...meshInstancesOf(c.container)];
+    return meshes.some((mi) => mi.aabb.intersectsRay(ray));
   }
 
   private attachInput() {
@@ -580,7 +577,7 @@ export class InspectionViewer {
     on("pointermove", (e) => {
       const prev = this.pointers.get(e.pointerId);
       if (!prev) {
-        // Sem botão pressionado: indica onde o clique tira a rocha da caixa.
+        // Sem botão pressionado: indica onde o clique tira a rocha da caixa (ou a devolve).
         if (e.pointerType === "mouse") canvas.style.cursor = this.hitsContent(...local(e)) ? "pointer" : "grab";
         return;
       }
