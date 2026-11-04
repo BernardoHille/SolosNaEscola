@@ -211,6 +211,7 @@ permanecem no modo de caminhada.
 | Liberar o cursor | **Esc** | — |
 | Ir até um ponto | clicar no piso (cursor livre) | — |
 | Voltar ao início | botão **Voltar à entrada** | idem |
+| Qualidade | botão ao lado da tela cheia: Alto, Médio, Baixo, Muito baixo | idem |
 
 **Captura do mouse (estilo jogo em primeira pessoa).** No computador, a primeira tecla de
 movimento liga o modo de jogo do próprio viewer (`state.gamingControls = true`), que usa a
@@ -234,7 +235,34 @@ a ele. O joystick é um elemento separado e não passa pelo filtro.
 Teclado e joystick são combinados em [`moveInput.ts`](src/lib/viewer/moveInput.ts) e enviados
 por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o foco da janela e
 ao ocultar a aba — nunca fica “preso”. A interface mínima tem identificação do projeto, ajuda
-(aberta automaticamente na primeira visita), tela cheia e o botão de retorno.
+(aberta automaticamente na primeira visita), qualidade, tela cheia e o botão de retorno.
+
+### Qualidade
+
+O botão ao lado da tela cheia abre quatro modos, em degraus iguais de **resolução de
+renderização** (fração da resolução máxima do viewer, em cada eixo):
+
+| Modo | Escala | Pixels desenhados |
+| --- | --- | --- |
+| Alto | 100% | 100% |
+| Médio | 75% | ≈ 56% |
+| Baixo | 50% | 25% |
+| Muito baixo | 25% | ≈ 6% |
+
+Por que resolução: os níveis nativos de qualidade do viewer (`state.quality`) mudam o orçamento
+de splats, que só age em cenas com níveis de detalhe (LOD). O SOG da exposição é um arquivo único
+de ≈ 3,0 milhões de splats e é sempre desenhado inteiro, então ali os níveis nativos só
+diferem na resolução do mais baixo. Como o SOG não deve ser reconvertido, a resolução é o ajuste
+que realmente muda o custo (o desenho dos splats cresce com o número de pixels).
+
+Implementação ([`renderScale.ts`](src/lib/viewer/renderScale.ts)): o viewer dimensiona o
+backbuffer pelo tamanho CSS do canvas; o canvas passa a ocupar `escala × 100%` do contêiner e é
+ampliado de volta com `transform: scale(1/escala)`, sem alterar o código do viewer. O olhar
+usa deslocamentos e a escolha de um ponto no piso usa `offsetX / clientWidth`, ambos no espaço
+local do canvas, então continuam corretos. O nível nativo do viewer é mantido fora de
+`performance` (que já corta a resolução pela metade nos celulares), para não somar as duas
+reduções. Padrão sem escolha salva: **Alto** no computador e **Baixo** em telas de toque —
+o mesmo que o viewer fazia antes. A escolha fica salva no navegador (`localStorage`).
 
 ---
 
@@ -284,17 +312,20 @@ SolosNaEscola/
 │   │   ├── viewer/
 │   │   │   ├── GaussianViewer.tsx # integração React do SuperSplat Viewer (+ escala e colisão)
 │   │   │   ├── Exhibition.tsx     # tela principal da visita
-│   │   │   └── useWalkVisit.ts    # trava no Walk, teclado, joystick, retorno à entrada
+│   │   │   ├── useWalkVisit.ts    # trava no Walk, teclado, joystick, retorno à entrada
+│   │   │   └── useRenderQuality.ts # modo de qualidade escolhido e aplicado
 │   │   ├── dev/CameraCalibration.tsx
 │   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
 │   ├── data/
 │   │   ├── collision.json         # escala e parâmetros de colisão (script + app)
 │   │   ├── visit.ts               # entrada, velocidades, convenções
+│   │   ├── quality.ts             # modos de qualidade (escala de resolução)
 │   │   └── experience.ts          # modelo e Experience Settings v2
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
 │       ├── touchTapFilter.ts      # toque rápido não vira pulo (olhar no celular)
+│       ├── renderScale.ts         # resolução de renderização dos modos de qualidade
 │       ├── moveInput.ts           # combinação teclado + joystick → setMoveInput
 │       ├── keyboardMovement.ts    # WASD/setas/Shift
 │       ├── cameraPose.ts          # leitura da pose da câmera (calibração)
@@ -346,6 +377,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | D | Voltar à entrada | ✔ retorna exatamente à pose inicial, continua em Walk, nenhuma nova requisição do SOG ou da colisão |
 | E | Móvel (emulação 375×812 retrato; 812×375 paisagem) | ✔ joystick aparece em modo toque, anda para frente e para ao soltar; sem rolagem/overflow; ajuda adaptada ao toque |
 | H | Olhar no toque (eventos de toque simulados) | ✔ modo de jogo ligado em `inputMode = touch`; arrastar 120 px para a direita gira ≈ 40° para a direita; toque rápido e arrasto de 10 px não movem a câmera nem fazem pular (altura dos olhos constante); joystick continua andando; ao usar o mouse o modo de jogo desliga e volta ao tocar |
+| I | Qualidade | ✔ os quatro modos mudam o backbuffer para 100/75/50/25% (771×846 → 579×635 → 386×423 → 193×212 no computador) mantendo a imagem na tela inteira; nível nativo do viewer fica em `default`; clique no piso com 50% chega ao canvas na posição relativa certa (0,749; 0,8 para um clique em 75%; 80%); escolha salva e restaurada; celular (emulação) começa em Baixo, com a mesma resolução de antes; menu fecha ao tocar fora; olhar por toque inalterado |
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 | G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 

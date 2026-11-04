@@ -11,6 +11,7 @@ import ProjectBadge from "@/components/ui/ProjectBadge";
 import TouchJoystick from "@/components/ui/TouchJoystick";
 import VisitControls from "@/components/ui/VisitControls";
 import GaussianViewer from "@/components/viewer/GaussianViewer";
+import { useRenderQuality } from "@/components/viewer/useRenderQuality";
 import { useWalkVisit } from "@/components/viewer/useWalkVisit";
 import { buildExperienceSettings, EXPERIENCE_SETTINGS, MODEL } from "@/data/experience";
 import { MOVEMENT } from "@/data/visit";
@@ -46,6 +47,7 @@ export default function Exhibition() {
   const [viewer, setViewer] = useState<ViewerHandle | null>(null);
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [qualityOpen, setQualityOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   // Em desenvolvimento, uma entrada de teste salva pela calibração substitui a
@@ -61,13 +63,16 @@ export default function Exhibition() {
     );
   }, []);
 
-  const walk = useWalkVisit(viewer, stage, MODEL.collisionUrl, onCollisionError, { captureAllowed: !helpOpen });
+  const panelOpen = helpOpen || qualityOpen;
+  const walk = useWalkVisit(viewer, stage, MODEL.collisionUrl, onCollisionError, { captureAllowed: !panelOpen });
+  const quality = useRenderQuality(viewer, walk.inputMode);
 
-  // Painel de ajuda aberto: devolve o cursor para que o visitante possa usá-lo.
+  // Painel de ajuda ou menu de qualidade aberto: devolve o cursor para que o visitante
+  // possa usá-lo.
   const { releaseMouse } = walk;
   useEffect(() => {
-    if (helpOpen) releaseMouse();
-  }, [helpOpen, releaseMouse]);
+    if (panelOpen) releaseMouse();
+  }, [panelOpen, releaseMouse]);
 
   // Desenvolvimento: expõe o handle no console para inspeção e testes manuais.
   useEffect(() => {
@@ -149,6 +154,12 @@ export default function Exhibition() {
             onReturnToEntrance={walk.returnToEntrance}
             onHelp={() => setHelpOpen(true)}
             fullscreen={{ supported: fullscreenSupported, active: isFullscreen, toggle: toggleFullscreen }}
+            quality={{
+              level: quality.level,
+              onChange: quality.setLevel,
+              open: qualityOpen,
+              onOpenChange: setQualityOpen,
+            }}
           />
           {walk.inputMode === "touch" && (
             <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-10">

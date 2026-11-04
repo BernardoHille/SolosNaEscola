@@ -44,6 +44,24 @@ export function FullscreenIcon({ className, active }: IconProps & { active?: boo
   );
 }
 
+export function QualityIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4.2 17.5a8.5 8.5 0 1 1 15.6 0" />
+      <path d="m12 14 3.6-4.2" />
+      <circle cx="12" cy="14" r="1.3" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
