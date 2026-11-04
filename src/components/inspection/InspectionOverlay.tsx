@@ -68,6 +68,19 @@ const startsOpen = () =>
 /** Distância do painel lateral até a borda direita (px). */
 const DOCK_GAP = 16;
 
+/**
+ * Largura livre mínima (px) entre o painel lateral e a sua imagem espelhada à esquerda para manter
+ * o modelo e os controles centralizados na tela (eles são o foco). Abaixo disso (notebooks
+ * estreitos, celular deitado), o painel reserva o seu espaço e o modelo se desloca para a esquerda.
+ */
+const CENTERED_MIN_WIDTH = 600;
+
+const subscribeResize = (onChange: () => void) => {
+  window.addEventListener("resize", onChange);
+  return () => window.removeEventListener("resize", onChange);
+};
+const useViewportWidth = () => useSyncExternalStore(subscribeResize, () => window.innerWidth, () => 0);
+
 const iconButton =
   "inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-stone-100 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200";
 
@@ -244,7 +257,10 @@ export default function InspectionOverlay({
   const hasMarkers = !!item.markers?.length;
   const hasDescription = hasDescriptionPanel;
   const showDock = hasDescription && docked && descriptionOpen;
-  const rightInset = showDock ? descriptionSize.width + DOCK_GAP : 0;
+  const viewportWidth = useViewportWidth();
+  const dockSpace = descriptionSize.width + DOCK_GAP;
+  const centered = viewportWidth - 2 * dockSpace >= CENTERED_MIN_WIDTH;
+  const rightInset = showDock && !centered ? dockSpace : 0;
   const sheetHeight = hasDescription && !docked ? descriptionSize.height : 0;
 
   return (
@@ -352,7 +368,7 @@ export default function InspectionOverlay({
           ref={descriptionRef}
           className={
             docked
-              ? `pointer-events-none absolute bottom-4 top-16 w-[clamp(17rem,30vw,24rem)] flex-col sm:bottom-6 ${
+              ? `pointer-events-none absolute bottom-4 top-16 w-[clamp(17rem,30vw,24rem)] xl:w-[clamp(24rem,24vw,32rem)] flex-col sm:bottom-6 ${
                   descriptionOpen ? "flex" : "hidden"
                 }`
               : "pointer-events-none absolute inset-x-0 mx-auto flex max-w-xl px-3 pb-1"

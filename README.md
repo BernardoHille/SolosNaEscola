@@ -370,8 +370,12 @@ fechamento.
 O painel se adapta à tela:
 
 - **tela deitada** (computador, tablet ou celular na horizontal, ≥ 640 px de largura): encaixado à
-  direita, do tamanho do texto (rola se faltar altura); o modelo e os controles ocupam o espaço à
-  esquerda. Fecha no **X** do painel ou com **I**, e volta pelo botão do livro;
+  direita, do tamanho do texto (rola se faltar altura). O modelo e os controles, que são o foco,
+  **continuam centralizados** quando sobram ao menos 600 px entre o painel e a sua imagem
+  espelhada à esquerda (ex.: monitor 1920×1080, notebook 1440 px); em telas mais estreitas
+  (1280 px, celular deitado) eles passam para o espaço à esquerda do painel, para não ficarem por
+  baixo dele. A partir de 1280 px o painel e as letras crescem (até 32 rem de largura). Fecha no
+  **X** do painel ou com **I**, e volta pelo botão do livro;
 - **tela em pé** (celular, tablet na vertical): gaveta logo acima dos controles, com altura máxima
   de 32 % da tela. Em telas pequenas (< 640 px de largura ou < 740 px de altura) começa
   **recolhida**, só com a barra das abas e um ponto amarelo pulsante avisando que há texto novo;
@@ -662,6 +666,7 @@ emulação de celular 375×812), em 4/11/2026:
 | 18 | Descrição no computador (janela ≈ 980×850) | ✔ painel à direita abre na Introdução; “Ir para a etapa 1” troca de aba; miniatura 4 leva à maquete com a lista dos estágios (rola); **I** fecha e o modelo volta ao centro, **I** reabre |
 | 19 | Descrição no celular em pé (emulação 375×812) | ✔ abre recolhida, com o ponto amarelo; **Ler** expande (o modelo continua visível acima); sem rolagem horizontal |
 | 20 | Descrição no celular deitado (emulação 812×375) e tablet (768×1024) | ✔ deitado: painel à direita e controles compactos, modelo visível; tablet: gaveta aberta acima dos controles |
+| 21 | Descrição em monitor 16:9 (emulação 1920×1080) e 1280×800 | ✔ 1920: modelo e controles no centro, painel maior à direita sem cobri-los; 1280: o modelo passa para a esquerda do painel |
 
 Não verificado na inspeção: aparência num celular real (sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o
