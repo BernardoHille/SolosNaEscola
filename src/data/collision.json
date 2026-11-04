@@ -3,6 +3,8 @@
   "modelFile": "models/museu_web.sog",
   "voxelFile": "models/museu_web.voxel.json",
   "sceneScale": 5.4,
+  "$verticalOffset": "Deslocamento vertical (m) aplicado à colisão depois de gerada (scripts/offset-collision.mjs): alinha o piso da colisão ao piso visível e deixa os olhos ≈ 1,55 m acima dele.",
+  "verticalOffset": -0.1,
   "generation": {
     "seedPosition": [-0.27, 0.9, -4.1],
     "voxelSize": 0.05,

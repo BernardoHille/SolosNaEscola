@@ -8,6 +8,7 @@
  * - Yaw em graus em torno de Y: 0° olha para −Z, 90° para −X, 180° para +Z.
  * - Pitch em graus: positivo olha para cima.
  */
+import voxelMeta from "../../public/models/museu_web.voxel.json";
 import collision from "./collision.json";
 
 /**
@@ -21,8 +22,23 @@ import collision from "./collision.json";
  */
 export const SCENE_SCALE: number = collision.sceneScale;
 
-/** URL pública dos metadados de colisão; o `.voxel.bin` deve estar ao lado. */
-export const COLLISION_URL = `/${collision.voxelFile}`;
+/**
+ * Versão da colisão, derivada dos próprios metadados: muda quando a colisão é regenerada
+ * (contagens da octree) ou deslocada (`solosVerticalOffset`).
+ */
+const COLLISION_VERSION = [
+  voxelMeta.nodeCount,
+  voxelMeta.leafDataCount,
+  (voxelMeta as { solosVerticalOffset?: number }).solosVerticalOffset ?? 0,
+].join("-");
+
+/**
+ * URL pública dos metadados de colisão; o `.voxel.bin` deve estar ao lado. O parâmetro `v`
+ * evita que navegadores e CDN sirvam uma colisão antiga do cache (`/models/*` é cacheado por
+ * 1 dia): o viewer deriva a URL do `.voxel.bin` trocando a extensão, então ele vale para os
+ * dois arquivos.
+ */
+export const COLLISION_URL = `/${collision.voxelFile}?v=${COLLISION_VERSION}`;
 
 /** Pose de partida do visitante. */
 export type SpawnPose = {

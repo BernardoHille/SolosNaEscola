@@ -110,7 +110,7 @@ A colisão é um conjunto de **voxels** gerado a partir do próprio SOG com o Sp
 
 | Arquivo | Tamanho | Conteúdo |
 | --- | --- | --- |
-| `public/models/museu_web.voxel.json` | 666 B | metadados (formato 1.1, limites, resolução) |
+| `public/models/museu_web.voxel.json` | 669 B | metadados (formato 1.1, limites, resolução) |
 | `public/models/museu_web.voxel.bin` | 133.844 B | octree esparsa de voxels sólidos |
 
 Parâmetros (em [`src/data/collision.json`](src/data/collision.json), compartilhado pelo script e
@@ -124,6 +124,7 @@ pela aplicação):
 | `seedPosition` | (−0,27; 0,9; −4,1) | ponto no interior da sala usado para filtrar fragmentos soltos e para o preenchimento externo |
 | `externalFill` | 1,6 m | fecha o espaço exterior alcançável a partir da semente (impede sair pela porta) |
 | `carveCapsule` | 1,6 m × 0,2 m | escava o espaço livre por onde uma cápsula humana pode passar |
+| `verticalOffset` | −0,10 m | desloca a colisão gerada para alinhar o piso da colisão ao piso visível (ver abaixo) |
 
 Para regenerar (requer Node.js e acesso à internet para o `npx` baixar o SplatTransform):
 
@@ -141,8 +142,26 @@ npx @playcanvas/splat-transform@3.10.3 -w public/models/museu_web.sog -s 5.4 \
   --voxel-external-fill 1.6 --voxel-carve 1.6,0.2
 ```
 
+e, em seguida, [`scripts/offset-collision.mjs`](scripts/offset-collision.mjs) (também executável
+sozinho com `node scripts/offset-collision.mjs`).
+
+**Deslocamento vertical (`verticalOffset = −0,10 m`).** A voxelização marca como sólida toda
+célula de 5 cm com densidade de splats, e os splats do piso se espalham alguns centímetros acima
+da superfície: o topo do piso da colisão ficava em y ≈ 0,10 m, enquanto o piso visível — medido
+decodificando as posições dos splats do SOG em quatro pontos da sala — fica em y ≈ 0,00 m
+(entre −0,015 e +0,005). Como o Walk Mode põe os olhos 1,5 m acima do piso da **colisão**, os
+olhos ficavam ≈ 1,6–1,7 m acima do piso visível. O script desloca a grade inteira 0,10 m (dois
+voxels) para baixo alterando só `gridBounds` no `.voxel.json` — o viewer posiciona a grade por
+esse campo; o `.voxel.bin` não muda. O valor aplicado fica registrado em `solosVerticalOffset`, de
+modo que rodar o script de novo não acumula deslocamentos. O modelo visual e o SOG não mudam.
+
+**Cache da colisão.** `/models/*` é servido com cache de 1 dia. Para que uma colisão regenerada
+ou deslocada chegue a quem já visitou o site, a URL leva `?v=<versão>`, derivada dos próprios
+metadados (contagens da octree e deslocamento) em [`src/data/visit.ts`](src/data/visit.ts); o
+viewer deriva a URL do `.voxel.bin` trocando a extensão, então o parâmetro vale para os dois.
+
 Arquivos necessários para reproduzir: `public/models/museu_web.sog`,
-`src/data/collision.json` e `scripts/generate-collision.mjs`. O SOG apenas é lido; seu SHA-256
+`src/data/collision.json`, `scripts/generate-collision.mjs` e `scripts/offset-collision.mjs`. O SOG apenas é lido; seu SHA-256
 permanece o mesmo.
 
 **Verificação da área caminhável:** decodificando a octree e simulando a cápsula a partir da
@@ -176,15 +195,15 @@ Não recarrega o SOG nem a colisão.
 
 | Item | Valor | Origem |
 | --- | --- | --- |
-| Altura dos olhos | ≈ 1,5 m acima do piso (acompanha o piso) | fixo no WalkController 1.42 (`eyeHeight` 1,3 m + flutuação 0,2 m); não configurável pela API pública |
+| Altura dos olhos | ≈ 1,55 m acima do piso visível (1,50 m na entrada; 1,45–1,61 m andando) | WalkController 1.42: 1,5 m acima do piso da colisão (`eyeHeight` 1,3 m + flutuação 0,2 m), não configurável pela API pública; ajustada com o deslocamento vertical da colisão (`verticalOffset`) |
 | Cápsula | 1,5 m de altura × 0,2 m de raio | WalkController |
 | Campo de visão | 90° | fixo no WalkController durante a caminhada |
 | Inclinação vertical | ±90° | fixa no viewer; não pode ser limitada pela API pública |
 | Velocidade de caminhada | ≈ 1,15 m/s (`MOVEMENT.walk = 0,45`) | medida no navegador |
 | Velocidade com Shift | ≈ 1,9 m/s (`MOVEMENT.run = 0,75`) | medida no navegador |
 
-A especificação previa olhos a ~1,6–1,8 m; o valor real é o do viewer (1,5 m), mantido para não
-modificar código de terceiros.
+A altura do WalkController não é alterada (código de terceiros); a altura percebida foi ajustada
+para ≈ 1,55 m alinhando o piso da colisão ao piso visível (ver “Deslocamento vertical”).
 
 ### O que foi bloqueado
 
@@ -321,7 +340,8 @@ SolosNaEscola/
 │   ├── museu_web.voxel.json       # colisão: metadados
 │   └── museu_web.voxel.bin        # colisão: octree de voxels
 ├── scripts/
-│   └── generate-collision.mjs     # npm run collision
+│   ├── generate-collision.mjs     # npm run collision
+│   └── offset-collision.mjs       # alinha o piso da colisão ao piso visível
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx               # rota "/" → exposição
@@ -391,7 +411,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | # | Teste | Resultado |
 | --- | --- | --- |
 | A | Início na entrada, olhando para o interior, já em Walk | ✔ posição (−0,27; 1,6; −4,1), direção (0; −0,09; 1,0), `cameraMode = walk` |
-| B | Caminhada, altura e colisão | ✔ W/A/S/D corretos; olhos entre 1,59 e 1,74 m durante o percurso; para ao encontrar as mesas (z ≈ −1,15); para atrás antes da porta (z ≈ −4,45) — não sai da sala |
+| B | Caminhada, altura e colisão | ✔ W/A/S/D corretos; olhos entre 1,59 e 1,74 m durante o percurso (antes do deslocamento vertical; ver teste L); para ao encontrar as mesas (z ≈ −1,15); para atrás antes da porta (z ≈ −4,45) — não sai da sala |
 | C | Bloqueios | ✔ teclas 1, 2, 3, F, R, G, V, Espaço, E, Q, Esc, roda do mouse e botão direito não mudam o modo nem movem a câmera; arrastar só gira |
 | D | Voltar à entrada | ✔ retorna exatamente à pose inicial, continua em Walk, nenhuma nova requisição do SOG ou da colisão |
 | E | Móvel (emulação 375×812 retrato; 812×375 paisagem) | ✔ joystick aparece em modo toque, anda para frente e para ao soltar; sem rolagem/overflow; ajuda adaptada ao toque |
@@ -399,6 +419,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | I | Qualidade | ✔ os quatro modos mudam o backbuffer para 100/75/50/25% (771×846 → 579×635 → 386×423 → 193×212 no computador) mantendo a imagem na tela inteira; nível nativo do viewer fica em `default`; clique no piso com 50% chega ao canvas na posição relativa certa (0,749; 0,8 para um clique em 75%; 80%); escolha salva e restaurada; celular (emulação) começa em Baixo, com a mesma resolução de antes; menu fecha ao tocar fora; olhar por toque inalterado |
 | J | Aviso do mouse e FPS | ✔ aviso visível 0,7 s após a captura e oculto aos 2,6 s; some com Esc; reaparece numa nova captura (pointer lock simulado); contador mostra “— fps” com a cena parada, ≈ 100 fps andando no painel de testes (sobe de 78 para 100 no primeiro segundo) e volta a “—” ao parar |
 | K | Recálculo das cores ao andar (GPU, WebGPU) | ✔ `colorUpdateAngle` = 1 após o carregamento e após troca do nível nativo do viewer; andando, recálculo em 7 de 199 quadros (antes: 100%), GPU média 5,21 ms (antes ≈ 8,0 ms), pior quadro 8,26 ms; imagem normal após andar. Não medido no notebook nem no Galaxy S25 |
+| L | Altura dos olhos (deslocamento −0,10 m) | ✔ colisão carregada com `?v=17775-15686--0.1` (JSON e BIN); olhos a 1,50 m na entrada e após “Voltar à entrada”; andando, 1,45–1,61 m (mediana 1,551 m), antes 1,57–1,71 m (mediana 1,66 m); piso visível em y ≈ 0,00 m; para nas mesas (z ≈ −1,20) e antes da porta (z ≈ −3,95), como antes do ajuste; continua em Walk |
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 | G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 
@@ -410,7 +431,7 @@ celulares de entrada e o deploy na Vercel.
 - A escala (5,4) é estimada a partir da altura padrão de porta (2,10 m).
 - A pose de entrada foi medida em renderizações do SOG; recomenda-se confirmar com a rota
   `/dev/camera`.
-- Altura dos olhos (1,5 m), FOV (90°) e limite de inclinação são fixos no viewer 1.42.
+- Altura dos olhos (1,5 m acima do piso da colisão), FOV (90°) e limite de inclinação são fixos no viewer 1.42; a altura percebida depende do deslocamento vertical da colisão.
 - A colisão por voxels tem resolução de 5 cm; superfícies muito finas ou com baixa opacidade no
   splat podem não bloquear (ou bloquear um pouco antes) o visitante.
 - Clicar/tocar no piso leva o visitante até o ponto (recurso do Walk Mode), inclusive até áreas

@@ -19,11 +19,14 @@
  *   4. --voxel-external-fill  dilata sólidos para fechar aberturas (janelas, porta) e
  *                          preenche o exterior a partir da caixa envolvente;
  *   5. --voxel-carve       inunda o espaço navegável com uma cápsula a partir do seed.
+ *   6. deslocamento vertical (`verticalOffset`), ver scripts/offset-collision.mjs.
  */
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { applyVerticalOffset } from "./offset-collision.mjs";
 
 const SPLAT_TRANSFORM = "@playcanvas/splat-transform@3.10.3";
 
@@ -61,4 +64,5 @@ const finalArgs = isWindows ? args.map((a) => (a.includes(" ") ? `"${a}"` : a)) 
 
 console.log(`npx ${finalArgs.join(" ")}\n`);
 const result = spawnSync("npx", finalArgs, { stdio: "inherit", shell: isWindows });
+if (result.status === 0) applyVerticalOffset();
 process.exit(result.status ?? 1);
