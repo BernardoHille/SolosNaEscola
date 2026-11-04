@@ -237,6 +237,18 @@ por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o 
 ao ocultar a aba — nunca fica “preso”. A interface mínima tem identificação do projeto, ajuda
 (aberta automaticamente na primeira visita), qualidade, tela cheia e o botão de retorno.
 
+**Recálculo das cores ao andar.** Os splats do SOG têm cor dependente do ângulo de visão
+(harmônicos esféricos, 3 bandas). O motor recalcula essas cores quando a câmera se desloca mais
+que `tan(colorUpdateAngle) × max(1, distância até a cena)`; girar no lugar não dispara o
+recálculo. O viewer usa 0,2°: com a câmera dentro da sala o limite fica em ≈ 3,5 mm e, ao andar,
+as cores dos ≈ 3,0 milhões de splats eram recalculadas em todo quadro — por isso o FPS caía ao
+caminhar em notebooks e celulares, mas não ao só olhar em volta. A visita fixa o ângulo em 1°
+(o valor que o próprio viewer usa no nível `performance`), em
+[`colorRefresh.ts`](src/lib/viewer/colorRefresh.ts). Medido com o tempo de GPU do WebGPU no painel
+de testes, andando: quadros com recálculo de 100% → 4%, GPU média de ≈ 8,0 ms → ≈ 5,2 ms (o mesmo
+de só girar a câmera). Esse custo depende do número de splats, não da resolução; os modos de
+qualidade não o reduzem.
+
 **Contador de FPS.** Abaixo da identificação do projeto, um contador discreto mostra os quadros
 por segundo que o viewer realmente renderizou no último segundo (evento `postrender` do motor, que só dispara quando há render,
 [`FpsCounter.tsx`](src/components/ui/FpsCounter.tsx)). O viewer renderiza sob demanda: com a
@@ -332,6 +344,7 @@ SolosNaEscola/
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
 │       ├── touchTapFilter.ts      # toque rápido não vira pulo (olhar no celular)
 │       ├── renderScale.ts         # resolução de renderização dos modos de qualidade
+│       ├── colorRefresh.ts        # cores dependentes do ângulo: recálculo a cada 1°
 │       ├── moveInput.ts           # combinação teclado + joystick → setMoveInput
 │       ├── keyboardMovement.ts    # WASD/setas/Shift
 │       ├── cameraPose.ts          # leitura da pose da câmera (calibração)
@@ -385,6 +398,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 | H | Olhar no toque (eventos de toque simulados) | ✔ modo de jogo ligado em `inputMode = touch`; arrastar 120 px para a direita gira ≈ 40° para a direita; toque rápido e arrasto de 10 px não movem a câmera nem fazem pular (altura dos olhos constante); joystick continua andando; ao usar o mouse o modo de jogo desliga e volta ao tocar |
 | I | Qualidade | ✔ os quatro modos mudam o backbuffer para 100/75/50/25% (771×846 → 579×635 → 386×423 → 193×212 no computador) mantendo a imagem na tela inteira; nível nativo do viewer fica em `default`; clique no piso com 50% chega ao canvas na posição relativa certa (0,749; 0,8 para um clique em 75%; 80%); escolha salva e restaurada; celular (emulação) começa em Baixo, com a mesma resolução de antes; menu fecha ao tocar fora; olhar por toque inalterado |
 | J | Aviso do mouse e FPS | ✔ aviso visível 0,7 s após a captura e oculto aos 2,6 s; some com Esc; reaparece numa nova captura (pointer lock simulado); contador mostra “— fps” com a cena parada, ≈ 100 fps andando no painel de testes (sobe de 78 para 100 no primeiro segundo) e volta a “—” ao parar |
+| K | Recálculo das cores ao andar (GPU, WebGPU) | ✔ `colorUpdateAngle` = 1 após o carregamento e após troca do nível nativo do viewer; andando, recálculo em 7 de 199 quadros (antes: 100%), GPU média 5,21 ms (antes ≈ 8,0 ms), pior quadro 8,26 ms; imagem normal após andar. Não medido no notebook nem no Galaxy S25 |
 | F | Produção | ✔ `typecheck`, `lint` e `build` sem erros; `/` 200; `/dev/camera` 404; voxels 200; sem erros no console |
 | G | Captura do mouse | ✔ W/D chamam `requestPointerLock` e ligam o modo de jogo; com a captura ativa (API de pointer lock simulada, pois o painel de navegador embutido usado nos testes recusa o pointer lock), mover o mouse sem botão gira a câmera e o aviso aparece; Esc desliga o modo de jogo, o aviso some e o visitante continua em Walk; com a ajuda aberta não há captura. Recusa real do navegador: o viewer reverte o modo de jogo e continua em Walk |
 

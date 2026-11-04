@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 
 import { defaultRenderQuality, findRenderQuality, type RenderQualityId } from "@/data/quality";
+import { pinColorRefresh } from "@/lib/viewer/colorRefresh";
 import { applyRenderScale, pinViewerQuality } from "@/lib/viewer/renderScale";
 
 const STORAGE_KEY = "solos:render-quality";
@@ -29,7 +30,13 @@ export function useRenderQuality(viewer: ViewerHandle | null, inputMode: "deskto
 
   useEffect(() => {
     if (!viewer) return;
-    return pinViewerQuality(viewer);
+    const unpinQuality = pinViewerQuality(viewer);
+    // Cores dependentes do ângulo recalculadas só a cada ~1°, não em todo passo (ver colorRefresh).
+    const unpinColor = pinColorRefresh(viewer);
+    return () => {
+      unpinQuality();
+      unpinColor();
+    };
   }, [viewer]);
 
   useEffect(() => {
