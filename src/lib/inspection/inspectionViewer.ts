@@ -15,18 +15,25 @@
  *   deslocam a vista de forma limitada; duplo clique restaura a orientação inicial.
  * - Itens com recipiente (`container`): clicar/tocar na caixa ou no conteúdo (a rocha) esmaece a
  *   caixa e reenquadra só o conteúdo; clicar na rocha de novo devolve a caixa.
+ * - Itens com animação (`animation`): o primeiro clipe do GLB segue a narração do item
+ *   (`setNarrationClock`), quadro a quadro, sem tocar sozinho; pausar a narração pausa a animação.
+ *   Depois do último ponto de sincronia ela fica parada no último quadro.
  * - Modelos carregados sob demanda e guardados enquanto a inspeção está aberta (voltar a uma
  *   etapa não baixa de novo); `destroy()` libera tudo.
  */
 import {
   ADDRESS_CLAMP_TO_EDGE,
   ADDRESS_REPEAT,
+  AnimClip,
+  AnimEvaluator,
+  type AnimTrack,
   Application,
   type Asset,
   BLEND_NONE,
   BLEND_NORMAL,
   BoundingBox,
   Color,
+  DefaultAnimBinder,
   type Entity as EntityType,
   Entity,
   EnvLighting,
@@ -50,6 +57,7 @@ import {
 } from "playcanvas";
 
 import type { InspectionItem } from "@/data/inspection";
+import { animationTimeAt } from "@/lib/inspection/animationSync";
 
 export type MarkerPosition = { label: string; x: number; y: number; visible: boolean };
 
@@ -95,6 +103,22 @@ const reducedMotion = () =>
 
 type Frame = { center: Vec3; radius: number };
 
+/**
+ * Relógio da narração do item atual: segundos já tocados, `Infinity` se já foi ouvida até o fim
+ * (ou numa visita anterior, sem tocar de novo) e `null` se não houver narração deste item.
+ */
+export type NarrationClock = () => number | null;
+
+type Animation = {
+  evaluator: AnimEvaluator;
+  clip: AnimClip;
+  duration: number;
+  /** Pares [s da narração, s do clipe] (`InspectionItem.animation.sync`). */
+  sync: readonly (readonly [number, number])[];
+  /** Tempo do clipe mostrado agora (s). */
+  time: number;
+};
+
 type Loaded = {
   item: InspectionItem;
   holder: EntityType;
@@ -105,6 +129,7 @@ type Loaded = {
   contentMeshes: MeshInstance[];
   fitDistance: number;
   markers: { label: string; entity: EntityType }[];
+  animation: Animation | null;
 };
 
 export class InspectionViewer {
@@ -141,6 +166,7 @@ export class InspectionViewer {
   private readonly disposers: (() => void)[] = [];
   private lastMarkers = "";
   private destroyed = false;
+  private narrationClock: NarrationClock | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -235,7 +261,9 @@ export class InspectionViewer {
     // Enquadramentos medidos no espaço do pivô, ainda sem rotação nem deslocamento.
     this.pivot.setLocalRotation(Quat.IDENTITY);
     holder.setLocalPosition(0, 0, 0);
-    const full = frameOf(meshInstancesOf(root));
+    const animation = item.animation ? animationOf(asset, root, item.animation.sync) : null;
+    // Animado: enquadra tudo o que o clipe percorre (os potes sobem e saem do lugar).
+    const full = animation ? animatedFrame(animation, root) : frameOf(meshInstancesOf(root));
 
     const container = item.container ? containerOf(root, item.container) : null;
     let content: Frame | null = null;
@@ -260,12 +288,20 @@ export class InspectionViewer {
       contentMeshes,
       fitDistance: this.fitDistance(full.radius),
       markers,
+      animation,
     };
+    if (animation) this.updateAnimation(true);
     this.detached = false;
     this.containerOpacity = 1;
     this.containerTarget = 1;
     this.emitContainer();
     this.reset(true);
+  }
+
+  /** Narração que conduz a animação do item atual (ver `NarrationClock`). */
+  setNarrationClock(clock: NarrationClock | null) {
+    this.narrationClock = clock;
+    this.app.renderNextFrame = true;
   }
 
   /** Baixa um modelo antecipadamente (ex.: a próxima etapa). */
@@ -404,7 +440,8 @@ export class InspectionViewer {
     const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight) || 1;
     const halfV = (FOV / 2) * (Math.PI / 180);
     const halfH = Math.atan(Math.tan(halfV) * aspect);
-    return (radius / Math.sin(Math.min(halfV, halfH))) * FIT_MARGIN;
+    // A esfera envolvente sobra em cenas largas e baixas (ex.: as bandejas do ímã): `fitScale` aproxima.
+    return (radius / Math.sin(Math.min(halfV, halfH))) * FIT_MARGIN * (this.current?.item.view.fitScale ?? 1);
   }
 
   private resize() {
@@ -474,7 +511,20 @@ export class InspectionViewer {
     const light = this.keyLight.light;
     if (light) light.shadowDistance = this.distance + c.full.radius * 2;
     if (moving) this.app.renderNextFrame = true;
+    this.updateAnimation();
     if (this.app.renderNextFrame) this.updateMarkers();
+  }
+
+  /** Leva o clipe ao instante da narração; só redesenha se o quadro mudou. */
+  private updateAnimation(force = false) {
+    const a = this.current?.animation;
+    if (!a) return;
+    const narration = this.narrationClock?.() ?? null;
+    // Sem narração deste item (ainda carregando, outra aba): fica no quadro em que está.
+    const time = narration === null ? a.time : animationTimeAt(narration, a.sync, a.duration);
+    if (!force && Math.abs(time - a.time) < 1e-4) return;
+    setAnimationTime(a, time);
+    this.app.renderNextFrame = true;
   }
 
   private applyContainerOpacity() {
@@ -695,6 +745,45 @@ function containerOf(root: EntityType, spec: NonNullable<InspectionItem["contain
     }
   }
   return group;
+}
+
+/** Primeiro clipe do GLB, avaliado à mão (sem tocar sozinho) sobre a cópia instanciada. */
+function animationOf(asset: Asset, root: EntityType, sync: Animation["sync"]): Animation | null {
+  const track = (asset.resource as { animations?: Asset[] }).animations?.[0]?.resource as AnimTrack | undefined;
+  if (!track) return null;
+  const evaluator = new AnimEvaluator(new DefaultAnimBinder(root));
+  const clip = new AnimClip(track, 0, 1, true, false);
+  evaluator.addClip(clip);
+  const animation: Animation = { evaluator, clip, duration: track.duration, sync, time: -1 };
+  setAnimationTime(animation, 0);
+  return animation;
+}
+
+function setAnimationTime(a: Animation, time: number) {
+  a.time = time;
+  a.clip.time = time;
+  a.evaluator.update(0);
+}
+
+/** Enquadramento que contém o modelo em todo o clipe (amostras a cada meio segundo). */
+function animatedFrame(a: Animation, root: EntityType): Frame {
+  const meshes = meshInstancesOf(root);
+  const box = new BoundingBox();
+  let first = true;
+  for (let t = 0; t <= a.duration + 1e-6; t += 0.5) {
+    setAnimationTime(a, Math.min(t, a.duration));
+    root.syncHierarchy();
+    // Malhas escondidas (escala 0, ex.: grãos antes de cair) não entram.
+    for (const mi of meshes) {
+      const aabb = mi.aabb;
+      if (aabb.halfExtents.lengthSq() < 1e-12) continue;
+      if (first) box.copy(aabb);
+      else box.add(aabb);
+      first = false;
+    }
+  }
+  setAnimationTime(a, 0);
+  return { center: box.center.clone(), radius: Math.max(box.halfExtents.length(), 0.01) };
 }
 
 function meshInstancesOf(entity: EntityType): MeshInstance[] {

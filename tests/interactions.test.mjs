@@ -9,6 +9,7 @@ import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { animationTimeAt } from "../src/lib/inspection/animationSync.ts";
 import {
   castRay,
   convexHull,
@@ -118,14 +119,17 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
   for (const v of volumes) {
     assert.ok(!ids.has(v.id), `id repetido: ${v.id}`);
     ids.add(v.id);
-    assert.ok(["formacao-do-solo", "material-de-origem", "horizontes-do-solo"].includes(v.setId), `${v.id}: ${v.setId}`);
+    assert.ok(
+      ["formacao-do-solo", "material-de-origem", "horizontes-do-solo", "atracao-do-solo-pelo-ima"].includes(v.setId),
+      `${v.id}: ${v.setId}`,
+    );
     if (v.setId === "formacao-do-solo") {
       assert.ok(source.includes(`id: "${v.id}"`), `item ausente em inspection.ts: ${v.id}`);
     } else {
@@ -159,6 +163,13 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     ["horizontes"],
   );
   assert.ok(table[0].position[2] > shelf[0].position[2], "a mesa fica à frente da estante");
+  // Atração do Solo pelo Ímã: a mesa ao lado da dos horizontes (à direita, sem sobrepor).
+  const magnet = volumes.filter((v) => v.setId === "atracao-do-solo-pelo-ima");
+  assert.equal(magnet.length, 1);
+  const right = (v) => v.position[0] + v.size[0] / 2;
+  const left = (v) => v.position[0] - v.size[0] / 2;
+  assert.ok(left(magnet[0]) >= right(table[0]), "bandejas à direita das caixas dos horizontes");
+  assert.ok(Math.abs(magnet[0].position[1] - table[0].position[1]) < 0.05, "mesma altura de tampo");
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -343,4 +354,63 @@ test("dados: Horizontes do Solo (grupo único, modelos, caixa da camada R, minia
   const container = r.container.nodes.map((name) => gltf.nodes.findIndex((n) => n.name === name));
   assert.ok(container.every((k) => k >= 0), `${r.container.nodes}`);
   assert.ok(gltf.nodes.some((n, k) => n.mesh !== undefined && !container.includes(k) && n.name.startsWith("Pedra")));
+});
+
+test("animação conduzida pela narração: parada antes, interpolada, parada no último quadro", () => {
+  const sync = [
+    [24.7, 0],
+    [31.42, 7],
+    [40.38, 15.958],
+  ];
+  close(animationTimeAt(0, sync, 16), 0);
+  close(animationTimeAt(24.7, sync, 16), 0);
+  close(animationTimeAt((24.7 + 31.42) / 2, sync, 16), 3.5);
+  close(animationTimeAt(35.9, sync, 16), 7 + ((35.9 - 31.42) / (40.38 - 31.42)) * 8.958);
+  close(animationTimeAt(50, sync, 16), 15.958);
+  // Narração já ouvida (sem tocar de novo): o último quadro.
+  close(animationTimeAt(Infinity, sync, 16), 15.958);
+  close(animationTimeAt(5, [[0, 0], [1, 30]], 16), 16);
+});
+
+test("dados: Atração do Solo pelo Ímã (um item, GLB animado, sincronia e narração)", async () => {
+  const { ATRACAO_DO_IMA: set } = await import("../src/data/atracaoDoIma.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(set.items.length, 1, "um experimento só: sem setas nem faixa");
+  assert.ok(!set.overview);
+  const [item] = set.items;
+  const file = resolve(root, "public", item.model.url.slice(1));
+  assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+  assert.ok(item.model.sizeBytes < 6_500_000, item.model.url);
+  assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+  // Um clipe de animação, sem extensões; os dois casos e o disco de magnetita estão no GLB.
+  const gltf = glbJson(file);
+  assert.equal(gltf.animations?.length, 1);
+  assert.deepEqual(gltf.extensionsUsed ?? [], []);
+  for (const name of ["placa_com_ima", "placa_sem_ima", "disco_magnetita_girassol", "pote_com_magnetita", "pote_sem_magnetita"]) {
+    assert.ok(gltf.nodes.some((n) => n.name === name), name);
+  }
+  const clip = Math.max(...gltf.animations[0].samplers.map((sm) => gltf.accessors[sm.input].max[0]));
+  // Narração: um cue por parágrafo.
+  const narration = item.narration;
+  const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+  assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+  assert.ok(audio.length < 600_000, narration.audioUrl);
+  assert.equal(narration.cues.length, blocks(item.description));
+  assert.equal(narration.cues[0], 0);
+  for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1]);
+  // Sincronia: crescente; o despejo sem magnetita começa com "Na primeira...", o com magnetita
+  // com "Mas observe..."; termina no último quadro do clipe.
+  const sync = item.animation.sync;
+  for (let i = 1; i < sync.length; i++) {
+    assert.ok(sync[i][0] > sync[i - 1][0]);
+    assert.ok(sync[i][1] >= sync[i - 1][1]);
+  }
+  const paragraphs = item.description.split(/\n\s*\n/);
+  const cueOf = (start) => narration.cues[paragraphs.findIndex((p) => p.startsWith(start))];
+  assert.deepEqual(sync[0], [cueOf("Na primeira"), 0]);
+  assert.deepEqual(sync[1], [cueOf("Mas observe"), 7]);
+  assert.ok(Math.abs(sync[sync.length - 1][1] - clip) < 0.05, `${sync[sync.length - 1][1]} vs ${clip}`);
+  assert.ok(sync[sync.length - 1][0] < narration.cues[narration.cues.length - 1] + 20);
+  const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+  assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
 });

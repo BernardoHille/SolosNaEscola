@@ -13,8 +13,9 @@ computadores e dispositivos móveis.
 > exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
 > com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
 > lado da porta, as três caixas e a maquete da **Formação do Solo** (módulo 01) e as 20 rochas do
-> **Material de Origem** (módulo 02, nas três prateleiras de baixo) e as cinco caixas dos
-> **Horizontes do Solo** (módulo 03, na mesa em frente à estante) podem ser inspecionadas em 3D
+> **Material de Origem** (módulo 02, nas três prateleiras de baixo), as cinco caixas dos
+> **Horizontes do Solo** (módulo 03, na mesa em frente à estante) e o experimento animado da
+> **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) podem ser inspecionados em 3D
 > (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos e narração
 > automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -525,6 +526,49 @@ de 0,8 contra “ele é formado por”); agora fica com a melhor entre essa e as
 Recalculados, os áudios do módulo 02 saíram idênticos byte a byte, e 9 `cues` em 7 arquivos
 (ex.: Granito, Calcário, grupo das metamórficas) foram corrigidos (estavam 0,6–1,4 s adiantados).
 
+### Módulo 04 · Atração do Solo pelo Ímã
+
+Na mesa ao lado da dos horizontes ficam as duas bandejas do experimento (solo sem e com magnetita,
+cada uma com o pote e a placa verde) e, à frente, a caixinha com a magnetita. Um volume
+(`atracao-ima`, ≈ 43 × 13 × 48 cm, centro em (2,98; 0,86; −3,49)) cobre as bandejas, os potes e
+a caixinha: medido no splat, as bandejas ocupam x = 2,73–3,18 m e z = −3,72 a −3,38 m, com as tampas
+dos potes em y ≈ 0,90 m; a caixinha vai até z ≈ −3,26 m. O volume começa em x = 2,76 m para não
+sobrepor o dos horizontes (que termina em 2,758 m).
+
+É um **conjunto de um item só**: abre direto no experimento (aba **Experimento**), sem contador,
+setas nem faixa de miniaturas, e **Esc** fecha. O texto do painel é o roteiro da narração enviado
+pela equipe (sem alteração; só o negrito de “Percebeu a diferença???” não foi mantido), e a gravação
+(`magnetita.aac`, 65,3 s, sem introdução nem títulos) foi só trocada de contêiner, sem recodificar
+(`00-atracao-do-ima.m4a`, 0,43 MB); os `cues` vêm da transcrição com marcação de palavras.
+
+**GLB animado, copiado sem alteração** (`public/models/inspection/ima/`, 6,2 MB, um clipe
+`atracao_ima` de 16 s a 24 q/s, só TRS): despejo do solo sem magnetita de 0 a 7 s, do solo com
+magnetita de 7 a 14 s e quadro final parado com os dois resultados lado a lado (disco de magnetita
+preso na placa com ímã; solo sem magnetita espalhado no fundo da outra bandeja).
+
+**Animação conduzida pela narração** (`animation.sync` do item, pares [s da narração, s do clipe]):
+o visualizador não toca o clipe sozinho; a cada quadro lê o tempo do áudio do painel e leva o clipe
+ao instante correspondente (`AnimEvaluator` + `AnimClip` do PlayCanvas, avaliados à mão).
+
+| Narração | Clipe |
+|---|---|
+| até 24,7 s (“Você já imaginou…” a “Agora, vamos comparar…”) | parado no primeiro quadro |
+| 24,7 s, “Na primeira, temos um solo sem magnetita…” | 0 s: começa o despejo sem magnetita (o solo escorre em “Quando aproximamos o ímã…”) |
+| 31,42 s, “Mas observe o que acontece com a segunda amostra!” | 7 s: começa o despejo com magnetita (o disco se forma em “Percebeu a diferença???”) |
+| 40,38 s em diante | 15,96 s: último quadro, parado até o fim e depois da narração |
+
+Pausar a narração pausa a animação. Com a narração já ouvida (reabrir a inspeção, sem tocar de
+novo), o modelo aparece direto no último quadro, para comparar as duas placas; o ▶ recomeça a
+narração e a animação do início. O enquadramento considera tudo o que o clipe percorre (amostras a
+cada 0,5 s; malhas escondidas com escala 0 não entram), e `view.fitScale` = 0,8 aproxima a vista
+inicial, porque a cena é larga e baixa. A função de sincronia fica em
+[`animationSync.ts`](src/lib/inspection/animationSync.ts), testada.
+
+**Limite:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
+magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
+acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
+≈ 21 × 34 cm. Na inspeção o modelo é enquadrado pelo próprio tamanho, então isso não aparece.
+
 **Walk Mode suspenso, não recriado.** Abrir a inspeção não recarrega o SOG, não muda a câmera
 nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
 captura do mouse é liberada e o joystick some. Ao fechar, o visitante está exatamente onde estava
@@ -624,9 +668,10 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
 ### Adicionar uma nova estante
 
 1. Copie os GLBs para `public/models/inspection/` (nomes em minúsculas, sem espaços).
-2. Em `inspection.ts`, crie um `InspectionSet` (id, título e itens) e inclua-o em
-   `INSPECTION_SETS`; para um acervo com grupos e menu, crie um `InspectionCatalog` e inclua-o em
-   `INSPECTION_CATALOGS`.
+2. Crie um `InspectionSet` (id, título e itens; tipos em `inspection.ts`) num arquivo de
+   `src/data/` e inclua-o em `INSPECTION_SETS` (`inspectionSets.ts`); para um acervo com grupos e
+   menu, crie um `InspectionCatalog` e inclua-o em `INSPECTION_CATALOGS`. GLB com animação: dê ao
+   item `animation.sync` para o clipe seguir a narração.
 3. Gere as miniaturas (acima) em `public/models/inspection/thumbs/`.
 4. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
    `order` na sequência; calibre com `?debugInteractions=1`. Se outro móvel puder ser visto
@@ -677,6 +722,7 @@ SolosNaEscola/
 │   ├── inspection/*.glb           # módulo 01: caixas 1–3 e maquete
 │   ├── inspection/rochas/*.glb    # módulo 02: 20 rochas (versões web)
 │   ├── inspection/horizontes/*.glb # módulo 03: horizontes O, A, B, C e camada R
+│   ├── inspection/ima/*.glb       # módulo 04: experimento do ímã (animado)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -710,6 +756,8 @@ SolosNaEscola/
 │   │   ├── interactions.json      # volumes de interação (calibrados)
 │   │   ├── interactions.ts        # tipos e serialização dos volumes
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
+│   │   ├── atracaoDoIma.ts        # módulo 04 (gerado a partir do texto, da gravação e do acervo)
+│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01 e 04)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
@@ -717,7 +765,8 @@ SolosNaEscola/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
 │   │   └── interactionManager.ts  # alvo, distância, destaque SVG e modo de calibração
 │   ├── lib/inspection/
-│   │   └── inspectionViewer.ts    # visualizador PlayCanvas do objeto
+│   │   ├── inspectionViewer.ts    # visualizador PlayCanvas do objeto
+│   │   └── animationSync.ts       # narração → instante do clipe (testado)
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
@@ -786,7 +835,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **16 de 16 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **18 de 18 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -797,7 +846,11 @@ os três grupos (7/5/8 rochas, 20 ids únicos), cada GLB web (existe, tamanho ca
 < 6 MB), nós da bandeja e da etiqueta presentes com a rocha fora deles, miniaturas WebP e as 24
 narrações (MP4, um `cue` por parágrafo) e as três faixas da estante em ordem de altura; no
 módulo 03, grupo único, as cinco amostras na ordem do perfil, GLBs, miniaturas, seis narrações,
-o volume da mesa à frente da estante e a caixa só na Camada R (com as pedras fora dela). `tsc`,
+o volume da mesa à frente da estante e a caixa só na Camada R (com as pedras fora dela); no
+módulo 04, um item só, GLB com um clipe e sem extensões, nós das placas, do disco e dos potes,
+narração com um `cue` por parágrafo, sincronia começando em “Na primeira…” (0 s) e “Mas observe…”
+(7 s) e terminando no último quadro do clipe, o volume à direita da mesa dos horizontes e a função
+de sincronia (parada antes, interpolada, parada no último quadro, narração já ouvida). `tsc`,
 `lint` e `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -844,13 +897,19 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 33 | Clique na mesa abre o menu das amostras | ✔ “Escolha uma amostra · Horizontes do Solo”, cinco cartões, sem botão de voltar; narração geral tocando sozinha |
 | 34 | Amostras | ✔ Camada R: “Amostra 5”, “05 / 05”, fechamento depois do texto, caixa e etiqueta somem ao clicar; Horizonte A pela miniatura: sem a dica da caixa, “Ele é formado…” destacado no tempo certo |
 | 35 | Voltar e fechar | ✔ **Esc** na amostra volta ao menu (narração geral já ouvida fica no ▶); **Esc** no menu fecha |
+| 36 | Volume da mesa do ímã | ✔ o contorno cobre bandejas, potes e a caixinha da magnetita; “Inspecionar · Atração do solo pelo ímã” |
+| 37 | Abertura | ✔ “Atração do Solo pelo Ímã · Solo sem e com magnetita”, aba “Experimento”, sem contador, setas nem faixa; narração tocando sozinha |
+| 38 | Animação com a narração | ✔ narração tocando: clipe em 13,8 s quando a fala chegava a “Isso acontece porque…” e em 15,96 s logo depois, parado (disco na placa com ímã, solo no fundo da outra bandeja). Forçando o relógio da narração: 5 s → primeiro quadro (potes fechados), 28,2 s → solo sem magnetita escorrendo pela placa, 35,3 s → disco se formando na placa com ímã |
+| 39 | Reabrir | ✔ sem tocar sozinha (▶) e direto no último quadro; ▶ volta o clipe a 0 s |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
 foi confirmada pelo andamento do tempo, do anel de progresso, dos destaques e da legenda), o
 início automático num celular real (iOS pode exigir o toque no ▶), todas as 20 rochas uma a uma
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
-o módulo 03 no celular (os componentes são os mesmos do módulo 02, testado em emulação),
+os módulos 03 e 04 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
+o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
+fraco),
 aparência num celular real
 (sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o

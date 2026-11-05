@@ -46,9 +46,10 @@ export type InspectionItem = {
   /**
    * Orientação inicial, em graus. `rotationDeg` corrige os eixos do arquivo, se preciso
    * (aplicada primeiro, em X, Y e Z). `yawDeg` (em torno de Y) e `pitchDeg` (inclina o
-   * topo em direção ao visitante) definem a vista de três quartos inicial.
+   * topo em direção ao visitante) definem a vista de três quartos inicial. `fitScale` (< 1)
+   * aproxima o enquadramento inicial, que cabe a esfera envolvente e sobra em cenas largas e baixas.
    */
-  view: { rotationDeg: [number, number, number]; yawDeg: number; pitchDeg: number };
+  view: { rotationDeg: [number, number, number]; yawDeg: number; pitchDeg: number; fitScale?: number };
   /** Rótulos opcionais sobre partes do modelo (ex.: estágios da maquete). */
   markers?: InspectionMarker[];
   /**
@@ -72,6 +73,13 @@ export type InspectionItem = {
   closing?: string;
   /** Narração do texto da etapa (controle na barra do painel de descrição). */
   narration?: InspectionNarration;
+  /**
+   * Animação do GLB (primeiro clipe) conduzida pela narração do item: pares
+   * [segundos da narração, segundos do clipe], interpolados. Antes do primeiro par fica no quadro
+   * do primeiro; depois do último, parada no último. Pausar a narração pausa a animação; com a
+   * narração já ouvida (sem tocar de novo), mostra o último quadro.
+   */
+  animation?: { sync: [number, number][] };
 };
 
 export type InspectionSet = {
@@ -218,10 +226,6 @@ Ele é resultado de um longo processo de transformação da natureza!`,
       ],
     },
   ],
-};
-
-export const INSPECTION_SETS: Record<string, InspectionSet> = {
-  [FORMACAO_DO_SOLO.id]: FORMACAO_DO_SOLO,
 };
 
 /** Grupo de um acervo (ex.: rochas ígneas): menu próprio, com texto e narração. */

@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-import { INSPECTION_SETS, type InspectionCatalog, type InspectionItem, type InspectionSet } from "@/data/inspection";
+import type { InspectionCatalog, InspectionItem, InspectionSet } from "@/data/inspection";
+import { INSPECTION_SETS } from "@/data/inspectionSets";
 import { INSPECTION_CATALOGS } from "@/data/inspectionCatalogs";
 
 /** Cartão de um menu de acervo (grupo ou peça). */

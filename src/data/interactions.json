@@ -176,6 +176,28 @@
         0.22
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "atracao-ima",
+      "label": "Atração do solo pelo ímã",
+      "setId": "atracao-do-solo-pelo-ima",
+      "order": 9,
+      "position": [
+        2.975,
+        0.86,
+        -3.49
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.43,
+        0.13,
+        0.48
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

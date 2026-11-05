@@ -19,6 +19,8 @@ type InspectionDescriptionProps = {
   onSpeakingMarker?: (label: string | null) => void;
   /** Frase sendo narrada agora (legenda com o painel recolhido), ou null. */
   onCaption?: (text: string | null) => void;
+  /** Elemento de áudio da narração (relógio da animação do modelo), ou null ao desmontar. */
+  onAudio?: (audio: HTMLAudioElement | null) => void;
 };
 
 type Tab = "intro" | "item";
@@ -62,6 +64,9 @@ const sentenceAt = (text: string, t: number, from: number, to: number) => {
  * já ouvido (ir e voltar nos menus, reabrir a inspeção), ela não recomeça sozinha: fica no ▶.
  */
 const HEARD = new Set<string>();
+
+/** A narração deste endereço já começou a tocar nesta visita? */
+export const narrationHeard = (url: string) => HEARD.has(url);
 
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
@@ -149,6 +154,7 @@ export default function InspectionDescription({
   onNext,
   onSpeakingMarker,
   onCaption,
+  onAudio,
 }: InspectionDescriptionProps) {
   const item = set.items[index] as InspectionItem | undefined;
   const hasIntro = !!set.overview;
@@ -176,6 +182,10 @@ export default function InspectionDescription({
   const narration = tab === "intro" || !item ? set.overviewNarration : item.narration;
   const url = narration?.audioUrl;
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const onAudioRef = useRef(onAudio);
+  useEffect(() => {
+    onAudioRef.current = onAudio;
+  }, [onAudio]);
   const [playing, setPlaying] = useState(false);
   const [ended, setEnded] = useState(false);
   const [time, setTime] = useState(0);
@@ -206,7 +216,9 @@ export default function InspectionDescription({
     audio.addEventListener("loadstart", onReload);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("ended", onEnded);
+    onAudioRef.current?.(audio);
     return () => {
+      onAudioRef.current?.(null);
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("play", onPlay);
@@ -312,7 +324,8 @@ export default function InspectionDescription({
   const last = index === set.items.length - 1;
   const heading = tab === "intro" || !item ? set.title : item.title;
   const noun = set.stepNoun ?? "Etapa";
-  const stepLabel = `${noun} ${index + 1}`;
+  // Conjunto de um item só: a aba leva só o nome ("Experimento").
+  const stepLabel = set.items.length === 1 ? noun : `${noun} ${index + 1}`;
 
   const tabButton = (value: Tab, label: string) => (
     <button

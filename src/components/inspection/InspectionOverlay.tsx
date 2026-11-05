@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import InspectionDescription, { type DescriptionLayout } from "@/components/inspection/InspectionDescription";
+import InspectionDescription, { type DescriptionLayout, narrationHeard } from "@/components/inspection/InspectionDescription";
 import InspectionMenuGrid from "@/components/inspection/InspectionMenuGrid";
 import type { InspectionMenu } from "@/components/inspection/useInspection";
 import {
@@ -115,6 +115,8 @@ export default function InspectionOverlay({
   const item = menu ? undefined : set.items[index];
   const inMenu = !!menu;
   const count = set.items.length;
+  // Conjunto de um item só (ex.: Atração do Solo pelo Ímã): sem contador, setas nem faixa.
+  const single = count === 1;
   const noun = set.stepNoun ?? "Etapa";
   // Frase narrada agora: legenda discreta quando o painel de descrição está recolhido.
   const [caption, setCaption] = useState<string | null>(null);
@@ -133,6 +135,15 @@ export default function InspectionOverlay({
   // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
   const [speakingMarker, setSpeakingMarker] = useState<string | null>(null);
   const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
+  // Áudio da narração do painel: relógio da animação do modelo (itens com `animation`).
+  const narrationAudioRef = useRef<HTMLAudioElement | null>(null);
+  const setNarrationAudio = useCallback((audio: HTMLAudioElement | null) => {
+    narrationAudioRef.current = audio;
+  }, []);
+  const itemRef = useRef(item);
+  useEffect(() => {
+    itemRef.current = item;
+  }, [item]);
   // Altura dos controles inferiores: o modelo é enquadrado no espaço acima deles.
   const controlsRef = useRef<HTMLDivElement>(null);
   const [controlsHeight, setControlsHeight] = useState(0);
@@ -187,6 +198,16 @@ export default function InspectionOverlay({
         if (disposed || !canvas) return;
         viewer = new InspectionViewer(canvas, { onMarkers: setMarkers, onContainer: setContainer });
         viewerRef.current = viewer;
+        // A animação segue a narração do item: parada antes do play, pausada com ela e, depois do
+        // fim (ou com a narração já ouvida numa visita anterior, sem tocar de novo), no último quadro.
+        viewer.setNarrationClock(() => {
+          const audio = narrationAudioRef.current;
+          const url = itemRef.current?.narration?.audioUrl;
+          if (!audio || !url || audio.src !== new URL(url, window.location.href).href) return null;
+          if (audio.ended) return Infinity;
+          if (audio.paused && audio.currentTime === 0) return narrationHeard(url) ? Infinity : 0;
+          return audio.currentTime;
+        });
         // Desenvolvimento: handle no console para testes manuais.
         if (IS_DEV) (window as unknown as Record<string, unknown>).__SOLOS_INSPECTION__ = viewer;
         setViewerReady(true);
@@ -408,7 +429,7 @@ export default function InspectionOverlay({
           <h2 id="inspection-title" className={`mt-1 text-lg font-semibold leading-tight text-stone-50 ${short ? "" : "sm:text-2xl"}`}>
             {item ? item.title : set.title}
           </h2>
-          {item && (
+          {item && !single && (
             <p className="mt-1 font-mono text-xs text-stone-400" aria-label={`${noun} ${index + 1} de ${count}`}>
               <span className="text-stone-100">{pad(index + 1)}</span> / {pad(count)}
             </p>
@@ -449,6 +470,7 @@ export default function InspectionOverlay({
             onNext={onNext}
             onSpeakingMarker={setSpeakingMarker}
             onCaption={setCaption}
+            onAudio={setNarrationAudio}
           />
         </div>
       )}
@@ -513,6 +535,7 @@ export default function InspectionOverlay({
             type="button"
             onClick={onPrevious}
             disabled={index === 0}
+            hidden={single}
             className={iconButton}
             aria-label={`${noun} anterior`}
             title="Anterior (←)"
@@ -586,6 +609,7 @@ export default function InspectionOverlay({
             type="button"
             onClick={onNext}
             disabled={index === count - 1}
+            hidden={single}
             className={iconButton}
             aria-label={`Próxima ${noun.toLowerCase()}`}
             title="Próximo (→)"
@@ -595,7 +619,11 @@ export default function InspectionOverlay({
         </div>
 
         {/* Sequência do conjunto: ir direto a qualquer etapa. */}
-        <nav aria-label={`${noun}s de ${set.title}`} className={`w-full ${count > 4 ? "max-w-2xl" : "max-w-md"}`}>
+        <nav
+          aria-label={`${noun}s de ${set.title}`}
+          hidden={single}
+          className={`w-full ${count > 4 ? "max-w-2xl" : "max-w-md"}`}
+        >
           <ol className={`flex justify-center ${many ? "gap-1 sm:gap-2" : "gap-2 sm:gap-3"}`}>
             {set.items.map((it, i) => {
               const active = i === index;

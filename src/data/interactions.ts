@@ -31,7 +31,7 @@ export type InteractionVolume = OrientedBox & {
   id: string;
   /** Nome curto exibido no indicador de interação. */
   label: string;
-  /** Conjunto educativo aberto por este volume (`INSPECTION_SETS`). */
+  /** Conjunto educativo aberto por este volume (`INSPECTION_SETS` ou `INSPECTION_CATALOGS`). */
   setId: string;
   /** Ordem do objeto no conjunto (informativo; a inspeção sempre começa pela etapa 1). */
   order: number;
