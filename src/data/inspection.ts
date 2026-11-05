@@ -228,24 +228,27 @@ export const INSPECTION_SETS: Record<string, InspectionSet> = {
 export type InspectionGroup = {
   id: string;
   title: string;
-  /** Texto do grupo (mostrado e narrado no menu do grupo). */
-  overview: string;
+  /** Texto do grupo (mostrado e narrado no menu do grupo; dispensável com um grupo só). */
+  overview?: string;
   overviewNarration?: InspectionNarration;
   items: InspectionItem[];
 };
 
 /**
- * Acervo com menu em dois níveis (ex.: Material de Origem): abre num menu com os grupos e o texto
- * geral; um grupo abre o menu das suas peças; uma peça abre a inspeção 3D, com as outras peças do
- * grupo na faixa de navegação.
+ * Acervo com menu (ex.: Material de Origem): abre num menu com os grupos e o texto geral; um grupo
+ * abre o menu das suas peças; uma peça abre a inspeção 3D, com as outras peças do grupo na faixa
+ * de navegação. Com **um grupo só** (ex.: Horizontes do Solo), o acervo abre direto no menu das
+ * peças, com o texto e a narração do acervo.
  */
 export type InspectionCatalog = {
   id: string;
   title: string;
   overview: string;
   overviewNarration?: InspectionNarration;
-  /** Nome de cada peça ("Rocha"). */
+  /** Nome de cada peça ("Rocha", "Amostra"). */
   stepNoun: string;
+  /** Linha acima do título no menu das peças de um acervo de grupo único ("Escolha uma amostra"). */
+  menuEyebrow?: string;
   groups: InspectionGroup[];
 };
 

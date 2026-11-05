@@ -154,6 +154,28 @@
         0.3
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "horizontes",
+      "label": "Horizontes do solo",
+      "setId": "horizontes-do-solo",
+      "order": 8,
+      "position": [
+        2.228,
+        0.86,
+        -3.49
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.06,
+        0.14,
+        0.22
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

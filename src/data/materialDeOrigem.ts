@@ -38,7 +38,7 @@ Repare nos pequenos minerais de cores diferentes!
 O granito é muito utilizado na construção civil, em pisos, revestimentos e bancadas.
 
 Talvez você já tenha visto essa rocha na sua própria casa!`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-06-granito.m4a`, cues: [0, 4.16, 7.42, 13.7, 16.92, 21.88] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-06-granito.m4a`, cues: [0, 4.16, 8.46, 13.7, 16.92, 21.88] },
   },
   {
     id: "rocha-02-07-basalto-amigdaloide",
@@ -108,7 +108,7 @@ Uma curiosidade é que a obsidiana pode produzir bordas extremamente afiadas.
 Por isso, diferentes povos a utilizaram para fabricar ferramentas de corte e pontas de instrumentos.
 
 Interessante, não é?`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-09-obsidiana.m4a`, cues: [0, 3.86, 4.46, 8.2, 13.84, 18.51, 25.08] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-09-obsidiana.m4a`, cues: [0, 3.86, 5.08, 8.2, 13.84, 18.51, 25.08] },
   },
   {
     id: "rocha-02-10-basalto",
@@ -255,7 +255,7 @@ Com o passar do tempo, esses sedimentos são compactados e se transformam em roc
 Uma característica interessante é sua tendência a se dividir em camadas bem finas.
 
 E sabe o que é mais curioso? Alguns folhelhos podem preservar fósseis de organismos que viveram há milhões de anos!`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-04-folhelho.m4a`, cues: [0, 1.34, 9.0, 13.34, 19.3] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-04-folhelho.m4a`, cues: [0, 1.34, 9.0, 14.64, 19.3] },
   },
   {
     id: "rocha-02-05-calcario",
@@ -275,7 +275,7 @@ Muitos calcários se formam pelo acúmulo desses materiais no fundo dos mares, e
 O calcário também é muito importante para nós!
 
 Ele é utilizado na fabricação de cimento e, quando preparado adequadamente, pode ajudar a corrigir a acidez dos solos agrícolas.`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-05-calcario.m4a`, cues: [0, 6.46, 7.9, 14.94, 17.66] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-05-calcario.m4a`, cues: [0, 6.46, 7.9, 15.76, 18.46] },
   },
 ];
 
@@ -322,7 +322,7 @@ Quando esse material volta a se solidificar, encontramos uma mistura de caracter
 Observe seus padrões e suas faixas!
 
 Essa rocha registra condições extremas de temperatura e transformação no interior da Terra.`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-14-migmatito.m4a`, cues: [0, 3.06, 5.88, 12.8, 17.9, 22.1] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-14-migmatito.m4a`, cues: [0, 3.06, 5.88, 12.8, 19.14, 22.1] },
   },
   {
     id: "rocha-02-15-quartzito",
@@ -342,7 +342,7 @@ Durante esse processo, os grãos de quartzo se recristalizam, formando uma rocha
 Por causa dessa resistência, o quartzito pode formar serras e relevos que permanecem mesmo após longos períodos de erosão.
 
 É impressionante como a mesma areia pode dar origem a materiais tão diferentes!`,
-    narration: { audioUrl: `${AUDIO}/rocha-02-15-quartzito.m4a`, cues: [0, 4.75, 12.39, 18.47, 24.97] },
+    narration: { audioUrl: `${AUDIO}/rocha-02-15-quartzito.m4a`, cues: [0, 4.75, 12.39, 18.47, 25.75] },
   },
   {
     id: "rocha-02-16-filito",
@@ -565,7 +565,7 @@ Explore os modelos e compare!
 Assim como nos outros grupos, as rochas metamórficas também podem dar origem a solos variados, dependendo das características da rocha original.
 
 Isso nos ajuda a entender por que encontramos tanta diversidade de solos na natureza!`,
-      overviewNarration: { audioUrl: `${AUDIO}/grupo-metamorficas.m4a`, cues: [0, 2.9, 5.92, 8.72, 18.08, 23.58, 28.69, 37.34, 41.52, 45.06, 48.64, 52.32, 61.22] },
+      overviewNarration: { audioUrl: `${AUDIO}/grupo-metamorficas.m4a`, cues: [0, 2.9, 5.92, 10.1, 18.08, 23.58, 28.69, 37.34, 41.52, 45.06, 49.92, 52.32, 61.22] },
       items: METAMORFICAS,
     },
   ],

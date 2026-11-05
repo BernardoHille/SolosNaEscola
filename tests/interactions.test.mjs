@@ -118,12 +118,14 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = readFileSync(resolve(root, "src/data/materialDeOrigem.ts"), "utf8");
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts"]
+    .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
+    .join("\n");
   const ids = new Set();
   for (const v of volumes) {
     assert.ok(!ids.has(v.id), `id repetido: ${v.id}`);
     ids.add(v.id);
-    assert.ok(["formacao-do-solo", "material-de-origem"].includes(v.setId), `${v.id}: ${v.setId}`);
+    assert.ok(["formacao-do-solo", "material-de-origem", "horizontes-do-solo"].includes(v.setId), `${v.id}: ${v.setId}`);
     if (v.setId === "formacao-do-solo") {
       assert.ok(source.includes(`id: "${v.id}"`), `item ausente em inspection.ts: ${v.id}`);
     } else {
@@ -150,6 +152,13 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     ["material-igneas", "material-metamorficas", "material-sedimentares"],
   );
   for (let i = 1; i < shelf.length; i++) assert.ok(shelf[i].position[1] < shelf[i - 1].position[1]);
+  // Horizontes do Solo: um volume só, sobre as cinco caixas da mesa em frente à estante.
+  const table = volumes.filter((v) => v.setId === "horizontes-do-solo");
+  assert.deepEqual(
+    table.map((v) => v.id),
+    ["horizontes"],
+  );
+  assert.ok(table[0].position[2] > shelf[0].position[2], "a mesa fica à frente da estante");
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -292,4 +301,46 @@ test("dados: Material de Origem (grupos, modelos, recipientes, miniaturas e narr
     });
   }
   assert.equal(ids.size, 20);
+});
+
+test("dados: Horizontes do Solo (grupo único, modelos, caixa da camada R, miniaturas e narração)", async () => {
+  const { HORIZONTES_DO_SOLO: catalog } = await import("../src/data/horizontesDoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkNarration = (narration, count) => {
+    assert.ok(narration, "narração ausente");
+    const buf = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(buf.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(buf.length < 600_000, narration.audioUrl);
+    assert.equal(narration.cues.length, count, narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1], narration.audioUrl);
+  };
+
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu das amostras");
+  checkNarration(catalog.overviewNarration, blocks(catalog.overview));
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => it.title),
+    ["Horizonte O", "Horizonte A", "Horizonte B", "Horizonte C", "Camada R"],
+  );
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+    assert.ok(item.model.sizeBytes < 6_500_000, item.model.url);
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    checkNarration(item.narration, blocks(item.description) + blocks(item.closing));
+  }
+  // Só a Camada R (pedras) sai da caixa; os horizontes (solo solto) não.
+  assert.deepEqual(
+    items.map((it) => !!it.container),
+    [false, false, false, false, true],
+  );
+  const r = items[4];
+  const gltf = glbJson(resolve(root, "public", r.model.url.slice(1)));
+  const container = r.container.nodes.map((name) => gltf.nodes.findIndex((n) => n.name === name));
+  assert.ok(container.every((k) => k >= 0), `${r.container.nodes}`);
+  assert.ok(gltf.nodes.some((n, k) => n.mesh !== undefined && !container.includes(k) && n.name.startsWith("Pedra")));
 });

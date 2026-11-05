@@ -48,8 +48,11 @@ type State =
   | { kind: "set"; setId: string; index: number }
   | { kind: "catalog"; catalogId: string; groupId: string | null; index: number | null };
 
-const menuSet = (id: string, title: string, overview: string, narration: InspectionCatalog["overviewNarration"]) =>
+const menuSet = (id: string, title: string, overview: string | undefined, narration: InspectionCatalog["overviewNarration"]) =>
   ({ id: `${id}:menu`, title, overview, overviewNarration: narration, items: [] }) satisfies InspectionSet;
+
+/** O acervo tem o menu dos grupos (mais de um grupo)? */
+const hasGroupMenu = (catalogId: string) => (INSPECTION_CATALOGS[catalogId]?.groups.length ?? 0) > 1;
 
 /**
  * Estado da inspeção. Conjuntos em sequência (Formação do Solo) abrem sempre na primeira etapa.
@@ -91,10 +94,14 @@ export function useInspection(): InspectionState {
         } satisfies InspectionMenu,
       };
     }
+    // Grupo único: o menu das peças é a entrada do acervo (texto e narração do acervo).
+    const single = catalog.groups.length === 1;
     if (choosingItem) {
       return {
-        set: menuSet(group.id, group.title, group.overview, group.overviewNarration),
-        eyebrow: catalog.title,
+        set: single
+          ? menuSet(catalog.id, catalog.title, catalog.overview, catalog.overviewNarration)
+          : menuSet(group.id, group.title, group.overview, group.overviewNarration),
+        eyebrow: single ? (catalog.menuEyebrow ?? "Escolha uma peça") : catalog.title,
         menu: {
           variant: "items",
           cards: group.items.map((it, i) => ({
@@ -108,8 +115,13 @@ export function useInspection(): InspectionState {
       };
     }
     return {
-      set: { id: group.id, title: group.title, stepNoun: catalog.stepNoun, items: group.items } satisfies InspectionSet,
-      eyebrow: `${catalog.title} · ${group.title}`,
+      set: {
+        id: group.id,
+        title: single ? catalog.title : group.title,
+        stepNoun: catalog.stepNoun,
+        items: group.items,
+      } satisfies InspectionSet,
+      eyebrow: single ? catalog.title : `${catalog.title} · ${group.title}`,
       menu: null,
     };
   }, [catalog, group, choosingItem, selectGroup, selectItem]);
@@ -127,7 +139,10 @@ export function useInspection(): InspectionState {
 
   const open = useCallback((setId: string) => {
     if (INSPECTION_SETS[setId]) setState({ kind: "set", setId, index: 0 });
-    else if (INSPECTION_CATALOGS[setId]) setState({ kind: "catalog", catalogId: setId, groupId: null, index: null });
+    else if (INSPECTION_CATALOGS[setId]) {
+      const groups = INSPECTION_CATALOGS[setId].groups;
+      setState({ kind: "catalog", catalogId: setId, groupId: groups.length === 1 ? groups[0].id : null, index: null });
+    }
   }, []);
   const close = useCallback(() => setState(null), []);
   const goBack = useCallback(
@@ -135,12 +150,13 @@ export function useInspection(): InspectionState {
       setState((s) => {
         if (s?.kind !== "catalog") return null;
         if (s.index !== null) return { ...s, index: null };
-        if (s.groupId !== null) return { ...s, groupId: null };
+        if (s.groupId !== null && hasGroupMenu(s.catalogId)) return { ...s, groupId: null };
         return null;
       }),
     [],
   );
-  const canGoBack = state?.kind === "catalog" && (state.groupId !== null || state.index !== null);
+  const canGoBack =
+    state?.kind === "catalog" && (state.index !== null || (state.groupId !== null && hasGroupMenu(state.catalogId)));
 
   const next = useCallback(
     () =>

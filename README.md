@@ -13,7 +13,8 @@ computadores e dispositivos móveis.
 > exposição e caminha pelo espaço em primeira pessoa (Walk Mode oficial do SuperSplat Viewer),
 > com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
 > lado da porta, as três caixas e a maquete da **Formação do Solo** (módulo 01) e as 20 rochas do
-> **Material de Origem** (módulo 02, nas três prateleiras de baixo) podem ser inspecionadas em 3D
+> **Material de Origem** (módulo 02, nas três prateleiras de baixo) e as cinco caixas dos
+> **Horizontes do Solo** (módulo 03, na mesa em frente à estante) podem ser inspecionadas em 3D
 > (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos e narração
 > automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -488,6 +489,42 @@ primeiro parágrafo à última palavra do último, localizado pela transcrição
 energia, porque a transcrição adiantava a primeira palavra e o corte levava o fim do título. Todos
 os 24 cortes foram conferidos transcrevendo os 3 s iniciais e finais de cada arquivo.
 
+### Módulo 03 · Horizontes do Solo
+
+Na mesa em frente à estante ficam cinco caixas, na ordem do perfil: **Horizonte O, A, B, C e Camada
+R**. Um volume único (`horizontes`, ≈ 106 × 14 × 22 cm, centro em (2,23; 0,86; −3,49)) cobre a
+fileira: medido no splat, as caixas ocupam x = 1,72–2,74 m e z = −3,59 a −3,39 m, sobre o tampo da
+mesa em y ≈ 0,80 m, com as etiquetas voltadas para +z (para o visitante), como a estante.
+
+É um acervo de **grupo único**: abre direto no menu das cinco amostras (“Escolha uma amostra”), com
+o texto geral e a sua narração; cada cartão abre a amostra em 3D com a narração própria (aba
+**Amostra N**), e setas e miniaturas percorrem as cinco. **‹** ou **Esc** volta ao menu; no menu,
+**Esc** fecha (não há menu acima dele). Qualquer `InspectionCatalog` com um grupo só funciona
+assim.
+
+**Caixa.** Só a Camada R (pedras) sai da caixa ao clicar (paredes, base e etiqueta). Os horizontes
+O, A, B e C são material solto e ficam na caixa, pela mesma regra da Caixa 3 do módulo 01.
+
+**Modelos e miniaturas.** Os cinco GLBs do acervo (3,5–6,1 MB, 23,4 MB no total; normal e cor já
+em JPEG) foram copiados **sem alteração** para `public/models/inspection/horizontes/`. Miniaturas
+pelo mesmo método do módulo 02 (recorte da imagem de apresentação, 320 px WebP). Observação: no
+splat, cada caixa mede ≈ 20 × 20 × 11 cm, menor que a hipótese de 30 cm de largura do acervo; na
+inspeção o modelo é enquadrado pelo próprio tamanho, então isso não aparece.
+
+**Textos e narração.** Não houve roteiro escrito para a narração deste módulo: os textos do painel
+são a fala da gravação da equipe (`horizontes.aac`, 190,5 s), transcrita localmente e revisada só
+na pontuação e na divisão em parágrafos, sem trocar palavras; o conteúdo segue o roteiro de 2026
+(págs. 15–18). A gravação tem só o roteiro (sem introdução nem títulos falados) e foi cortada sem
+recodificar em seis M4A (1,3 MB) em `public/audio/inspection/horizontes-do-solo/`: `00-geral` e um
+por caixa. O fechamento (“E agora que conhecemos todos os horizontes…”) vem depois da Camada R e
+fica como `closing` dela.
+
+**Correção dos cues do módulo 02.** A busca de cada parágrafo na transcrição aceitava a primeira
+posição com semelhança ≥ 0,8, que às vezes ficava uma palavra antes (“a ele é formado” ainda passa
+de 0,8 contra “ele é formado por”); agora fica com a melhor entre essa e as duas seguintes.
+Recalculados, os áudios do módulo 02 saíram idênticos byte a byte, e 9 `cues` em 7 arquivos
+(ex.: Granito, Calcário, grupo das metamórficas) foram corrigidos (estavam 0,6–1,4 s adiantados).
+
 **Walk Mode suspenso, não recriado.** Abrir a inspeção não recarrega o SOG, não muda a câmera
 nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
 captura do mouse é liberada e o joystick some. Ao fechar, o visitante está exatamente onde estava
@@ -639,6 +676,7 @@ SolosNaEscola/
 │   ├── museu_web.voxel.bin        # colisão: octree de voxels
 │   ├── inspection/*.glb           # módulo 01: caixas 1–3 e maquete
 │   ├── inspection/rochas/*.glb    # módulo 02: 20 rochas (versões web)
+│   ├── inspection/horizontes/*.glb # módulo 03: horizontes O, A, B, C e camada R
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -673,6 +711,7 @@ SolosNaEscola/
 │   │   ├── interactions.ts        # tipos e serialização dos volumes
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
+│   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -747,7 +786,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **15 de 15 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **16 de 16 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -756,7 +795,9 @@ textos (introdução, as quatro etapas e os quatro estágios da maquete preenchi
 (cinco arquivos MP4 presentes, um `cue` por bloco do texto, em ordem crescente) e, no módulo 02,
 os três grupos (7/5/8 rochas, 20 ids únicos), cada GLB web (existe, tamanho cadastrado, glTF,
 < 6 MB), nós da bandeja e da etiqueta presentes com a rocha fora deles, miniaturas WebP e as 24
-narrações (MP4, um `cue` por parágrafo) e as três faixas da estante em ordem de altura. `tsc`,
+narrações (MP4, um `cue` por parágrafo) e as três faixas da estante em ordem de altura; no
+módulo 03, grupo único, as cinco amostras na ordem do perfil, GLBs, miniaturas, seis narrações,
+o volume da mesa à frente da estante e a caixa só na Camada R (com as pedras fora dela). `tsc`,
 `lint` e `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -799,12 +840,17 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 28 | Voltar | ✔ **Esc** na rocha volta às rochas do grupo, de novo volta aos grupos |
 | 29 | Celular (emulação 375×812) | ✔ botão **Inspecionar** na fileira; grupos em lista; 8 metamórficas em grade de 2 colunas; Gnaisse com 8 miniaturas sem nome, gaveta recolhida e legenda acima dela |
 | 31 | Narração só na primeira vez | ✔ grupos (toca) → ígneas (toca) → Esc: grupos parados no ▶, nenhum parágrafo destacado; ígneas de novo: parado; Basalto amigdaloide (toca) → Esc → de novo: parado; ▶ toca normalmente |
+| 32 | Volume da mesa (`?debugInteractions=1`) | ✔ a caixa ciano cobre as cinco caixas O–R sobre a mesa |
+| 33 | Clique na mesa abre o menu das amostras | ✔ “Escolha uma amostra · Horizontes do Solo”, cinco cartões, sem botão de voltar; narração geral tocando sozinha |
+| 34 | Amostras | ✔ Camada R: “Amostra 5”, “05 / 05”, fechamento depois do texto, caixa e etiqueta somem ao clicar; Horizonte A pela miniatura: sem a dica da caixa, “Ele é formado…” destacado no tempo certo |
+| 35 | Voltar e fechar | ✔ **Esc** na amostra volta ao menu (narração geral já ouvida fica no ▶); **Esc** no menu fecha |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
 foi confirmada pelo andamento do tempo, do anel de progresso, dos destaques e da legenda), o
 início automático num celular real (iOS pode exigir o toque no ▶), todas as 20 rochas uma a uma
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
+o módulo 03 no celular (os componentes são os mesmos do módulo 02, testado em emulação),
 aparência num celular real
 (sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o
