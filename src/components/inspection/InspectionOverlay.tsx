@@ -69,12 +69,11 @@ const useMedia = (query: string) =>
     () => false,
   );
 
-/** A gaveta começa recolhida em telas pequenas (o modelo fica com o espaço todo). */
-const startsOpen = () =>
-  window.matchMedia(DOCKED_QUERY).matches || (window.innerWidth >= 640 && window.innerHeight >= 740);
-
 /** Distância do painel lateral até a borda direita (px). */
 const DOCK_GAP = 16;
+
+/** Altura reservada à legenda no menu com a descrição oculta (px): até três linhas, sem cobrir os cartões. */
+const MENU_CAPTION_ROOM = 72;
 
 /**
  * Largura livre mínima (px) entre o painel lateral e a sua imagem espelhada à esquerda para manter
@@ -151,7 +150,9 @@ export default function InspectionOverlay({
   const docked = useMedia(DOCKED_QUERY);
   const short = useMedia(SHORT_QUERY);
   const layout: DescriptionLayout = docked ? "docked" : "sheet";
-  const [descriptionOpen, setDescriptionOpen] = useState(startsOpen);
+  // A descrição começa oculta e só aparece pelo botão (livro ou "Ler") ou pela tecla I: o modelo fica
+  // com o espaço todo, e a narração continua, com a legenda.
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const hasDescriptionPanel = !!(set.overview || set.items.some((it) => it.description));
   const [descriptionSize, setDescriptionSize] = useState({ width: 0, height: 0 });
@@ -359,7 +360,10 @@ export default function InspectionOverlay({
       {menu && (
         <InspectionMenuGrid
           menu={menu}
-          style={{ bottom: controlsHeight + sheetHeight, right: menuRight }}
+          style={{
+            bottom: controlsHeight + sheetHeight + (hasDescription && !descriptionOpen ? MENU_CAPTION_ROOM : 0),
+            right: menuRight,
+          }}
           onPreload={(it) => viewerRef.current?.preload(it)}
         />
       )}

@@ -304,10 +304,10 @@ export default function InspectionDescription({
   }, [onCaption, caption]);
   useEffect(() => () => onCaption?.(null), [onCaption]);
 
-  // Mantém o bloco falado à vista, rolando só o painel.
+  // Mantém o bloco falado à vista, rolando só o painel (também ao abrir no meio da narração).
   useEffect(() => {
     const body = bodyRef.current;
-    if (active < 0 || !body) return;
+    if (!open || active < 0 || !body) return;
     const el = body.querySelector<HTMLElement>(`[data-block="${active}"]`);
     if (!el) return;
     const top = el.offsetTop;
@@ -315,7 +315,7 @@ export default function InspectionDescription({
     if (top >= body.scrollTop + 8 && bottom <= body.scrollTop + body.clientHeight - 8) return;
     const smooth = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     body.scrollTo({ top: Math.max(0, top - body.clientHeight / 4), behavior: smooth ? "smooth" : "auto" });
-  }, [active, contentKey]);
+  }, [active, contentKey, open]);
 
   const id = useId();
   const titleId = `${id}-title`;

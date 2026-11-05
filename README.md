@@ -374,6 +374,13 @@ etapa 1”, “Próxima etapa”). Ao trocar de peça, o painel passa ao texto d
 estágios aparecem como uma lista com os mesmos rótulos amarelos do modelo, entre a introdução e o
 fechamento.
 
+O painel **começa oculto em todas as telas e em todos os módulos**: o modelo fica com o espaço todo
+e a narração toca com a legenda. Ele só aparece pelo botão (livro ou **Ler**) ou pela tecla **I**, e
+abre já no trecho que está sendo falado. Uma vez aberto, fica aberto ao trocar de peça ou de menu; ao
+fechar e reabrir a inspeção, começa oculto de novo. Com o painel oculto na tela deitada, a narração só
+pausa pela tecla **N**, porque o botão ❚❚ / ▶ fica na barra do painel. No menu, a grade de cartões
+reserva espaço acima dos controles para a legenda não cobrir os nomes da última fileira.
+
 O painel se adapta à tela:
 
 - **tela deitada** (computador, tablet ou celular na horizontal, ≥ 640 px de largura): encaixado à
@@ -384,9 +391,8 @@ O painel se adapta à tela:
   baixo dele. A partir de 1280 px o painel e as letras crescem (até 32 rem de largura). Fecha no
   **X** do painel ou com **I**, e volta pelo botão do livro;
 - **tela em pé** (celular, tablet na vertical): gaveta logo acima dos controles, com altura máxima
-  de 32 % da tela. Em telas pequenas (< 640 px de largura ou < 740 px de altura) começa
-  **recolhida**, só com a barra das abas e um ponto amarelo pulsante avisando que há texto novo;
-  **Ler** abre e **Recolher** fecha;
+  de 32 % da tela. Começa **recolhida**, só com a barra das abas e um ponto amarelo pulsante avisando
+  que há texto novo; **Ler** abre e **Recolher** fecha;
 - **tela baixa** (≤ 500 px de altura, celular deitado): os controles ficam compactos (miniaturas
   menores, sem legenda) para sobrar altura para o modelo.
 
@@ -1001,6 +1007,7 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 46 | Animação com a narração | ✔ narração tocando: 36,25 s → clipe em 10,153 s; 40,27 s → 12,729 s; 51,25 s → 14,87 s (parado sobre o torrão); 53,26 s → 16,056 s; 65,25 s → 23 s, parado (valores iguais aos calculados por `sync`). Forçando o relógio: gotas em queda, filetes e poça visíveis na pedra, gotas paradas e depois mancha na esponja, torrão escurecendo |
 | 47 | Reabrir | ✔ sem tocar sozinha (▶) e direto no último quadro, com os três resultados; 0 erros no console ao abrir e fechar normalmente |
 | 48 | Celular (emulação 375 × 812) | ✔ o toque em “Inspecionar” abre o experimento; legenda e botão “Ler” no lugar do painel; a bandeja fica menor, com a água ainda visível |
+| 49 | Descrição oculta ao abrir | ✔ sem painel na abertura, com narração e legenda; o botão do livro abre o painel no trecho falado, e o **X** ou **I** fecha; aberto, continua aberto ao trocar de item e ao voltar ao menu; ao reabrir a inspeção, oculto de novo; no menu, a legenda não cobre os cartões; em 375 × 812, a gaveta começa recolhida e abre pelo **Ler** no trecho falado |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
