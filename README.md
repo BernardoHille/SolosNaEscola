@@ -455,7 +455,9 @@ lista e as miniaturas das rochas perdem o nome (são 7–8 por grupo).
 **Dados.** [`src/data/materialDeOrigem.ts`](src/data/materialDeOrigem.ts) é gerado por um script
 (`modulo02_dados.py`, guardado com o material do processo, fora do repositório) a partir do roteiro
 da equipe e do catálogo do acervo (`catalogo_web.json`: nós da bandeja, da etiqueta e das rochas).
-Os textos são o roteiro sem alteração (as “Referências complementares” do documento ficam de fora).
+Os textos são o roteiro sem alteração (as “Referências complementares” do documento ficam de fora),
+exceto a abertura “Você já parou para pensar...” da explicação geral, retirada do texto e da
+narração a pedido da equipe (a mesma frase já abre a Formação do Solo).
 O texto do grupo das ígneas cita cinco exemplos, e o grupo tem sete rochas no acervo; mantido como
 foi entregue. O acervo é um `InspectionCatalog` registrado em
 [`inspectionCatalogs.ts`](src/data/inspectionCatalogs.ts); o `setId` dos volumes é o id dele.

@@ -460,9 +460,7 @@ export const MATERIAL_DE_ORIGEM: InspectionCatalog = {
   id: "material-de-origem",
   title: "Material de Origem",
   stepNoun: "Rocha",
-  overview: `Você já parou para pensar...
-
-Por que existem tantos tipos diferentes de solo???
+  overview: `Por que existem tantos tipos diferentes de solo???
 
 A resposta começa bem antes da formação do próprio solo!
 
@@ -479,7 +477,7 @@ E tem mais! Até mesmo sedimentos, como as areias das praias e das dunas, podem 
 Agora, que tal conhecer essas rochas mais de perto?
 
 Escolha um dos três grupos e descubra como cada tipo de rocha se forma!`,
-  overviewNarration: { audioUrl: `${AUDIO}/00-geral.m4a`, cues: [0, 2.56, 6.16, 9.64, 13.48, 20.52, 24.82, 30.96, 39.16, 42.2] },
+  overviewNarration: { audioUrl: `${AUDIO}/00-geral.m4a`, cues: [0, 3.2, 6.68, 10.52, 17.56, 21.86, 28.0, 36.2, 39.24] },
   groups: [
     {
       id: "igneas",
