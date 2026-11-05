@@ -14,8 +14,9 @@ computadores e dispositivos móveis.
 > com colisão, altura humana fixa e controles para teclado/mouse e telas de toque. Na estante ao
 > lado da porta, as três caixas e a maquete da **Formação do Solo** (módulo 01) e as 20 rochas do
 > **Material de Origem** (módulo 02, nas três prateleiras de baixo), as cinco caixas dos
-> **Horizontes do Solo** (módulo 03, na mesa em frente à estante) e o experimento animado da
-> **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) podem ser inspecionados em 3D
+> **Horizontes do Solo** (módulo 03, na mesa em frente à estante), o experimento animado da
+> **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) e a placa, os copos e o banner da
+> **Textura do Solo** (módulo 05, na mesa em frente à janela) podem ser inspecionados em 3D
 > (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos e narração
 > automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -564,6 +565,35 @@ cada 0,5 s; malhas escondidas com escala 0 não entram), e `view.fitScale` = 0,8
 inicial, porque a cena é larga e baixa. A função de sincronia fica em
 [`animationSync.ts`](src/lib/inspection/animationSync.ts), testada.
 
+### Módulo 05 · Textura do Solo
+
+Na mesa em frente à janela ficam a caixa de madeira com a **placa de granulometria** e as três
+bandejas com os **copos de solo arenoso, siltoso e argiloso**; o **banner** “Você conhece os grãos
+que formam o solo?” fica no canto ao lado. Um volume (`textura`, ≈ 110 × 22 × 55 cm, centro em
+(4,01; 0,89; −2,15), girado −90° em Y para a frente ficar voltada para a sala, −X) cobre a placa e
+as bandejas: medido no splat, a mesa ocupa x = 3,73–4,27 m e z = −2,70 a −1,60 m, com o tampo em
+y ≈ 0,78 m e os baldes até y ≈ 0,90 m.
+
+Acervo de **grupo único** (como o módulo 03): abre direto no menu dos cinco itens (“Escolha um
+item”), com o texto geral e a narração; cada item tem a narração própria (aba **Item N**). O texto
+do painel é o roteiro enviado pela equipe, e a gravação (`texturas.aac`) foi cortada sem recodificar
+em seis M4A (1,3 MB) em `public/audio/inspection/textura-do-solo/` (`00-geral` e um por item), com
+os `cues` da transcrição com marcação de palavras.
+
+**Modelos.** Placa e copos: GLBs do acervo copiados **sem alteração** para
+`public/models/inspection/textura/` (2,3–3,7 MB). A placa está deitada no arquivo (amostras para +Y,
+título para −Z): `rotationDeg` [90, 0, 0] a deixa em pé, de frente, com o cascalho em cima e a
+argila embaixo. Placa e banner usam `fitScale` 0,9.
+
+**Banner (modelo derivado).** Não há modelo 3D do banner no acervo. O GLB
+(`banner_05_05_textura.glb`, 0,27 MB) é um plano de 0,976 × 1,354 m (tamanho medido no splat,
+bastões incluídos), frente com a textura e verso cinza, material sem iluminação
+(`KHR_materials_unlit`, a foto já traz a luz da sala). A textura (1024 × 1421, JPEG) vem de **duas
+fotos da equipe**: a que mostra o banner inteiro (topo do título cortado) e a que mostra o topo,
+registradas por SIFT + homografia e retificadas pelos quatro cantos. Uma primeira versão, retificada
+de capturas do próprio splat, ficou só como registro do processo (legível no título, borrada nas
+letras pequenas).
+
 **Limite:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -723,6 +753,7 @@ SolosNaEscola/
 │   ├── inspection/rochas/*.glb    # módulo 02: 20 rochas (versões web)
 │   ├── inspection/horizontes/*.glb # módulo 03: horizontes O, A, B, C e camada R
 │   ├── inspection/ima/*.glb       # módulo 04: experimento do ímã (animado)
+│   ├── inspection/textura/*.glb   # módulo 05: placa, três copos e banner (derivado das fotos)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -760,6 +791,7 @@ SolosNaEscola/
 │   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01 e 04)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
+│   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -835,7 +867,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **18 de 18 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **19 de 19 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -850,7 +882,9 @@ o volume da mesa à frente da estante e a caixa só na Camada R (com as pedras f
 módulo 04, um item só, GLB com um clipe e sem extensões, nós das placas, do disco e dos potes,
 narração com um `cue` por parágrafo, sincronia começando em “Na primeira…” (0 s) e “Mas observe…”
 (7 s) e terminando no último quadro do clipe, o volume à direita da mesa dos horizontes e a função
-de sincronia (parada antes, interpolada, parada no último quadro, narração já ouvida). `tsc`,
+de sincronia (parada antes, interpolada, parada no último quadro, narração já ouvida); no
+módulo 05, grupo único, os cinco itens em ordem, sem recipiente, GLBs, miniaturas, seis narrações,
+o banner com uma imagem e `KHR_materials_unlit` e o volume da mesa da janela voltado para −X. `tsc`,
 `lint` e `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -901,13 +935,17 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 37 | Abertura | ✔ “Atração do Solo pelo Ímã · Solo sem e com magnetita”, aba “Experimento”, sem contador, setas nem faixa; narração tocando sozinha |
 | 38 | Animação com a narração | ✔ narração tocando: clipe em 13,8 s quando a fala chegava a “Isso acontece porque…” e em 15,96 s logo depois, parado (disco na placa com ímã, solo no fundo da outra bandeja). Forçando o relógio da narração: 5 s → primeiro quadro (potes fechados), 28,2 s → solo sem magnetita escorrendo pela placa, 35,3 s → disco se formando na placa com ímã |
 | 39 | Reabrir | ✔ sem tocar sozinha (▶) e direto no último quadro; ▶ volta o clipe a 0 s |
+| 40 | Volume da mesa da janela (`?debugInteractions=1`) | ✔ o volume cobre a caixa da placa e as três bandejas; ao mirar, o contorno amarelo envolve a mesa |
+| 41 | Abertura | ✔ “Escolha um item · Textura do Solo”, cinco cartões (placa, arenoso, siltoso, argiloso, banner), narração geral tocando sozinha |
+| 42 | Itens | ✔ placa em pé, cascalho em cima e argila embaixo, etiquetas legíveis; copo arenoso de três quartos com a etiqueta à frente; banner de frente, legível; cada um com a narração e o destaque do parágrafo |
+| 43 | Voltar e fechar | ✔ **Esc** no item volta ao menu; **Esc** no menu fecha; sem erros no console |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
 foi confirmada pelo andamento do tempo, do anel de progresso, dos destaques e da legenda), o
 início automático num celular real (iOS pode exigir o toque no ▶), todas as 20 rochas uma a uma
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
-os módulos 03 e 04 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
+os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
 fraco),
 aparência num celular real

@@ -119,7 +119,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -127,7 +127,9 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     assert.ok(!ids.has(v.id), `id repetido: ${v.id}`);
     ids.add(v.id);
     assert.ok(
-      ["formacao-do-solo", "material-de-origem", "horizontes-do-solo", "atracao-do-solo-pelo-ima"].includes(v.setId),
+      ["formacao-do-solo", "material-de-origem", "horizontes-do-solo", "atracao-do-solo-pelo-ima", "textura-do-solo"].includes(
+        v.setId,
+      ),
       `${v.id}: ${v.setId}`,
     );
     if (v.setId === "formacao-do-solo") {
@@ -170,6 +172,11 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const left = (v) => v.position[0] - v.size[0] / 2;
   assert.ok(left(magnet[0]) >= right(table[0]), "bandejas à direita das caixas dos horizontes");
   assert.ok(Math.abs(magnet[0].position[1] - table[0].position[1]) < 0.05, "mesma altura de tampo");
+  // Textura do Solo: um volume na mesa em frente à janela (x ≈ 4), com a frente para −X (sala).
+  const texture = volumes.filter((v) => v.setId === "textura-do-solo");
+  assert.equal(texture.length, 1);
+  assert.deepEqual(texture[0].rotationDeg, [0, -90, 0]);
+  assert.ok(texture[0].position[0] > 3.7 && texture[0].position[0] < 4.3, "mesa da janela");
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -354,6 +361,43 @@ test("dados: Horizontes do Solo (grupo único, modelos, caixa da camada R, minia
   const container = r.container.nodes.map((name) => gltf.nodes.findIndex((n) => n.name === name));
   assert.ok(container.every((k) => k >= 0), `${r.container.nodes}`);
   assert.ok(gltf.nodes.some((n, k) => n.mesh !== undefined && !container.includes(k) && n.name.startsWith("Pedra")));
+});
+
+test("dados: Textura do Solo (grupo único, placa, copos, banner, miniaturas e narração)", async () => {
+  const { TEXTURA_DO_SOLO: catalog } = await import("../src/data/texturaDoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkNarration = (narration, count) => {
+    assert.ok(narration, "narração ausente");
+    const buf = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(buf.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(buf.length < 600_000, narration.audioUrl);
+    assert.equal(narration.cues.length, count, narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1], narration.audioUrl);
+  };
+
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  checkNarration(catalog.overviewNarration, blocks(catalog.overview));
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => it.title),
+    ["Placa de granulometria", "Solo arenoso", "Solo siltoso", "Solo argiloso", "Banner de textura do solo"],
+  );
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    assert.ok(!item.container, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+    assert.ok(item.model.sizeBytes < 6_500_000, item.model.url);
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    checkNarration(item.narration, blocks(item.description) + blocks(item.closing));
+  }
+  // Banner: plano único com textura própria (derivado do splat), sem iluminação.
+  const banner = glbJson(resolve(root, "public", items[4].model.url.slice(1)));
+  assert.equal(banner.images.length, 1);
+  assert.ok(banner.extensionsUsed.includes("KHR_materials_unlit"));
 });
 
 test("animação conduzida pela narração: parada antes, interpolada, parada no último quadro", () => {

@@ -198,6 +198,28 @@
         0.48
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "textura",
+      "label": "Textura do solo",
+      "setId": "textura-do-solo",
+      "order": 10,
+      "position": [
+        4.005,
+        0.89,
+        -2.15
+      ],
+      "rotationDeg": [
+        0,
+        -90,
+        0
+      ],
+      "size": [
+        1.1,
+        0.22,
+        0.55
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [
