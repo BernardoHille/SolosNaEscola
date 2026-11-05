@@ -16,9 +16,10 @@ computadores e dispositivos móveis.
 > **Material de Origem** (módulo 02, nas três prateleiras de baixo), as cinco caixas dos
 > **Horizontes do Solo** (módulo 03, na mesa em frente à estante), o experimento animado da
 > **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) e a placa, os copos e o banner da
-> **Textura do Solo** (módulo 05, na mesa em frente à janela) podem ser inspecionados em 3D
-> (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos e narração
-> automática. As demais estantes serão desenvolvidas nas próximas etapas.
+> **Textura do Solo** (módulo 05, na mesa em frente à janela) e o experimento animado da
+> **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde) podem ser
+> inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
+> e narração automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -594,7 +595,61 @@ registradas por SIFT + homografia e retificadas pelos quatro cantos. Uma primeir
 de capturas do próprio splat, ficou só como registro do processo (legível no título, borrada nas
 letras pequenas).
 
-**Limite:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
+### Módulo 06 · Porosidade do Solo
+
+Na mesa em frente ao painel do campo verde ficam a bandeja (pedra, esponja e torrão), a pisseta, os
+dois vasos e o pote branco. Um volume (`porosidade`, ≈ 52 × 28 × 54 cm, centro em (2,08; 0,92; −0,81),
+girado 180° em Y para a frente ficar voltada para −Z, de onde o visitante olha o painel) cobre a mesa:
+medido no splat, o tampo ocupa x = 1,82–2,34 m e z = −1,08 a −0,54 m, em y ≈ 0,78 m, e o pote branco
+vai até y ≈ 1,05 m.
+
+É um **conjunto de um item só**, como o módulo 04: abre direto no experimento (aba **Experimento**),
+sem contador, setas nem faixa. A gravação (`porosidade.aac`, 84,5 s, sem introdução nem títulos) foi
+só trocada de contêiner, sem recodificar (`00-porosidade.m4a`, 0,57 MB). **A equipe enviou só o
+áudio:** o texto do painel vem da transcrição com marcação de palavras, e não de um roteiro escrito.
+
+**GLB animado, derivado do acervo** (`public/models/inspection/porosidade/`, 12,7 MB, um clipe
+`porosidade_solo` de 23 s a 24 q/s, só TRS). O bloco binário (geometria, texturas e animação) é
+idêntico ao do acervo; mudam só cor e opacidade de seis materiais:
+
+- **Água** (gotas, gotículas, filetes e poças): no acervo é quase branca e tem alfa de 0,20 a 0,50,
+  feita para o Cycles. Em WebGL, sem refração e sobre a bandeja branca, ficava quase invisível. Ganhou
+  azul claro e alfa de 0,38 a 0,82. É uma escolha didática, para a água ser vista.
+- **Esponja**: saía creme (textura clara e realces comprimidos pelo ACES 2), longe do laranja da foto.
+  A cor agora multiplica a textura, e a mancha molhada escurece para ficar mais escura que a parte seca.
+
+**Animação conduzida pela narração** (`animation.sync`), medida nos tempos reais do clipe:
+
+| Narração | Clipe |
+|---|---|
+| até 17,16 s (“Você já imaginou…” a “…torrão de solo.”) | parado no primeiro quadro |
+| 17,16 s, “Começamos pela pedra.” | 0–1,6 s: o frasco sobe e inclina |
+| 18,82 s, “Observe…” até “…pela superfície.” | 1,6–5,8 s: gotas, filetes e poça (0,64×) |
+| 25,38 s, “Isso acontece porque…” | 5,8 s: parado |
+| 31,82 s, “Agora, vamos observar a esponja.” | 5,8–7,25 s: o frasco vai para a esponja |
+| 33,44 s até “…ser absorvida” | 7,25–11,96 s: as gotas ficam paradas no topo (≈ 1×) |
+| 38 s até “…material poroso.” | 11,96–14 s: a mancha cresce devagar (0,34×) |
+| 44 s, “Mas agora vem…” | 14 s: parado |
+| 46,74 s, “Vamos observar o torrão de solo.” | 14–14,87 s: o frasco vai para o torrão |
+| 48,6 s, “Assim como a esponja…” | 14,87 s: parado, antes de a gota se formar |
+| 52,06 s até “Isso mostra…” | 14,87–19 s: velocidade normal; a mancha começa em “Quando a água entra no torrão…” (53,02 s) |
+| 56,3 s a 60,3 s | 19–23 s: o frasco volta; último quadro, parado até o fim |
+
+A absorção da esponja fica mais lenta e o torrão corre em velocidade normal, o que preserva o contraste
+do roteiro (esponja lenta, torrão rápido). O script `narracao_modulo06.py` (fora do repositório)
+recusa qualquer pausa com gota no ar ou respingo visível, lendo a escala de cada gota no próprio GLB.
+
+**Primeiro quadro das cenas animadas (correção).** `animatedFrame` chamava `root.syncHierarchy()` com
+os pais ainda pendentes; o modelo guardava a transformação antiga e o primeiro desenho saía sem a
+rotação inicial do pivô (de lado, com a bandeja parecendo vazia). Com o clipe parado não há segundo
+desenho, então o erro durava até a animação começar: 17 s neste módulo e 24,7 s no módulo 04, que tinha
+o mesmo problema. `root.getWorldTransform()` antes do laço resolve os dois.
+
+**Limites:** os tempos da água são ilustrativos, não medidos (ver o README do acervo). O GLB é o maior
+da exposição (12,7 MB, contra 6,2 MB do módulo 04) e não foi otimizado. A narração não fala em
+“absorção lenta” como o roteiro; o contraste fica na animação.
+
+**Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
 ≈ 21 × 34 cm. Na inspeção o modelo é enquadrado pelo próprio tamanho, então isso não aparece.
@@ -754,6 +809,7 @@ SolosNaEscola/
 │   ├── inspection/horizontes/*.glb # módulo 03: horizontes O, A, B, C e camada R
 │   ├── inspection/ima/*.glb       # módulo 04: experimento do ímã (animado)
 │   ├── inspection/textura/*.glb   # módulo 05: placa, três copos e banner (derivado das fotos)
+│   ├── inspection/porosidade/*.glb # módulo 06: experimento da porosidade (animado, derivado do acervo)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -788,7 +844,8 @@ SolosNaEscola/
 │   │   ├── interactions.ts        # tipos e serialização dos volumes
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
 │   │   ├── atracaoDoIma.ts        # módulo 04 (gerado a partir do texto, da gravação e do acervo)
-│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01 e 04)
+│   │   ├── porosidadeDoSolo.ts    # módulo 06 (gerado a partir da gravação e do acervo)
+│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04 e 06)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
@@ -939,6 +996,11 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 41 | Abertura | ✔ “Escolha um item · Textura do Solo”, cinco cartões (placa, arenoso, siltoso, argiloso, banner), narração geral tocando sozinha |
 | 42 | Itens | ✔ placa em pé, cascalho em cima e argila embaixo, etiquetas legíveis; copo arenoso de três quartos com a etiqueta à frente; banner de frente, legível; cada um com a narração e o destaque do parágrafo |
 | 43 | Voltar e fechar | ✔ **Esc** no item volta ao menu; **Esc** no menu fecha; sem erros no console |
+| 44 | Volume da mesa da porosidade (`?debugInteractions=1`) | ✔ a caixa cobre o tampo, a bandeja, a pisseta, os vasos e o pote branco, em frente ao painel do campo verde; ao mirar, “Inspecionar · Porosidade do solo” |
+| 45 | Abertura | ✔ “Porosidade do Solo · Pedra, esponja e torrão”, aba “Experimento”, sem contador, setas nem faixa; narração tocando sozinha; vista de três quartos já no primeiro desenho (corrigido; o módulo 04 também) |
+| 46 | Animação com a narração | ✔ narração tocando: 36,25 s → clipe em 10,153 s; 40,27 s → 12,729 s; 51,25 s → 14,87 s (parado sobre o torrão); 53,26 s → 16,056 s; 65,25 s → 23 s, parado (valores iguais aos calculados por `sync`). Forçando o relógio: gotas em queda, filetes e poça visíveis na pedra, gotas paradas e depois mancha na esponja, torrão escurecendo |
+| 47 | Reabrir | ✔ sem tocar sozinha (▶) e direto no último quadro, com os três resultados; 0 erros no console ao abrir e fechar normalmente |
+| 48 | Celular (emulação 375 × 812) | ✔ o toque em “Inspecionar” abre o experimento; legenda e botão “Ler” no lugar do painel; a bandeja fica menor, com a água ainda visível |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -947,7 +1009,9 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco),
+fraco), o módulo 06 num celular real (GLB de 12,7 MB, sem medida de tempo de carga nem de memória),
+fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
+erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real
 (sombras e IBL dependem da GPU),
 **E** com o mouse realmente capturado (o painel de testes recusa o

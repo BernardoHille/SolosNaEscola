@@ -220,6 +220,28 @@
         0.55
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "porosidade",
+      "label": "Porosidade do solo",
+      "setId": "porosidade-do-solo",
+      "order": 11,
+      "position": [
+        2.08,
+        0.92,
+        -0.81
+      ],
+      "rotationDeg": [
+        0,
+        180,
+        0
+      ],
+      "size": [
+        0.52,
+        0.28,
+        0.54
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

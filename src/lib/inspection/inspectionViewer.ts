@@ -770,6 +770,10 @@ function animatedFrame(a: Animation, root: EntityType): Frame {
   const meshes = meshInstancesOf(root);
   const box = new BoundingBox();
   let first = true;
+  // Sincroniza os pais antes: `syncHierarchy` só desce. Com os pais ainda pendentes, o modelo guarda
+  // a transformação antiga e a rotação inicial do pivô não chega a ele no primeiro desenho (com o
+  // clipe parado, não há segundo desenho até a animação começar).
+  root.getWorldTransform();
   for (let t = 0; t <= a.duration + 1e-6; t += 0.5) {
     setAnimationTime(a, Math.min(t, a.duration));
     root.syncHierarchy();

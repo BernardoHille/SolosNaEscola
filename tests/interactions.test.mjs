@@ -119,7 +119,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -127,9 +127,14 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     assert.ok(!ids.has(v.id), `id repetido: ${v.id}`);
     ids.add(v.id);
     assert.ok(
-      ["formacao-do-solo", "material-de-origem", "horizontes-do-solo", "atracao-do-solo-pelo-ima", "textura-do-solo"].includes(
-        v.setId,
-      ),
+      [
+        "formacao-do-solo",
+        "material-de-origem",
+        "horizontes-do-solo",
+        "atracao-do-solo-pelo-ima",
+        "textura-do-solo",
+        "porosidade-do-solo",
+      ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
     if (v.setId === "formacao-do-solo") {
@@ -177,6 +182,12 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.equal(texture.length, 1);
   assert.deepEqual(texture[0].rotationDeg, [0, -90, 0]);
   assert.ok(texture[0].position[0] > 3.7 && texture[0].position[0] < 4.3, "mesa da janela");
+  // Porosidade do Solo: um volume na mesa em frente ao painel do campo verde (z ≈ 0), com a frente
+  // para −Z, de onde o visitante olha o painel.
+  const porosity = volumes.filter((v) => v.setId === "porosidade-do-solo");
+  assert.equal(porosity.length, 1);
+  assert.deepEqual(porosity[0].rotationDeg, [0, 180, 0]);
+  assert.ok(porosity[0].position[2] + porosity[0].size[2] / 2 < 0, "à frente do painel central");
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -455,6 +466,60 @@ test("dados: Atração do Solo pelo Ímã (um item, GLB animado, sincronia e nar
   assert.deepEqual(sync[1], [cueOf("Mas observe"), 7]);
   assert.ok(Math.abs(sync[sync.length - 1][1] - clip) < 0.05, `${sync[sync.length - 1][1]} vs ${clip}`);
   assert.ok(sync[sync.length - 1][0] < narration.cues[narration.cues.length - 1] + 20);
+  const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+  assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+});
+
+test("dados: Porosidade do Solo (um item, GLB animado, sincronia e narração)", async () => {
+  const { POROSIDADE_DO_SOLO: set } = await import("../src/data/porosidadeDoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(set.items.length, 1, "um experimento só: sem setas nem faixa");
+  assert.ok(!set.overview);
+  const [item] = set.items;
+  const file = resolve(root, "public", item.model.url.slice(1));
+  assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+  assert.ok(item.model.sizeBytes < 13_000_000, item.model.url);
+  assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+  // Um clipe de animação, sem extensões; os três materiais, a bandeja e o frasco estão no GLB.
+  const gltf = glbJson(file);
+  assert.equal(gltf.animations?.length, 1);
+  assert.deepEqual(gltf.extensionsUsed ?? [], []);
+  for (const name of ["Bandeja", "Pedra", "Esponja", "Torrao", "Frasco"]) {
+    assert.ok(gltf.nodes.some((n) => n.name === name), name);
+  }
+  const clip = Math.max(...gltf.animations[0].samplers.map((sm) => gltf.accessors[sm.input].max[0]));
+  // Narração: um cue por parágrafo.
+  const narration = item.narration;
+  const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+  assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+  assert.ok(audio.length < 700_000, narration.audioUrl);
+  assert.equal(narration.cues.length, blocks(item.description));
+  assert.equal(narration.cues[0], 0);
+  for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1]);
+  // Sincronia: crescente, com cada material começando na sua fala e o último quadro no fim.
+  const sync = item.animation.sync;
+  for (let i = 1; i < sync.length; i++) {
+    assert.ok(sync[i][0] > sync[i - 1][0]);
+    assert.ok(sync[i][1] >= sync[i - 1][1]);
+  }
+  const paragraphs = item.description.split(/\n\s*\n/);
+  const cueOf = (start) => narration.cues[paragraphs.findIndex((p) => p.startsWith(start))];
+  const clipAt = (start) => animationTimeAt(cueOf(start), sync, clip);
+  close(clipAt("Começamos pela pedra"), 0);
+  close(clipAt("Observe o que acontece"), 1.6);
+  close(clipAt("Agora, vamos observar a esponja"), 5.8); // parado depois da pedra, sem gotas no ar
+  close(clipAt("Vamos observar o torrão"), 14);
+  close(clipAt("Quando a água entra no torrão"), 15.83); // primeira célula molhada do torrão
+  close(clipAt("Isso mostra que"), 19);
+  // Depois do último par, o clipe fica parado no último quadro.
+  assert.ok(Math.abs(sync[sync.length - 1][1] - clip) < 0.05, `${sync[sync.length - 1][1]} vs ${clip}`);
+  // Torrão em velocidade normal; absorção da esponja mais lenta (o contraste do roteiro).
+  const speed = (from) => {
+    const i = sync.findIndex(([, a]) => a === from);
+    return (sync[i + 1][1] - sync[i][1]) / (sync[i + 1][0] - sync[i][0]);
+  };
+  assert.ok(speed(11.96) < 0.5, "absorção lenta na esponja");
+  assert.ok(Math.abs(speed(15.83) - 1) < 0.1, "infiltração em velocidade normal no torrão");
   const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
   assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
 });
