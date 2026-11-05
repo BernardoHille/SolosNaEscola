@@ -76,6 +76,10 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
               <strong className="text-stone-50">Olhar ao redor:</strong> ao começar a andar, o cursor some e
               o mouse passa a girar a câmera.
             </li>
+            <li>
+              <strong className="text-stone-50">Ver detalhes:</strong> segure o botão direito do mouse para
+              aproximar a visão; ao soltar, ela volta.
+            </li>
             <li className="flex flex-wrap items-center gap-1.5">
               <strong className="text-stone-50">Liberar o cursor:</strong> <Key>Esc</Key>
             </li>

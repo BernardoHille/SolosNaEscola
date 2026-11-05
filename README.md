@@ -221,7 +221,7 @@ O visitante não pode sair do Walk Mode nem usar recursos que quebrem a sensaç�
 | Orbit, Fly, Frame, animação, troca de modo | `ui: false` (sem barra do viewer) e `noanim: true`; o viewer é colocado em `walk` e qualquer mudança de `cameraMode` é revertida |
 | Atalhos 1/2/3, F, R, G, V, H, Espaço (pulo), Esc | `state.inputEnabled = false` desativa os atalhos e a entrada de teclado do próprio viewer; o movimento por teclado é da aplicação |
 | Pulo por toque rápido (modo de jogo em telas de toque) | toques no canvas que não chegam a arrastar são retidos e nunca chegam ao viewer ([`touchTapFilter.ts`](src/lib/viewer/touchTapFilter.ts)) |
-| Roda do mouse (zoom/deslocamento), botão direito/meio | bloqueados na fase de captura sobre o contêiner |
+| Roda do mouse (zoom/deslocamento), botão direito/meio | não chegam ao viewer: bloqueados na fase de captura sobre o contêiner (a aplicação usa o botão direito para o zoom de detalhes) |
 
 Continua disponível: arrastar para olhar ao redor (mouse ou um dedo) e, no computador com o
 cursor livre, clicar no piso para caminhar até o ponto — comportamentos do próprio Walk Mode, que
@@ -234,6 +234,7 @@ permanecem no modo de caminhada.
 | Andar | **W A S D** ou setas | joystick no canto inferior esquerdo |
 | Andar mais rápido | segurar **Shift** | inclinar o joystick até a borda |
 | Olhar ao redor | ao começar a andar, o cursor some e o mouse gira a câmera; com o cursor livre, clicar e arrastar | arrastar um dedo na tela (a câmera segue o dedo) |
+| Ver detalhes (zoom) | segurar o **botão direito**; ao soltar, volta | — |
 | Liberar o cursor | **Esc** | — |
 | Ir até um ponto | clicar no piso (cursor livre) | — |
 | Voltar ao início | botão **Voltar à entrada** | idem |
@@ -248,6 +249,16 @@ modo de jogo); a próxima tecla de movimento captura de novo. Enquanto o mouse e
 aviso discreto no topo indica “Esc libera o cursor” por 2 segundos e some (reaparece a cada nova captura). O painel de ajuda libera o cursor ao abrir
 e impede a captura enquanto estiver aberto.
 Com o cursor capturado, cliques não levam até um ponto (comportamento do modo de jogo do viewer).
+
+**Zoom de detalhes (estilo “mirar” de jogo em primeira pessoa).** Enquanto o botão direito fica
+pressionado sobre a cena, [`detailZoom.ts`](src/lib/viewer/detailZoom.ts) amplia a imagem 2,5 vezes
+(FOV de 90° para 43,6°, em cerca de 0,2 s), e ao soltar ela volta; o fator e a suavização ficam em
+`DETAIL_ZOOM` ([`visit.ts`](src/data/visit.ts)). Dá para andar durante o zoom, e o olhar fica mais
+lento na mesma proporção do FOV, pois o viewer já multiplica a velocidade por `fov / 120`. Com o
+cursor livre, o botão também captura o mouse, para olhar em volta com o zoom ligado, e devolve o
+cursor ao soltar, a menos que o visitante tenha começado a andar. Abrir a ajuda, o menu de qualidade
+ou uma inspeção encerra o zoom. Como a API do viewer não expõe o FOV e o WalkController o regrava a
+cada quadro, o zoom é aplicado no evento `update` do PlayCanvas, logo depois do viewer.
 
 **Olhar no toque (estilo jogo para celular).** Fora do modo de jogo, o viewer trata o arrasto de
 um dedo como “arrastar o cenário”: a câmera gira no sentido oposto ao do dedo, o que parece
@@ -865,6 +876,7 @@ SolosNaEscola/
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
+│       ├── detailZoom.ts          # zoom de detalhes no botão direito do mouse
 │       ├── touchTapFilter.ts      # toque rápido não vira pulo (olhar no celular)
 │       ├── renderScale.ts         # resolução de renderização dos modos de qualidade
 │       ├── colorRefresh.ts        # cores dependentes do ângulo: recálculo a cada 1°
@@ -1008,6 +1020,7 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 47 | Reabrir | ✔ sem tocar sozinha (▶) e direto no último quadro, com os três resultados; 0 erros no console ao abrir e fechar normalmente |
 | 48 | Celular (emulação 375 × 812) | ✔ o toque em “Inspecionar” abre o experimento; legenda e botão “Ler” no lugar do painel; a bandeja fica menor, com a água ainda visível |
 | 49 | Descrição oculta ao abrir | ✔ sem painel na abertura, com narração e legenda; o botão do livro abre o painel no trecho falado, e o **X** ou **I** fecha; aberto, continua aberto ao trocar de item e ao voltar ao menu; ao reabrir a inspeção, oculto de novo; no menu, a legenda não cobre os cartões; em 375 × 812, a gaveta começa recolhida e abre pelo **Ler** no trecho falado |
+| 50 | Zoom de detalhes (eventos simulados; botão direito real só em clique rápido) | ✔ FOV de 90° para 43,6° em cerca de 0,2 s e de volta ao soltar; olhar cai de 11,2° para 5,4° com o mesmo movimento; sem menu de contexto; funciona com o botão esquerdo já pressionado; encerra ao perder o foco ou se o botão for solto fora da janela; não dispara com toque nem sobre os botões da interface; a ajuda encerra e impede o zoom; captura simulada: entra ao apertar e sai ao soltar, e fica se o visitante andou ou se já estava capturado |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1028,7 +1041,7 @@ desempenho em aparelhos de entrada.
 
 ### Visita (etapa 2)
 
-Não verificado: captura real do mouse em um navegador comum (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
+Não verificado: captura real do mouse em um navegador comum, inclusive olhar em volta durante o zoom de detalhes (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
 celulares de entrada e o deploy na Vercel.
 
 ## Limitações conhecidas

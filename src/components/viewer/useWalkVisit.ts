@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import type { ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 
 import { MOVEMENT } from "@/data/visit";
+import { attachDetailZoom, type DetailZoom } from "@/lib/viewer/detailZoom";
 import { attachKeyboardMovement } from "@/lib/viewer/keyboardMovement";
 import { MoveInputMixer } from "@/lib/viewer/moveInput";
 import { setMouseCapture } from "@/lib/viewer/viewerCommands";
@@ -84,6 +85,7 @@ export function useWalkVisit(
     suspendedRef.current = suspended;
   });
   const mixerRef = useRef<MoveInputMixer | null>(null);
+  const zoomRef = useRef<DetailZoom | null>(null);
   const errorRef = useRef(onCollisionError);
   useEffect(() => {
     errorRef.current = onCollisionError;
@@ -95,6 +97,8 @@ export function useWalkVisit(
     mixerRef.current = mixer;
 
     const disposeLock = lockToWalk(viewer, container, { onWalkActive: () => setWalkActive(true) });
+    const zoom = attachDetailZoom(viewer, container, () => captureAllowedRef.current);
+    zoomRef.current = zoom;
     // Ao começar a andar pelo teclado, o mouse é capturado e passa a controlar a câmera
     // (estilo jogo em primeira pessoa). Esc devolve o cursor; a próxima tecla de
     // movimento captura de novo.
@@ -102,7 +106,9 @@ export function useWalkVisit(
       mixer,
       MOVEMENT,
       () => {
-        if (captureAllowedRef.current && !suspendedRef.current) setMouseCapture(viewer, true);
+        if (!captureAllowedRef.current || suspendedRef.current) return;
+        setMouseCapture(viewer, true);
+        zoom.keepCapture();
       },
       () => suspendedRef.current,
     );
@@ -142,12 +148,19 @@ export function useWalkVisit(
       loadedHandle.off();
       modeHandle.off();
       disposeKeyboard();
+      zoom.dispose();
+      zoomRef.current = null;
       disposeLock();
       mixer.clear();
       mixerRef.current = null;
       setWalkActive(false);
     };
   }, [viewer, container, collisionUrl]);
+
+  // Painel ou inspeção abertos durante o zoom: a câmera volta ao normal.
+  useEffect(() => {
+    if (!captureAllowed) zoomRef.current?.stop();
+  }, [captureAllowed]);
 
   // Suspensão: para o movimento em curso e devolve o cursor (sem mexer na câmera).
   useEffect(() => {

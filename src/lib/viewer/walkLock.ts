@@ -17,7 +17,7 @@
  * 4. Bloqueio, no contêiner (fase de captura do DOM), da roda do mouse e dos botões
  *    direito/do meio: no Walk Mode a roda empurra o corpo e o arrasto com botão
  *    direito gera "pan" com componente vertical, que o WalkController interpreta como
- *    pulo.
+ *    pulo. O botão direito serve só à aplicação: é o zoom de detalhes (`detailZoom`).
  * 5. Guarda de modo: se `cameraMode` sair de "walk" por qualquer caminho, volta para
  *    "walk" (sem loop: só reage a valores diferentes de "walk").
  *

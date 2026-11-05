@@ -81,6 +81,15 @@ export const MOVEMENT = {
   run: 0.75,
 } as const;
 
+/**
+ * Zoom de detalhes (botão direito do mouse): ampliação da imagem e constante de tempo da
+ * transição, que assenta em cerca de 0,2 s.
+ */
+export const DETAIL_ZOOM = {
+  factor: 2.5,
+  smoothingSeconds: 0.06,
+} as const;
+
 /** Vetor de direção (unitário) correspondente a yaw/pitch. */
 export function directionFromAngles(yawDeg: number, pitchDeg: number): [number, number, number] {
   const yaw = (yawDeg * Math.PI) / 180;
