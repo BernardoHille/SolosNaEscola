@@ -118,12 +118,17 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
+  const catalog = readFileSync(resolve(root, "src/data/materialDeOrigem.ts"), "utf8");
   const ids = new Set();
   for (const v of volumes) {
     assert.ok(!ids.has(v.id), `id repetido: ${v.id}`);
     ids.add(v.id);
-    assert.equal(v.setId, "formacao-do-solo");
-    assert.ok(source.includes(`id: "${v.id}"`), `item ausente em inspection.ts: ${v.id}`);
+    assert.ok(["formacao-do-solo", "material-de-origem"].includes(v.setId), `${v.id}: ${v.setId}`);
+    if (v.setId === "formacao-do-solo") {
+      assert.ok(source.includes(`id: "${v.id}"`), `item ausente em inspection.ts: ${v.id}`);
+    } else {
+      assert.ok(catalog.includes(`id: "${v.setId}"`), `acervo ausente: ${v.setId}`);
+    }
     assert.equal(v.position.length, 3);
     assert.ok(v.size.every((n) => n > 0));
     assert.ok(v.maxDistance > 0);
@@ -134,9 +139,17 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
     assert.ok(o.size.every((n) => n > 0), o.id);
   }
   assert.deepEqual(
-    volumes.map((v) => v.order),
+    volumes.filter((v) => v.setId === "formacao-do-solo").map((v) => v.order),
     [1, 2, 3, 4],
   );
+  // Material de Origem: uma faixa por prateleira, de cima para baixo (ígneas, metamórficas,
+  // sedimentares), todas abrindo o menu dos grupos.
+  const shelf = volumes.filter((v) => v.setId === "material-de-origem");
+  assert.deepEqual(
+    shelf.map((v) => v.id),
+    ["material-igneas", "material-metamorficas", "material-sedimentares"],
+  );
+  for (let i = 1; i < shelf.length; i++) assert.ok(shelf[i].position[1] < shelf[i - 1].position[1]);
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -223,4 +236,60 @@ test("dados: narração (arquivos MP4/AAC e um cue por bloco do texto)", async (
     assert.equal(narration.cues[0], 0);
     for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1]);
   }
+});
+
+test("dados: Material de Origem (grupos, modelos, recipientes, miniaturas e narração)", async () => {
+  const { MATERIAL_DE_ORIGEM: catalog } = await import("../src/data/materialDeOrigem.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkNarration = (narration, count) => {
+    assert.ok(narration, "narração ausente");
+    const buf = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(buf.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(buf.length < 500_000, narration.audioUrl);
+    assert.equal(narration.cues.length, count, narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let i = 1; i < narration.cues.length; i++) assert.ok(narration.cues[i] > narration.cues[i - 1], narration.audioUrl);
+  };
+
+  assert.equal(catalog.stepNoun, "Rocha");
+  checkNarration(catalog.overviewNarration, blocks(catalog.overview));
+  assert.deepEqual(
+    catalog.groups.map((g) => [g.id, g.items.length]),
+    [
+      ["igneas", 7],
+      ["sedimentares", 5],
+      ["metamorficas", 8],
+    ],
+  );
+  const ids = new Set();
+  for (const group of catalog.groups) {
+    checkNarration(group.overviewNarration, blocks(group.overview));
+    group.items.forEach((item, i) => {
+      assert.ok(!ids.has(item.id), item.id);
+      ids.add(item.id);
+      assert.equal(item.order, i + 1, item.id);
+      // Modelo web: existe, tem o tamanho cadastrado, é glTF binário e cabe na rede.
+      const file = resolve(root, "public", item.model.url.slice(1));
+      const size = statSync(file).size;
+      assert.equal(size, item.model.sizeBytes, item.model.url);
+      assert.ok(size < 6_000_000, item.model.url);
+      assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+      // Bandeja e etiqueta existem no GLB; a rocha (malha fora delas) também.
+      const gltf = glbJson(file);
+      const container = item.container.nodes.map((name) => gltf.nodes.findIndex((n) => n.name === name));
+      assert.ok(container.every((k) => k >= 0), `${item.id}: ${item.container.nodes}`);
+      const inside = new Set();
+      const walk = (k) => {
+        inside.add(k);
+        for (const c of gltf.nodes[k].children ?? []) walk(c);
+      };
+      container.forEach(walk);
+      assert.ok(gltf.nodes.some((n, k) => n.mesh !== undefined && !inside.has(k)), item.id);
+      // Miniatura WebP.
+      const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+      assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+      checkNarration(item.narration, blocks(item.description));
+    });
+  }
+  assert.equal(ids.size, 20);
 });

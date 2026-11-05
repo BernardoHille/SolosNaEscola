@@ -29,8 +29,23 @@
   animation: inspection-line-in 320ms ease-out both;
 }
 
+/* Legenda da narração: cada frase nova surge suavemente. */
+@keyframes inspection-caption-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.inspection-caption {
+  animation: inspection-caption-in 220ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .inspection-line {
+  .inspection-line,
+  .inspection-caption {
     animation: none;
   }
 }

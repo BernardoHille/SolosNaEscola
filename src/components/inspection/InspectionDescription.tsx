@@ -17,6 +17,8 @@ type InspectionDescriptionProps = {
   onNext: () => void;
   /** Rótulo do estágio (`markers[].label`) sendo narrado agora, ou null. */
   onSpeakingMarker?: (label: string | null) => void;
+  /** Frase sendo narrada agora (legenda com o painel recolhido), ou null. */
+  onCaption?: (text: string | null) => void;
 };
 
 type Tab = "intro" | "item";
@@ -29,6 +31,31 @@ const paragraphs = (text?: string) =>
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
+
+/** Textos falados, na ordem dos `cues`: parágrafos, estágios ("Rótulo: descrição") e fechamento. */
+const spokenBlocks = (set: InspectionSet, item: InspectionItem | undefined, tab: Tab) => {
+  if (tab === "intro" || !item) return paragraphs(set.overview);
+  const stages = (item.markers ?? []).filter((m) => m.description).map((m) => `${m.label}: ${m.description}`);
+  return [...paragraphs(item.description), ...stages, ...paragraphs(item.closing)];
+};
+
+/** Frases de um bloco (para a legenda mostrar uma de cada vez). */
+const sentences = (text: string) => text.match(/[^.!?…]+(?:[.!?…]+["”»)]*|$)/g)?.map((s) => s.trim()).filter(Boolean) ?? [text];
+
+/**
+ * Frase falada no instante `t` dentro de um bloco que começa em `from` e termina em `to`: o tempo
+ * do bloco é repartido entre as frases na proporção do número de caracteres (estimativa simples).
+ */
+const sentenceAt = (text: string, t: number, from: number, to: number) => {
+  const parts = sentences(text);
+  const total = parts.reduce((n, s) => n + s.length, 0);
+  let at = from;
+  for (const s of parts) {
+    at += ((to - from) * s.length) / total;
+    if (t < at) return s;
+  }
+  return parts[parts.length - 1];
+};
 
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
@@ -100,9 +127,12 @@ function ItemBody({ item, active }: { item: InspectionItem; active: number }) {
  * encaixado à direita; nas estreitas vira uma gaveta acima dos controles, que pode ser
  * recolhida até sobrar só a barra do título.
  *
- * Narração: o botão redondo da barra (ou N) toca a gravação do texto da aba aberta; o bloco
- * falado fica destacado e acompanha a rolagem. Depois de iniciada, a narração segue para o
- * texto seguinte quando o visitante avança (até ele pausar).
+ * Narração: começa sozinha a cada texto novo (abertura, troca de etapa, de aba ou de menu); o
+ * botão redondo da barra (ou N) pausa e retoma. O bloco falado fica destacado e acompanha a
+ * rolagem; com o painel recolhido, a frase falada vira legenda (`onCaption`).
+ *
+ * Num menu de acervo, o conjunto não tem etapas: só a aba de introdução, com o texto do acervo
+ * ou do grupo.
  */
 export default function InspectionDescription({
   set,
@@ -112,17 +142,19 @@ export default function InspectionDescription({
   onOpenChange,
   onNext,
   onSpeakingMarker,
+  onCaption,
 }: InspectionDescriptionProps) {
-  const item = set.items[index];
+  const item = set.items[index] as InspectionItem | undefined;
   const hasIntro = !!set.overview;
-  const [tab, setTab] = useState<Tab>(hasIntro ? "intro" : "item");
-  // Ao trocar de etapa, o painel passa a mostrar o texto dela.
-  const [shownIndex, setShownIndex] = useState(index);
-  if (shownIndex !== index) {
-    setShownIndex(index);
-    setTab("item");
+  const firstTab = (s: InspectionSet): Tab => (s.overview ? "intro" : "item");
+  const [tab, setTab] = useState<Tab>(firstTab(set));
+  // Conjunto novo (menu, grupo, peça): volta à primeira aba. Etapa nova: mostra o texto dela.
+  const [shown, setShown] = useState({ setId: set.id, index });
+  if (shown.setId !== set.id || shown.index !== index) {
+    setTab(shown.setId !== set.id ? firstTab(set) : "item");
+    setShown({ setId: set.id, index });
   }
-  const contentKey = tab === "intro" ? "intro" : item.id;
+  const contentKey = tab === "intro" || !item ? `${set.id}:intro` : item.id;
 
   // Texto novo com a gaveta recolhida: um ponto pulsante na barra avisa que há o que ler.
   const [seenKey, setSeenKey] = useState<string | null>(open ? contentKey : null);
@@ -135,11 +167,9 @@ export default function InspectionDescription({
   }, [contentKey]);
 
   // Narração: um único elemento de áudio, trocado junto com o texto.
-  const narration = tab === "intro" ? set.overviewNarration : item.narration;
+  const narration = tab === "intro" || !item ? set.overviewNarration : item.narration;
   const url = narration?.audioUrl;
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Verdadeiro desde que o visitante deu play até pausar: o próximo texto já começa narrado.
-  const narratingRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [ended, setEnded] = useState(false);
   const [time, setTime] = useState(0);
@@ -190,26 +220,20 @@ export default function InspectionDescription({
       return;
     }
     audio.src = url;
-    if (narratingRef.current) {
-      audio.play().catch(() => {
-        narratingRef.current = false;
-      });
-    }
+    // Começa sozinha. A inspeção é aberta por um clique ou tecla do visitante, então o navegador
+    // permite o som; se ainda assim recusar, o botão de play fica à disposição.
+    audio.play().catch(() => {});
   }, [url]);
 
   const toggleNarration = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || !url) return;
     if (!audio.paused) {
-      narratingRef.current = false;
       audio.pause();
       return;
     }
     if (audio.ended) audio.currentTime = 0;
-    narratingRef.current = true;
-    audio.play().catch(() => {
-      narratingRef.current = false;
-    });
+    audio.play().catch(() => {});
   }, [url]);
 
   // Tecla N: tocar / pausar.
@@ -233,7 +257,7 @@ export default function InspectionDescription({
 
   // Estágio da maquete sendo narrado: o rótulo correspondente sobre o modelo também acende.
   let speakingMarker: string | null = null;
-  if (tab === "item" && playing && active >= 0) {
+  if (tab === "item" && item && playing && active >= 0) {
     const stages = item.markers?.filter((m) => m.description) ?? [];
     const k = active - paragraphs(item.description).length;
     speakingMarker = stages[k]?.label ?? null;
@@ -241,6 +265,18 @@ export default function InspectionDescription({
   useEffect(() => {
     onSpeakingMarker?.(speakingMarker);
   }, [onSpeakingMarker, speakingMarker]);
+
+  // Legenda: a frase falada agora dentro do bloco ativo.
+  let caption: string | null = null;
+  if (playing && active >= 0 && narration?.cues) {
+    const text = spokenBlocks(set, item, tab)[active];
+    const to = narration.cues[active + 1] ?? (duration || time + 1);
+    if (text) caption = sentenceAt(text, time, narration.cues[active], to);
+  }
+  useEffect(() => {
+    onCaption?.(caption);
+  }, [onCaption, caption]);
+  useEffect(() => () => onCaption?.(null), [onCaption]);
 
   // Mantém o bloco falado à vista, rolando só o painel.
   useEffect(() => {
@@ -260,8 +296,9 @@ export default function InspectionDescription({
   const bodyId = `${id}-body`;
   const docked = layout === "docked";
   const last = index === set.items.length - 1;
-  const heading = tab === "intro" ? set.title : item.title;
-  const stepLabel = `Etapa ${index + 1}`;
+  const heading = tab === "intro" || !item ? set.title : item.title;
+  const noun = set.stepNoun ?? "Etapa";
+  const stepLabel = `${noun} ${index + 1}`;
 
   const tabButton = (value: Tab, label: string) => (
     <button
@@ -297,7 +334,7 @@ export default function InspectionDescription({
       <div className="flex items-center gap-2 border-b border-white/10 py-1.5 pl-4 pr-2 xl:py-2.5 xl:pl-6 xl:pr-3">
         <div role="tablist" aria-label="Textos" className="flex min-w-0 items-center gap-1">
           {hasIntro && tabButton("intro", "Introdução")}
-          {tabButton("item", stepLabel)}
+          {item && tabButton("item", stepLabel)}
         </div>
         <span className="min-w-0 flex-1" />
         {url && (
@@ -379,18 +416,18 @@ export default function InspectionDescription({
         </h3>
         {/* A chave reinicia a entrada em sequência a cada texto novo. */}
         <div key={contentKey} className="mt-2 space-y-3 xl:mt-3 xl:space-y-4">
-          {tab === "intro" ? <Lines text={set.overview} active={active} /> : <ItemBody item={item} active={active} />}
+          {tab === "intro" || !item ? <Lines text={set.overview} active={active} /> : <ItemBody item={item} active={active} />}
         </div>
 
-        {/* "Continuar", como o indicador ▼ das caixas de diálogo. */}
-        {(tab === "intro" || !last) && (
+        {/* "Continuar", como o indicador ▼ das caixas de diálogo (não há etapas num menu). */}
+        {item && (tab === "intro" || !last) && (
           <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={() => (tab === "intro" ? setTab("item") : onNext())}
               className="group inline-flex items-center gap-1 rounded-full bg-[#FFD54A]/15 py-1.5 pl-3.5 pr-2.5 text-xs font-semibold xl:py-2 xl:pl-4 xl:pr-3 xl:text-sm text-[#FFE89A] ring-1 ring-[#FFD54A]/40 transition-colors hover:bg-[#FFD54A]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
             >
-              {tab === "intro" ? `Ir para a ${stepLabel.toLowerCase()}` : "Próxima etapa"}
+              {tab === "intro" ? `Ir para a ${stepLabel.toLowerCase()}` : `Próxima ${noun.toLowerCase()}`}
               <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5 motion-safe:animate-pulse motion-reduce:transition-none" />
             </button>
           </div>

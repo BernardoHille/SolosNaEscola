@@ -237,7 +237,7 @@ export class InspectionViewer {
     holder.setLocalPosition(0, 0, 0);
     const full = frameOf(meshInstancesOf(root));
 
-    const container = item.container ? ((root.findByName(item.container.node) as EntityType | null) ?? null) : null;
+    const container = item.container ? containerOf(root, item.container) : null;
     let content: Frame | null = null;
     let contentMeshes: MeshInstance[] = [];
     if (container) {
@@ -672,6 +672,29 @@ function lightRotationFrom(from: [number, number, number]): Quat {
   const axis = new Vec3().cross(down, to);
   const angle = Math.acos(clamp(down.dot(to), -1, 1)) * (180 / Math.PI);
   return axis.length() < 1e-6 ? new Quat() : new Quat().setFromAxisAngle(axis.normalize(), angle);
+}
+
+/**
+ * Recipiente do item: um nó do GLB (caixa de madeira) ou vários (bandeja de cartão em cinco
+ * peças e a etiqueta). Vários nós são reunidos num grupo novo, filho da mesma raiz, com a
+ * transformação local preservada — o arquivo não muda, só a hierarquia em memória.
+ */
+function containerOf(root: EntityType, spec: NonNullable<InspectionItem["container"]>): EntityType | null {
+  if ("node" in spec) return (root.findByName(spec.node) as EntityType | null) ?? null;
+  const parts = spec.nodes.map((n) => root.findByName(n) as EntityType | null).filter((e): e is EntityType => !!e);
+  if (!parts.length) return null;
+  const group = new Entity("Recipiente");
+  root.addChild(group);
+  for (const part of parts) {
+    const parent = part.parent;
+    if (parent === root) {
+      root.removeChild(part);
+      group.addChild(part);
+    } else {
+      part.reparent(group);
+    }
+  }
+  return group;
 }
 
 function meshInstancesOf(entity: EntityType): MeshInstance[] {

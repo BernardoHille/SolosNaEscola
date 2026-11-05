@@ -88,6 +88,72 @@
         0.12
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "material-igneas",
+      "label": "Material de origem · Rochas ígneas",
+      "setId": "material-de-origem",
+      "order": 5,
+      "position": [
+        1.275,
+        1.285,
+        -4.47
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.95,
+        0.16,
+        0.3
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "material-metamorficas",
+      "label": "Material de origem · Rochas metamórficas",
+      "setId": "material-de-origem",
+      "order": 6,
+      "position": [
+        1.275,
+        0.985,
+        -4.47
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.95,
+        0.16,
+        0.3
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "material-sedimentares",
+      "label": "Material de origem · Rochas sedimentares",
+      "setId": "material-de-origem",
+      "order": 7,
+      "position": [
+        1.3,
+        0.685,
+        -4.47
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.85,
+        0.16,
+        0.3
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

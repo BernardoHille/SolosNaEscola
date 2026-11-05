@@ -236,6 +236,9 @@ export default function Exhibition() {
               onPrevious={inspection.previous}
               onGoTo={inspection.goTo}
               onClose={inspection.close}
+              menu={inspection.menu}
+              eyebrow={inspection.eyebrow}
+              onBack={inspection.back}
             />
           )}
         </>

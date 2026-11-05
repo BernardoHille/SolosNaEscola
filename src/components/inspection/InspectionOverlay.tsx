@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import InspectionDescription, { type DescriptionLayout } from "@/components/inspection/InspectionDescription";
+import InspectionMenuGrid from "@/components/inspection/InspectionMenuGrid";
+import type { InspectionMenu } from "@/components/inspection/useInspection";
 import {
   BookIcon,
   BoxIcon,
@@ -28,6 +30,12 @@ type InspectionOverlayProps = {
   onGoTo: (index: number) => void;
   /** Chamado quando o visitante pede para fechar; o fechamento ocorre após o esmaecimento. */
   onClose: () => void;
+  /** Menu de acervo (grupos ou peças) no lugar do modelo 3D, ou null. */
+  menu?: InspectionMenu | null;
+  /** Linha acima do título; padrão: o título do conjunto. */
+  eyebrow?: string | null;
+  /** Volta um nível (menus de acervo); Esc também volta. */
+  onBack?: (() => void) | null;
 };
 
 /** Duração das transições (ms). O CSS usa os mesmos valores. */
@@ -88,6 +96,9 @@ const iconButton =
  * Modo de inspeção (estilo "examinar item"): o museu escurece ao fundo, sem ser recarregado,
  * e o modelo 3D da etapa atual aparece no centro, com iluminação própria, para girar,
  * aproximar e comparar. Setas navegam pela sequência; Esc ou o botão fecha.
+ *
+ * Acervos (Material de Origem) abrem antes num menu de cartões: grupos e, dentro do grupo, as
+ * peças. O visualizador 3D continua montado por baixo (invisível), para a peça abrir sem espera.
  */
 export default function InspectionOverlay({
   set,
@@ -97,18 +108,26 @@ export default function InspectionOverlay({
   onPrevious,
   onGoTo,
   onClose,
+  menu = null,
+  eyebrow = null,
+  onBack = null,
 }: InspectionOverlayProps) {
-  const item = set.items[index];
+  const item = menu ? undefined : set.items[index];
+  const inMenu = !!menu;
   const count = set.items.length;
+  const noun = set.stepNoun ?? "Etapa";
+  // Frase narrada agora: legenda discreta quando o painel de descrição está recolhido.
+  const [caption, setCaption] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<InspectionViewer | null>(null);
   const [viewerReady, setViewerReady] = useState(false);
   const [shown, setShown] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [viewerError, setViewerError] = useState<string | null>(null);
+  // Resultado do último carregamento (por peça e tentativa): "carregando" é não ter o da atual.
+  const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
   const [markers, setMarkers] = useState<MarkerPosition[]>([]);
   const [showMarkers, setShowMarkers] = useState(true);
   // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
@@ -132,7 +151,8 @@ export default function InspectionOverlay({
     const observer = new ResizeObserver(() => setControlsHeight(el.offsetHeight));
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+    // Menu e inspeção usam elementos de controle diferentes.
+  }, [inMenu]);
 
   useEffect(() => {
     const el = descriptionRef.current;
@@ -171,7 +191,7 @@ export default function InspectionOverlay({
         if (IS_DEV) (window as unknown as Record<string, unknown>).__SOLOS_INSPECTION__ = viewer;
         setViewerReady(true);
       })
-      .catch(() => !disposed && setError("Não foi possível iniciar o visualizador 3D neste navegador."));
+      .catch(() => !disposed && setViewerError("Não foi possível iniciar o visualizador 3D neste navegador."));
     return () => {
       disposed = true;
       viewer?.destroy();
@@ -184,22 +204,27 @@ export default function InspectionOverlay({
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewerReady || !viewer) return;
+    // Menu: nada a carregar (o último modelo fica guardado, invisível).
+    if (!item) return;
     let current = true;
-    setLoading(true);
-    setError(null);
+    const key = `${item.id}#${retry}`;
     viewer
       .show(item)
       .then(() => {
         if (!current) return;
-        setLoading(false);
+        setLoaded({ key, error: null });
         const next = set.items[index + 1];
         if (next) viewer.preload(next);
       })
-      .catch(() => current && (setLoading(false), setError("Não foi possível carregar este modelo.")));
+      .catch(() => current && setLoaded({ key, error: "Não foi possível carregar este modelo." }));
     return () => {
       current = false;
     };
   }, [viewerReady, item, index, set, retry]);
+
+  const current = item && loaded?.key === `${item.id}#${retry}` ? loaded : null;
+  const error = viewerError ?? current?.error ?? null;
+  const loading = !!item && !current && !viewerError;
 
   // Foco no diálogo ao abrir; devolvido ao fechar.
   useEffect(() => {
@@ -208,16 +233,18 @@ export default function InspectionOverlay({
     return () => previous?.focus?.();
   }, []);
 
-  // Teclado: Esc fecha, setas navegam, R restaura, C tira/devolve a caixa, + e − aproximam.
+  // Teclado: Esc volta (menus) ou fecha, setas navegam, R restaura, C tira/devolve a caixa,
+  // + e − aproximam.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        requestClose();
+        if (onBack) onBack();
+        else requestClose();
         return;
       }
-      if (isTyping(e.target)) return;
+      if (isTyping(e.target) || inMenu) return;
       const viewer = viewerRef.current;
       switch (e.key) {
         case "ArrowRight":
@@ -252,11 +279,11 @@ export default function InspectionOverlay({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onNext, onPrevious, requestClose]);
+  }, [onNext, onPrevious, requestClose, onBack, inMenu]);
 
   const visible = shown && !closing;
   const touch = inputMode === "touch";
-  const hasMarkers = !!item.markers?.length;
+  const hasMarkers = !!item?.markers?.length;
   const hasDescription = hasDescriptionPanel;
   const showDock = hasDescription && docked && descriptionOpen;
   const viewportWidth = useViewportWidth();
@@ -264,6 +291,9 @@ export default function InspectionOverlay({
   const centered = viewportWidth - 2 * dockSpace >= CENTERED_MIN_WIDTH;
   const rightInset = showDock && !centered ? dockSpace : 0;
   const sheetHeight = hasDescription && !docked ? descriptionSize.height : 0;
+  // O menu nunca passa por baixo do painel lateral (os cartões ficam todos à vista).
+  const menuRight = showDock ? dockSpace : 0;
+  const many = count > 5;
 
   return (
     <div
@@ -287,17 +317,31 @@ export default function InspectionOverlay({
       {/* Área de manipulação do modelo. */}
       <div
         className={`absolute inset-x-0 top-0 transition-[opacity,transform] duration-[260ms] ease-out motion-reduce:transition-none ${
-          visible && !loading ? "scale-100 opacity-100" : "scale-[0.97] opacity-0"
-        }`}
+          visible && !loading && item ? "scale-100 opacity-100" : "scale-[0.97] opacity-0"
+        } ${item ? "" : "invisible"}`}
         style={{ bottom: controlsHeight + sheetHeight, right: rightInset }}
+        aria-hidden={!item}
       >
         <canvas
           ref={canvasRef}
           className="block touch-none select-none"
           role="img"
-          aria-label={`Modelo 3D: ${item.title}. ${touch ? "Arraste para girar e use dois dedos para aproximar." : "Arraste para girar e use a roda do mouse para aproximar."}`}
+          aria-label={
+            item
+              ? `Modelo 3D: ${item.title}. ${touch ? "Arraste para girar e use dois dedos para aproximar." : "Arraste para girar e use a roda do mouse para aproximar."}`
+              : undefined
+          }
         />
       </div>
+
+      {/* Menu do acervo: grupos ou peças, no lugar do modelo. */}
+      {menu && (
+        <InspectionMenuGrid
+          menu={menu}
+          style={{ bottom: controlsHeight + sheetHeight, right: menuRight }}
+          onPreload={(it) => viewerRef.current?.preload(it)}
+        />
+      )}
 
       {/* Rótulos sobre partes do modelo (ex.: estágios da maquete). */}
       {hasMarkers && showMarkers && !loading && (
@@ -320,13 +364,13 @@ export default function InspectionOverlay({
         </div>
       )}
 
-      {loading && !error && (
+      {item && loading && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
           <span className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-[#FFD54A] motion-reduce:animate-none" />
           <span className="sr-only">Carregando modelo 3D…</span>
         </div>
       )}
-      {error && (
+      {item && error && (
         <div className="absolute inset-0 flex items-center justify-center p-6" role="alert">
           <div className="max-w-xs rounded-2xl bg-stone-950/90 p-5 text-center text-sm">
             <p>{error}</p>
@@ -341,20 +385,35 @@ export default function InspectionOverlay({
         </div>
       )}
 
-      {/* Cabeçalho: conjunto, objeto e etapa. */}
+      {/* Cabeçalho: voltar (menus), conjunto, objeto e etapa. */}
       <header
-        className="pointer-events-none absolute left-4 top-4 sm:left-6 sm:top-6"
-        style={{ right: Math.max(64, rightInset) }}
+        className="pointer-events-none absolute left-4 top-4 flex items-start gap-3 sm:left-6 sm:top-6"
+        style={{ right: Math.max(64, menu ? menuRight : rightInset) }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/80 sm:text-[11px]">
-          {set.title}
-        </p>
-        <h2 id="inspection-title" className={`mt-1 text-lg font-semibold leading-tight text-stone-50 ${short ? "" : "sm:text-2xl"}`}>
-          {item.title}
-        </h2>
-        <p className="mt-1 font-mono text-xs text-stone-400" aria-label={`Etapa ${index + 1} de ${count}`}>
-          <span className="text-stone-100">{pad(index + 1)}</span> / {pad(count)}
-        </p>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className={`${iconButton} pointer-events-auto shrink-0 bg-black/45`}
+            aria-label="Voltar"
+            title="Voltar (Esc)"
+          >
+            <ChevronLeftIcon />
+          </button>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/80 sm:text-[11px]">
+            {eyebrow ?? set.title}
+          </p>
+          <h2 id="inspection-title" className={`mt-1 text-lg font-semibold leading-tight text-stone-50 ${short ? "" : "sm:text-2xl"}`}>
+            {item ? item.title : set.title}
+          </h2>
+          {item && (
+            <p className="mt-1 font-mono text-xs text-stone-400" aria-label={`${noun} ${index + 1} de ${count}`}>
+              <span className="text-stone-100">{pad(index + 1)}</span> / {pad(count)}
+            </p>
+          )}
+        </div>
       </header>
 
       <button
@@ -389,11 +448,50 @@ export default function InspectionOverlay({
             onOpenChange={setDescriptionOpen}
             onNext={onNext}
             onSpeakingMarker={setSpeakingMarker}
+            onCaption={setCaption}
           />
         </div>
       )}
 
+      {/* Legenda da narração com o painel de descrição recolhido. */}
+      {hasDescription && !descriptionOpen && caption && (
+        <div
+          className="pointer-events-none absolute left-0 flex justify-center px-4"
+          style={{ bottom: controlsHeight + sheetHeight + 8, right: menu ? menuRight : rightInset }}
+          aria-hidden="true"
+        >
+          <p
+            key={caption}
+            className="inspection-caption max-w-xl rounded-lg bg-black/60 px-3 py-1.5 text-center text-[13px] leading-snug text-stone-100 backdrop-blur-sm sm:text-sm"
+          >
+            {caption}
+          </p>
+        </div>
+      )}
+
       {/* Controles inferiores. */}
+      {menu ? (
+        // Menu: só o botão que reabre a descrição (painel lateral); na gaveta, ela mesma basta.
+        <div
+          ref={controlsRef}
+          style={{ right: menuRight }}
+          className={`absolute bottom-0 left-0 flex flex-col items-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+            short ? "" : "sm:pb-6"
+          } ${hasDescription && docked && !descriptionOpen ? "" : "hidden"}`}
+        >
+          <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setDescriptionOpen(true)}
+              className={iconButton}
+              aria-label="Mostrar descrição"
+              title="Descrição (I)"
+            >
+              <BookIcon />
+            </button>
+          </div>
+        </div>
+      ) : (
       <div
         ref={controlsRef}
         style={{ right: rightInset }}
@@ -410,18 +508,13 @@ export default function InspectionOverlay({
         >
           {touch ? "Toque na caixa ou na rocha para tirar a rocha da caixa" : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
         </p>
-        <p className={`pointer-events-none text-center text-[11px] text-stone-400 sm:text-xs ${short ? "hidden" : ""}`}>
-          {touch
-            ? "Arraste para girar · Dois dedos para aproximar e deslocar"
-            : "Arraste para girar · Roda do mouse para aproximar · Botão direito para deslocar · Duplo clique ou R para restaurar"}
-        </p>
         <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
           <button
             type="button"
             onClick={onPrevious}
             disabled={index === 0}
             className={iconButton}
-            aria-label="Objeto anterior"
+            aria-label={`${noun} anterior`}
             title="Anterior (←)"
           >
             <ChevronLeftIcon />
@@ -494,7 +587,7 @@ export default function InspectionOverlay({
             onClick={onNext}
             disabled={index === count - 1}
             className={iconButton}
-            aria-label="Próximo objeto"
+            aria-label={`Próxima ${noun.toLowerCase()}`}
             title="Próximo (→)"
           >
             <ChevronRightIcon />
@@ -502,8 +595,8 @@ export default function InspectionOverlay({
         </div>
 
         {/* Sequência do conjunto: ir direto a qualquer etapa. */}
-        <nav aria-label={`Etapas de ${set.title}`} className="w-full max-w-md">
-          <ol className="flex justify-center gap-2 sm:gap-3">
+        <nav aria-label={`${noun}s de ${set.title}`} className={`w-full ${count > 4 ? "max-w-2xl" : "max-w-md"}`}>
+          <ol className={`flex justify-center ${many ? "gap-1 sm:gap-2" : "gap-2 sm:gap-3"}`}>
             {set.items.map((it, i) => {
               const active = i === index;
               return (
@@ -512,9 +605,9 @@ export default function InspectionOverlay({
                     type="button"
                     onClick={() => onGoTo(i)}
                     aria-current={active ? "step" : undefined}
-                    aria-label={`Etapa ${i + 1}: ${it.title}`}
+                    aria-label={`${noun} ${i + 1}: ${it.title}`}
                     title={it.title}
-                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${short ? "sm:w-14" : "sm:w-24"} ${
+                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${short ? "sm:w-14" : count > 4 ? "sm:w-[4.5rem]" : "sm:w-24"} ${
                       active ? "bg-[#FFD54A]/15" : "hover:bg-white/10"
                     }`}
                   >
@@ -539,7 +632,7 @@ export default function InspectionOverlay({
                     <span
                       className={`w-full truncate text-center text-[10px] leading-tight sm:text-[11px] ${
                         active ? "text-[#FFE89A]" : "text-stone-300"
-                      } ${short ? "sr-only" : ""}`}
+                      } ${short ? "sr-only" : many ? "max-sm:sr-only" : ""}`}
                     >
                       {it.shortTitle}
                     </span>
@@ -550,6 +643,7 @@ export default function InspectionOverlay({
           </ol>
         </nav>
       </div>
+      )}
     </div>
   );
 }

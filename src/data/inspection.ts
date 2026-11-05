@@ -59,7 +59,7 @@ export type InspectionItem = {
    * fragmentos). Não usar com material solto (terra, solo, areia): sem a caixa ele não se
    * sustenta, então o item fica sem esse recurso.
    */
-  container?: { node: string };
+  container?: { node: string } | { nodes: string[] };
   /** Miniatura da faixa de navegação (imagem gerada a partir do próprio modelo). */
   thumbnail: string;
   /**
@@ -77,6 +77,8 @@ export type InspectionItem = {
 export type InspectionSet = {
   id: string;
   title: string;
+  /** Nome de cada item na interface ("Etapa 1", "Rocha 1"…; padrão: "Etapa"). */
+  stepNoun?: string;
   /**
    * Introdução do conjunto (aba "Introdução" do painel de descrição, mostrada primeiro ao abrir).
    * Mesmo formato de `InspectionItem.description`.
@@ -220,6 +222,31 @@ Ele é resultado de um longo processo de transformação da natureza!`,
 
 export const INSPECTION_SETS: Record<string, InspectionSet> = {
   [FORMACAO_DO_SOLO.id]: FORMACAO_DO_SOLO,
+};
+
+/** Grupo de um acervo (ex.: rochas ígneas): menu próprio, com texto e narração. */
+export type InspectionGroup = {
+  id: string;
+  title: string;
+  /** Texto do grupo (mostrado e narrado no menu do grupo). */
+  overview: string;
+  overviewNarration?: InspectionNarration;
+  items: InspectionItem[];
+};
+
+/**
+ * Acervo com menu em dois níveis (ex.: Material de Origem): abre num menu com os grupos e o texto
+ * geral; um grupo abre o menu das suas peças; uma peça abre a inspeção 3D, com as outras peças do
+ * grupo na faixa de navegação.
+ */
+export type InspectionCatalog = {
+  id: string;
+  title: string;
+  overview: string;
+  overviewNarration?: InspectionNarration;
+  /** Nome de cada peça ("Rocha"). */
+  stepNoun: string;
+  groups: InspectionGroup[];
 };
 
 /** Opacidade da camada escura sobre o museu durante a inspeção (ajustável após testes). */
