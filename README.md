@@ -343,7 +343,7 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Mostrar / ocultar a descrição | **I**, botão do livro ou **X** do painel | **Ler** / **Recolher** |
-| Pausar / retomar a narração (começa sozinha) | **N** ou botão ❚❚ / ▶ na barra do painel | botão ❚❚ / ▶ |
+| Pausar / retomar a narração (começa sozinha na primeira vez) | **N** ou botão ❚❚ / ▶ na barra do painel | botão ❚❚ / ▶ |
 | Voltar um nível (menus do módulo 02) | **Esc** ou botão **‹** | botão **‹** |
 | Fechar | **Esc** (fora dos menus) ou **X** | **X** |
 
@@ -398,6 +398,9 @@ animação.
 um botão redondo e discreto (❚❚ / ▶) na barra das abas, com um anel amarelo que mostra o progresso.
 A narração **começa sozinha** a cada texto novo: ao abrir a inspeção, ao trocar de aba ou de peça
 (“Ir para a etapa 1”, “Próxima etapa”, setas, miniaturas) e, no módulo 02, ao entrar em cada menu.
+**Só na primeira vez:** voltando a um texto cuja narração já tocou (ir e voltar nos menus, rever
+uma rocha, reabrir a inspeção), ela não recomeça sozinha e fica no ▶. A lista do que já foi
+ouvido vale até a página ser recarregada.
 A inspeção é aberta por um clique, toque ou tecla do visitante, então os navegadores liberam o som;
 se algum recusar, o botão ▶ fica à disposição. O botão (ou **N**) pausa e retoma; a pausa vale só
 para o texto atual. Enquanto toca:
@@ -795,6 +798,7 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 27 | Legenda | ✔ com o painel oculto, a frase falada aparece acima dos controles (“Repare nos pequenos minerais de cores diferentes!”); também nos menus |
 | 28 | Voltar | ✔ **Esc** na rocha volta às rochas do grupo, de novo volta aos grupos |
 | 29 | Celular (emulação 375×812) | ✔ botão **Inspecionar** na fileira; grupos em lista; 8 metamórficas em grade de 2 colunas; Gnaisse com 8 miniaturas sem nome, gaveta recolhida e legenda acima dela |
+| 31 | Narração só na primeira vez | ✔ grupos (toca) → ígneas (toca) → Esc: grupos parados no ▶, nenhum parágrafo destacado; ígneas de novo: parado; Basalto amigdaloide (toca) → Esc → de novo: parado; ▶ toca normalmente |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução

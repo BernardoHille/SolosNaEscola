@@ -57,6 +57,12 @@ const sentenceAt = (text: string, t: number, from: number, to: number) => {
   return parts[parts.length - 1];
 };
 
+/**
+ * Narrações que já começaram a tocar nesta visita (até recarregar a página). Ao voltar a um texto
+ * já ouvido (ir e voltar nos menus, reabrir a inspeção), ela não recomeça sozinha: fica no ▶.
+ */
+const HEARD = new Set<string>();
+
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
 
@@ -185,6 +191,9 @@ export default function InspectionDescription({
       setEnded(false);
     };
     const onPause = () => setPlaying(false);
+    // Trocar o `src` cancela o evento "pause" que estava na fila: o estado é conferido de novo
+    // quando o novo áudio começa a carregar (sem isso, o botão ficaria em "pausar" à toa).
+    const onReload = () => setPlaying(!audio.paused);
     const onMeta = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     const onEnded = () => {
       setPlaying(false);
@@ -193,6 +202,8 @@ export default function InspectionDescription({
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("emptied", onReload);
+    audio.addEventListener("loadstart", onReload);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("ended", onEnded);
     return () => {
@@ -200,6 +211,8 @@ export default function InspectionDescription({
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("emptied", onReload);
+      audio.removeEventListener("loadstart", onReload);
       audio.removeEventListener("loadedmetadata", onMeta);
       audio.removeEventListener("ended", onEnded);
       audio.removeAttribute("src");
@@ -220,9 +233,10 @@ export default function InspectionDescription({
       return;
     }
     audio.src = url;
-    // Começa sozinha. A inspeção é aberta por um clique ou tecla do visitante, então o navegador
-    // permite o som; se ainda assim recusar, o botão de play fica à disposição.
-    audio.play().catch(() => {});
+    // Começa sozinha na primeira vez. A inspeção é aberta por um clique ou tecla do visitante, então
+    // o navegador permite o som; se ainda assim recusar, o botão de play fica à disposição.
+    if (HEARD.has(url)) return;
+    audio.play().then(() => HEARD.add(url), () => {});
   }, [url]);
 
   const toggleNarration = useCallback(() => {
@@ -233,7 +247,7 @@ export default function InspectionDescription({
       return;
     }
     if (audio.ended) audio.currentTime = 0;
-    audio.play().catch(() => {});
+    audio.play().then(() => HEARD.add(url), () => {});
   }, [url]);
 
   // Tecla N: tocar / pausar.
