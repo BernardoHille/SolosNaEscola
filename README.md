@@ -23,8 +23,9 @@ computadores e dispositivos móveis.
 > **Compactação do Solo** (módulo 09, na mesa depois dela) podem ser
 > inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
 > e narração automática. As quatro amostras do **Solo Ampliado** (módulo 10, na mesa dos microscópios)
-> abrem em 2D, numa telinha que lembra a do microscópio digital. As demais estantes serão desenvolvidas nas
-> próximas etapas.
+> abrem em 2D, numa telinha que lembra a do microscópio digital. Na parede da **Coleção de Perfis de Solo**
+> (módulo 11), cada uma das doze placas e o mapa têm o seu destaque e levam ao mesmo menu, com o mapa e os solos
+> em 3D. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -851,6 +852,41 @@ não recodifica, deixa de fora os títulos lidos e tira o encerramento, a pedido
 sequência das amostras não segue a dos aparelhos na mesa do museu. O gesto de dois dedos foi testado com
 eventos simulados, não num aparelho de toque.
 
+### Módulo 11 · Coleção de Perfis de Solo
+
+Na parede ao fundo ficam doze placas de solo, encostadas e em fila sobre um banco, a foto da soja e o mapa dos
+solos do Paraná. **Cada placa e o mapa têm um volume próprio**, com destaque e rótulo (“Inspecionar · Gleissolo”),
+e **todos abrem o mesmo menu** (`colecao-de-perfis-de-solo`). Não há caminho direto de uma placa para o seu item.
+
+**Volumes.** Saem de medidas no splat: a faixa de x e o topo de cada placa, e a frente ajustada em reta por altura
+(resíduo de 1 a 8 mm). Eles ficam **inclinados como a placa**, de 8,8° a 20,6°, com a profundidade da moldura atrás
+da frente, para o contorno seguir a peça. As placas vão de x ≈ 3,18 m (Organossolo) a x ≈ −3,28 m (Latossolo), de
+y ≈ 0,23 m até 0,70 a 2,28 m, e z ≈ 3,9 a 4,4 m. O mapa fica em (2,84; 1,54; 4,29), com 87 × 62 cm.
+
+**Menu.** É um acervo de grupo único, com texto geral: a introdução narrada e nove cartões. A ordem é a do texto:
+mapa, Organossolo, Neossolo, Gleissolo, Cambissolo, Espodossolo, Argissolo, Nitossolo e Latossolo. Na parede, o
+Cambissolo vem antes do Gleissolo.
+
+**Modelos** (`public/models/inspection/perfis/`). São doze placas no acervo e oito solos na narração. O item de cada
+solo mostra **todas as suas placas**, lado a lado, na ordem da parede e a 8 cm entre si: Organossolo (2 placas,
+2,2 MB), Neossolo (2, 2,4 MB) e Latossolo (3, 4,8 MB). O script `modulo11_glb_web.py` junta os arquivos, copiando
+geometria e texturas sem alteração. Os outros cinco solos (1,2 a 1,8 MB) e o mapa (2,6 MB, sem iluminação) são os
+GLBs do acervo, sem alteração. A vista das placas gira −24° e inclina só 4°: a frente é vertical, e a luz principal
+fica parada, à esquerda. As miniaturas saem dos previews do acervo.
+
+**Texto e narração.** O texto é o enviado pela equipe, sem alteração. O corte de `tipos_solo.aac` não recodifica,
+deixa de fora os títulos lidos e tira o encerramento, a pedido: o último trecho termina em 343,35 s. Ficam 37,51 s
+na introdução, 36,15 s no mapa e de 26,94 s a 33,78 s em cada solo. Em dois pontos, a transcrição ouviu uma palavra
+diferente do texto: “Este tipo de solo” no Organossolo e “Esse é um solo” no Latossolo. A legenda segue o texto.
+
+**Limites:**
+
+- O acervo avisa que as cores são aproximadas. O Nitossolo é a mais distante: a narração fala em “coloração
+  avermelhada”, e o modelo está mais claro e menos vermelho que a foto de referência. O Latossolo 12 é a cor menos
+  segura.
+- No celular deitado, os controles cobrem a parte de baixo das placas altas até o visitante mover o modelo.
+- O mapa é o PDF original: as cores e o bloco de logos diferem um pouco da folha da parede.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1016,6 +1052,7 @@ SolosNaEscola/
 │   ├── inspection/densidade/*.glb # módulo 08: três garrafas sobre balanças (derivadas do acervo)
 │   ├── inspection/compactacao/*.glb # módulo 09: caixa de solo solto e caixa compactada com o cavalo
 │   ├── images/inspection/solo-ampliado/*.webp # módulo 10: imagens vistas na telinha do microscópio
+│   ├── models/inspection/perfis/*.glb # módulo 11: placas de solo (juntas por tipo) e mapa
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1060,6 +1097,7 @@ SolosNaEscola/
 │   │   ├── densidadeDoSolo.ts     # módulo 08 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── compactacaoDoSolo.ts   # módulo 09 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── soloAmpliado.ts        # módulo 10 (gerado a partir da gravação e das imagens)
+│   │   ├── colecaoDePerfisDeSolo.ts # módulo 11 (gerado a partir do texto e da gravação)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1234,6 +1272,9 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 65 | Telinha: zoom e arraste | ✔ roda do mouse, botões do aparelho e teclas + e − aproximam e afastam, com os botões apagando nos limites; arrastar e W, A, S, D movem; R e a troca de amostra voltam à imagem inteira; a imagem nunca deixa borda vazia |
 | 66 | Telinha com o painel e a narração | ✔ **I** abre o painel, com o trecho falado destacado, e o aparelho se ajusta ao lado dele; legenda certa (“Agora, observe o solo orgânico.”, “Perceba que esta amostra…”) |
 | 67 | Telinha no celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, aparelho inteiro, com a gaveta **Ler** e a dica de toque; deitado, aparelho à direita, sem cobrir o título nem os botões; dois dedos testados com eventos simulados |
+| 68 | Volumes da Coleção de Perfis | ✔ no modo de calibração, as caixas inclinadas coincidem com as placas; ao mirar, destaque e “Inspecionar” com o nome do solo (Organossolo, Latossolo, Nitossolo) e no mapa; a foto da soja e a parede não destacam |
+| 69 | Menu e itens | ✔ placa abre o menu com os nove cartões e a introdução narrada, com legenda; mapa e os oito solos carregam com narração e legenda certas; Organossolo, Neossolo e Latossolo mostram todas as placas; sem erros no console |
+| 70 | Celular (emulação 375 × 812 e 667 × 375) | ✔ toque simulado na placa abre o menu; em pé, mapa e Nitossolo enquadrados; deitado, os controles cobrem a parte de baixo do Nitossolo (ver limites do módulo) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1242,7 +1283,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real,
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

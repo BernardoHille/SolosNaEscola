@@ -330,6 +330,292 @@
         0.45
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-01-organossolo",
+      "label": "Organossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 16,
+      "position": [
+        3.007,
+        0.449,
+        4.069
+      ],
+      "rotationDeg": [
+        -20.6,
+        180,
+        0
+      ],
+      "size": [
+        0.335,
+        0.507,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-02-organossolo",
+      "label": "Organossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 17,
+      "position": [
+        2.507,
+        0.585,
+        4.081
+      ],
+      "rotationDeg": [
+        -15.0,
+        180,
+        0
+      ],
+      "size": [
+        0.335,
+        0.766,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-03-neossolo",
+      "label": "Neossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 18,
+      "position": [
+        1.945,
+        0.489,
+        4.024
+      ],
+      "rotationDeg": [
+        -16.7,
+        180,
+        0
+      ],
+      "size": [
+        0.36,
+        0.574,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-04-neossolo",
+      "label": "Neossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 19,
+      "position": [
+        1.413,
+        0.58,
+        4.105
+      ],
+      "rotationDeg": [
+        -12.2,
+        180,
+        0
+      ],
+      "size": [
+        0.325,
+        0.742,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-05-cambissolo",
+      "label": "Cambissolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 20,
+      "position": [
+        0.895,
+        0.73,
+        4.121
+      ],
+      "rotationDeg": [
+        -12.1,
+        180,
+        0
+      ],
+      "size": [
+        0.36,
+        1.059,
+        0.12
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-06-gleissolo",
+      "label": "Gleissolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 21,
+      "position": [
+        0.375,
+        0.557,
+        4.093
+      ],
+      "rotationDeg": [
+        -16.7,
+        180,
+        0
+      ],
+      "size": [
+        0.35,
+        0.715,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-07-espodossolo",
+      "label": "Espodossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 22,
+      "position": [
+        -0.132,
+        0.761,
+        4.146
+      ],
+      "rotationDeg": [
+        -13.5,
+        180,
+        0
+      ],
+      "size": [
+        0.315,
+        1.121,
+        0.075
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-08-latossolo",
+      "label": "Latossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 23,
+      "position": [
+        -0.6,
+        0.943,
+        4.19
+      ],
+      "rotationDeg": [
+        -13.1,
+        180,
+        0
+      ],
+      "size": [
+        0.28,
+        1.499,
+        0.11
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-09-latossolo",
+      "label": "Latossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 24,
+      "position": [
+        -1.185,
+        0.982,
+        4.178
+      ],
+      "rotationDeg": [
+        -10.5,
+        180,
+        0
+      ],
+      "size": [
+        0.35,
+        1.561,
+        0.11
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-10-argissolo",
+      "label": "Argissolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 25,
+      "position": [
+        -1.755,
+        0.983,
+        4.185
+      ],
+      "rotationDeg": [
+        -10.2,
+        180,
+        0
+      ],
+      "size": [
+        0.39,
+        1.56,
+        0.11
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-11-nitossolo",
+      "label": "Nitossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 26,
+      "position": [
+        -2.38,
+        1.241,
+        4.237
+      ],
+      "rotationDeg": [
+        -9.1,
+        180,
+        0
+      ],
+      "size": [
+        0.36,
+        2.076,
+        0.11
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "perfil-12-latossolo",
+      "label": "Latossolo",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 27,
+      "position": [
+        -3.1,
+        1.242,
+        4.268
+      ],
+      "rotationDeg": [
+        -8.8,
+        180,
+        0
+      ],
+      "size": [
+        0.35,
+        2.075,
+        0.11
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "mapa-dos-solos",
+      "label": "Mapa dos solos",
+      "setId": "colecao-de-perfis-de-solo",
+      "order": 28,
+      "position": [
+        2.84,
+        1.542,
+        4.285
+      ],
+      "rotationDeg": [
+        0,
+        180,
+        0
+      ],
+      "size": [
+        0.87,
+        0.62,
+        0.06
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

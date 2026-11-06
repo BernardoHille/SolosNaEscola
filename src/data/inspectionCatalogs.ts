@@ -1,5 +1,6 @@
 /** Acervos com menu (abertos pelos volumes de interação com o `setId` do acervo). */
 import { AR_NO_SOLO } from "./arNoSolo";
+import { COLECAO_DE_PERFIS_DE_SOLO } from "./colecaoDePerfisDeSolo";
 import { COMPACTACAO_DO_SOLO } from "./compactacaoDoSolo";
 import { DENSIDADE_DO_SOLO } from "./densidadeDoSolo";
 import type { InspectionCatalog } from "./inspection";
@@ -16,4 +17,5 @@ export const INSPECTION_CATALOGS: Record<string, InspectionCatalog> = {
   [DENSIDADE_DO_SOLO.id]: DENSIDADE_DO_SOLO,
   [COMPACTACAO_DO_SOLO.id]: COMPACTACAO_DO_SOLO,
   [SOLO_AMPLIADO.id]: SOLO_AMPLIADO,
+  [COLECAO_DE_PERFIS_DE_SOLO.id]: COLECAO_DE_PERFIS_DE_SOLO,
 };

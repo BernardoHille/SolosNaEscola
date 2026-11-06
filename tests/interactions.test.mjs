@@ -121,7 +121,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -140,6 +140,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "densidade-do-solo",
         "compactacao-do-solo",
         "solo-ampliado",
+        "colecao-de-perfis-de-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -212,6 +213,24 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const zoomed = volumes.filter((v) => v.setId === "solo-ampliado");
   assert.equal(zoomed.length, 1);
   assert.deepEqual(zoomed[0].rotationDeg, [0, -90, 0]);
+  // Coleção de Perfis: as doze placas, das jovens (x maior) às evoluídas, sem sobrepor, mais o mapa, todos no mesmo menu.
+  const wall = volumes.filter((v) => v.setId === "colecao-de-perfis-de-solo");
+  const plates = wall.filter((v) => v.id.startsWith("perfil-"));
+  assert.equal(plates.length, 12);
+  assert.deepEqual(
+    plates.map((v) => v.label),
+    ["Organossolo", "Organossolo", "Neossolo", "Neossolo", "Cambissolo", "Gleissolo", "Espodossolo", "Latossolo", "Latossolo", "Argissolo", "Nitossolo", "Latossolo"],
+  );
+  for (let i = 1; i < plates.length; i++) assert.ok(right(plates[i]) <= left(plates[i - 1]), plates[i].id);
+  for (const p of plates) {
+    assert.equal(p.rotationDeg[1], 180, `${p.id}: de frente para −Z`);
+    assert.ok(p.rotationDeg[0] < 0 && p.rotationDeg[0] > -25, `${p.id}: o topo encosta na parede`);
+  }
+  const map = wall.filter((v) => !v.id.startsWith("perfil-"));
+  assert.deepEqual(map.map((v) => v.id), ["mapa-dos-solos"]);
+  for (const p of plates.slice(0, 2)) {
+    assert.ok(map[0].position[1] - map[0].size[1] / 2 > p.position[1] + p.size[1] / 2, "o mapa fica acima das placas");
+  }
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -738,6 +757,50 @@ test("dados: Solo Ampliado (menu com texto geral, quatro imagens 2D, sem o encer
   // O usuário pediu para cortar o encerramento da gravação.
   const all = [catalog.overview, ...items.map((it) => it.description)].join("\n");
   assert.ok(!/encerramento|quatro amostras|Interessante, não é/i.test(all));
+});
+
+test("dados: Coleção de Perfis de Solo (menu com texto geral, mapa e oito solos, sem o encerramento)", async () => {
+  const { COLECAO_DE_PERFIS_DE_SOLO: catalog } = await import("../src/data/colecaoDePerfisDeSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkAudio = (narration, text) => {
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 300_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(text), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  };
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  checkAudio(catalog.overviewNarration, catalog.overview);
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => it.title),
+    ["Mapa dos solos", "Organossolo", "Neossolo", "Gleissolo", "Cambissolo", "Espodossolo", "Argissolo", "Nitossolo", "Latossolo"],
+  );
+  // Cada solo mostra todas as suas placas da parede, e cada placa e o mapa têm um item no menu.
+  const plates = { organossolo: 2, neossolo: 2, gleissolo: 1, cambissolo: 1, espodossolo: 1, argissolo: 1, nitossolo: 1, latossolo: 3 };
+  const { volumes } = json("src/data/interactions.json");
+  for (const v of volumes.filter((w) => w.setId === catalog.id)) {
+    assert.ok(items.some((it) => it.title === v.label), `${v.id}: sem item no menu`);
+  }
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    assert.equal(item.model.sizeBytes, statSync(file).size, item.id);
+    const gltf = glbJson(file);
+    if (i > 0) {
+      const names = gltf.nodes.map((n) => n.name ?? "").filter((n) => /^Solo_11_/.test(n));
+      assert.equal(names.length, plates[item.id], `${item.id}: placas no modelo`);
+      assert.ok(Math.abs(item.view.pitchDeg) <= 10, `${item.id}: a frente vertical precisa continuar sob a luz`);
+    }
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    checkAudio(item.narration, item.description);
+  }
+  // O usuário pediu para cortar o encerramento da gravação.
+  const all = [catalog.overview, ...items.map((it) => it.description)].join("\n");
+  assert.ok(!/encerramento|Agora que você observou|debaixo dos nossos pés/i.test(all));
 });
 
 test("telinha do microscópio: a imagem sempre cobre a tela e o zoom mantém o ponto sob o cursor", () => {
