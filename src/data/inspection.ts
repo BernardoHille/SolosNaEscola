@@ -247,7 +247,8 @@ export type InspectionGroup = {
 export type InspectionCatalog = {
   id: string;
   title: string;
-  overview: string;
+  /** Texto geral. Sem ele (ex.: Ar no Solo), o menu abre só com os cartões, sem painel nem narração. */
+  overview?: string;
   overviewNarration?: InspectionNarration;
   /** Nome de cada peça ("Rocha", "Amostra"). */
   stepNoun: string;

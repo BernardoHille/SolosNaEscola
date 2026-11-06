@@ -81,7 +81,8 @@ function ItemCard({ card, index, onPreload }: { card: InspectionMenuCard; index:
           {index + 1}
         </span>
       </span>
-      <span className="truncate px-3 py-2 text-center text-xs font-semibold text-stone-100 sm:text-sm">{card.title}</span>
+      {/* Duas linhas no celular: nos títulos longos, o fim ("sem oxigênio") é o que distingue os itens. */}
+      <span className="line-clamp-2 px-3 py-2 text-center text-xs font-semibold text-stone-100 sm:text-sm">{card.title}</span>
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { ChevronRightIcon, ChevronUpIcon, CloseIcon, PauseIcon, PlayIcon } from "@/components/ui/icons";
 import type { InspectionItem, InspectionSet } from "@/data/inspection";
+import { goToStepLabel, nextStepLabel } from "@/lib/inspection/stepLabels";
 
 export type DescriptionLayout = "docked" | "sheet";
 
@@ -454,7 +455,7 @@ export default function InspectionDescription({
               onClick={() => (tab === "intro" ? setTab("item") : onNext())}
               className="group inline-flex items-center gap-1 rounded-full bg-[#FFD54A]/15 py-1.5 pl-3.5 pr-2.5 text-xs font-semibold xl:py-2 xl:pl-4 xl:pr-3 xl:text-sm text-[#FFE89A] ring-1 ring-[#FFD54A]/40 transition-colors hover:bg-[#FFD54A]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
             >
-              {tab === "intro" ? `Ir para a ${stepLabel.toLowerCase()}` : `Próxima ${noun.toLowerCase()}`}
+              {tab === "intro" ? goToStepLabel(noun, stepLabel) : nextStepLabel(noun)}
               <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5 motion-safe:animate-pulse motion-reduce:transition-none" />
             </button>
           </div>

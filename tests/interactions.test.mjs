@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { animationTimeAt } from "../src/lib/inspection/animationSync.ts";
+import { goToStepLabel, nextStepLabel, stepPlural } from "../src/lib/inspection/stepLabels.ts";
 import {
   castRay,
   convexHull,
@@ -119,7 +120,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -134,6 +135,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "atracao-do-solo-pelo-ima",
         "textura-do-solo",
         "porosidade-do-solo",
+        "ar-no-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -188,6 +190,22 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.equal(porosity.length, 1);
   assert.deepEqual(porosity[0].rotationDeg, [0, 180, 0]);
   assert.ok(porosity[0].position[2] + porosity[0].size[2] / 2 < 0, "à frente do painel central");
+  // Ar no Solo: um volume nas duas mesas do mesmo painel, à esquerda da porosidade (x menor).
+  const air = volumes.filter((v) => v.setId === "ar-no-solo");
+  assert.equal(air.length, 1);
+  assert.deepEqual(air[0].rotationDeg, [0, 180, 0]);
+  assert.ok(right(air[0]) <= left(porosity[0]), "não sobrepõe a mesa da porosidade");
+});
+
+test("rótulos de navegação concordam com o nome do passo", () => {
+  assert.equal(nextStepLabel("Etapa"), "Próxima etapa");
+  assert.equal(nextStepLabel("Rocha"), "Próxima rocha");
+  assert.equal(nextStepLabel("Item"), "Próximo item");
+  assert.equal(nextStepLabel("Experimento"), "Próximo experimento");
+  assert.equal(goToStepLabel("Etapa", "Etapa 1"), "Ir para a etapa 1");
+  assert.equal(goToStepLabel("Experimento", "Experimento"), "Ir para o experimento");
+  assert.equal(stepPlural("Amostra"), "Amostras");
+  assert.equal(stepPlural("Item"), "Itens");
 });
 
 test("dados: os quatro GLBs existem, com o tamanho cadastrado, e são glTF binário", () => {
@@ -522,4 +540,55 @@ test("dados: Porosidade do Solo (um item, GLB animado, sincronia e narração)",
   assert.ok(Math.abs(speed(15.83) - 1) < 0.1, "infiltração em velocidade normal no torrão");
   const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
   assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+});
+
+test("dados: Ar no Solo (menu sem texto geral, torrão animado, duas plantas, sincronia e narração)", async () => {
+  const { AR_NO_SOLO: catalog } = await import("../src/data/arNoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  assert.ok(!catalog.overview, "o roteiro não tem texto geral");
+  assert.ok(!catalog.overviewNarration);
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => it.title),
+    ["Torrão de solo dentro da água", "Planta no solo com oxigênio", "Planta no solo sem oxigênio"],
+  );
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+    assert.ok(item.model.sizeBytes < 10_000_000, item.model.url);
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    const { narration } = item;
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 300_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(item.description), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  }
+  // Só o torrão tem animação: um clipe, sem extensões; as plantas são modelos parados.
+  const [torrao, ...plantas] = items;
+  const gltf = glbJson(resolve(root, "public", torrao.model.url.slice(1)));
+  assert.equal(gltf.animations?.length, 1);
+  assert.deepEqual(gltf.extensionsUsed ?? [], []);
+  const clip = Math.max(...gltf.animations[0].samplers.map((sm) => gltf.accessors[sm.input].max[0]));
+  for (const planta of plantas) {
+    assert.ok(!planta.animation, planta.id);
+    assert.ok(!glbJson(resolve(root, "public", planta.model.url.slice(1))).animations?.length, planta.id);
+  }
+  // Sincronia: crescente; parado até “...dentro da água”, entrando na água nessa palavra; a bolha
+  // corre sem pausa (nenhum trecho parado) e o último par chega ao último quadro.
+  const sync = torrao.animation.sync;
+  for (let i = 1; i < sync.length; i++) {
+    assert.ok(sync[i][0] > sync[i - 1][0]);
+    assert.ok(sync[i][1] > sync[i - 1][1], "sem pausa: nada fica parado no ar");
+  }
+  const paragraphs = torrao.description.split(/\n\s*\n/);
+  const cueOf = (start) => torrao.narration.cues[paragraphs.findIndex((p) => p.startsWith(start))];
+  close(animationTimeAt(cueOf("Você acha"), sync, clip), 0);
+  assert.equal(sync[0][1], 0);
+  assert.ok(Math.abs(sync[sync.length - 1][1] - clip) < 0.05, `${sync[sync.length - 1][1]} vs ${clip}`);
 });

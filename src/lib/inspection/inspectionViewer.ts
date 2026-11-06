@@ -261,6 +261,11 @@ export class InspectionViewer {
     // Enquadramentos medidos no espaço do pivô, ainda sem rotação nem deslocamento.
     this.pivot.setLocalRotation(Quat.IDENTITY);
     holder.setLocalPosition(0, 0, 0);
+    // Material transparente não faz sombra: o mapa de sombras não considera alfa, e vidro e água
+    // deixariam às escuras tudo o que há dentro do recipiente.
+    for (const mi of meshInstancesOf(root)) {
+      if ((mi.material as StandardMaterial).blendType !== BLEND_NONE) mi.castShadow = false;
+    }
     const animation = item.animation ? animationOf(asset, root, item.animation.sync) : null;
     // Animado: enquadra tudo o que o clipe percorre (os potes sobem e saem do lugar).
     const full = animation ? animatedFrame(animation, root) : frameOf(meshInstancesOf(root));

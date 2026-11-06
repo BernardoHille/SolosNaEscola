@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/icons";
 import { INSPECTION_DIM_OPACITY, type InspectionSet } from "@/data/inspection";
 import type { ContainerState, InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
+import { nextStepLabel, stepPlural } from "@/lib/inspection/stepLabels";
 import { IS_DEV } from "@/lib/viewer/spawnOverride";
 
 type InspectionOverlayProps = {
@@ -615,7 +616,7 @@ export default function InspectionOverlay({
             disabled={index === count - 1}
             hidden={single}
             className={iconButton}
-            aria-label={`Próxima ${noun.toLowerCase()}`}
+            aria-label={nextStepLabel(noun)}
             title="Próximo (→)"
           >
             <ChevronRightIcon />
@@ -624,7 +625,7 @@ export default function InspectionOverlay({
 
         {/* Sequência do conjunto: ir direto a qualquer etapa. */}
         <nav
-          aria-label={`${noun}s de ${set.title}`}
+          aria-label={`${stepPlural(noun)} de ${set.title}`}
           hidden={single}
           className={`w-full ${count > 4 ? "max-w-2xl" : "max-w-md"}`}
         >

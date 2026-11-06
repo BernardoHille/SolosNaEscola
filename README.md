@@ -16,8 +16,9 @@ computadores e dispositivos móveis.
 > **Material de Origem** (módulo 02, nas três prateleiras de baixo), as cinco caixas dos
 > **Horizontes do Solo** (módulo 03, na mesa em frente à estante), o experimento animado da
 > **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) e a placa, os copos e o banner da
-> **Textura do Solo** (módulo 05, na mesa em frente à janela) e o experimento animado da
-> **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde) podem ser
+> **Textura do Solo** (módulo 05, na mesa em frente à janela), o experimento animado da
+> **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde) e o torrão na água e
+> as duas plantas do **Ar no Solo** (módulo 07, nas duas mesas ao lado) podem ser
 > inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
 > e narração automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -666,6 +667,64 @@ o mesmo problema. `root.getWorldTransform()` antes do laço resolve os dois.
 da exposição (12,7 MB, contra 6,2 MB do módulo 04) e não foi otimizado. A narração não fala em
 “absorção lenta” como o roteiro; o contraste fica na animação.
 
+### Módulo 07 · Ar no Solo
+
+Nas duas mesas em frente aos painéis do campo ficam os frascos pequenos, o pote branco, o pote “SOLO SEM
+OXIGÊNIO” e o vaso “SOLO COM OXIGÊNIO”. Um volume (`ar-no-solo`, ≈ 112 × 50 × 62 cm, centro em
+(0,89; 1,05; −0,78), girado 180° em Y como o da porosidade) cobre as duas mesas e foi conferido com
+`?debugInteractions=1`.
+
+É um **acervo de grupo único**, como o módulo 05: abre direto no menu, com os três itens na ordem do
+roteiro (“Torrão de solo dentro da água”, “Planta no solo com oxigênio”, “Planta no solo sem
+oxigênio”), com faixa de miniaturas e setas para ir de um ao outro. **O roteiro não tem texto geral:**
+`overview` passou a ser opcional em `InspectionCatalog`; sem ele, o menu não tem painel de descrição
+nem narração, e **I** e **N** não fazem nada.
+
+A gravação (`arplantas.aac`, 112,2 s) foi cortada nos três itens, sem recodificar (cópia AAC → M4A),
+deixando de fora os títulos lidos: 36,25 s, 29,93 s e 32,79 s, cada um com menos de 250 kB. O texto do
+painel vem do roteiro enviado.
+
+**Modelos.** As plantas são cópias sem alteração do acervo (2,4 e 2,2 MB), vistas de cima e giradas
+15° para as etiquetas ficarem legíveis. O do torrão é um **derivado** (`public/models/inspection/ar/`,
+9,2 MB, um clipe de 14 s a 24 q/s): geometria e animação são idênticas às do acervo, e mudam só a cor e
+a opacidade dos materiais transparentes, feitos para o render sobre fundo escuro. Em WebGL, sobre o
+museu escurecido e sem refração, o frasco quase sumia e o torrão parecia solto no ar.
+
+- **Vidro, bolhas e turvação:** o alfa vem da textura e o fator do glTF não passa de 1, então os PNGs
+  foram regravados com o alfa multiplicado por 2,2 a 3,0.
+- **Água:** ganhou azul claro e opacidade de 0,13. É uma escolha didática, como no módulo 06.
+- **Turvação:** puxa para o marrom; só com a textura ela saía bege e escondia o monte de terra.
+
+**Materiais transparentes não fazem mais sombra (vale para todos os módulos).** O mapa de sombras não
+considera o alfa: vidro, água e bolhas escureciam tudo dentro do frasco como se fossem opacos, e o
+torrão ficava quase preto. `show` em `inspectionViewer.ts` desliga `castShadow` nas malhas com
+`blendType` diferente de `BLEND_NONE`. Só os GLBs dos módulos 04, 05 (copos), 06 e 07 têm material
+transparente; nos módulos 01, 02 e 03 nada muda. As caixas com transparência controlada pelo visitante
+não são atingidas, porque voltam a ser opacas antes de cada `show` (`clearCurrent`). Conferido no pote
+do módulo 04, no copo “Arenoso” do módulo 05 e na bandeja do módulo 06.
+
+**Animação conduzida pela narração** (`animation.sync`, só no torrão), medida nos tempos reais do clipe:
+
+| Narração | Clipe |
+|---|---|
+| até 4,83 s (“Você acha…”) | parado no primeiro quadro, torrão acima do frasco |
+| 4,83 s, “Agora, observe…” até logo antes de “água” (8,02 s) | 0–0,75 s: parado (nada se move antes de 0,75 s) |
+| 8,02 a 8,13 s | 0,75–0,86 s: queda, entrando na água na palavra “água” |
+| 8,13 s até “…em forma de bolhas” (24,27 s) | 0,86–11,7 s: bolhas e desmanche, sem pausa (0,67×) |
+| 24,27 a 26,57 s | 11,7–14 s: turvação em velocidade real; último quadro, parado até o fim |
+
+Há bolhas no ar de 0,96 s a 11,75 s do clipe; por isso nenhum trecho desse intervalo fica parado. Ao
+voltar a um item já ouvido, o modelo mostra o último quadro e a narração só toca de novo pelo ▶ ou **N**.
+
+**Rótulos de navegação (correção).** Os botões diziam sempre “Próxima…” e “Ir para a…”, o que nos
+módulos 04, 05, 06 e 07 dava “Próxima item” e “Ir para a experimento”. `stepLabels.ts` concorda com o
+nome do passo. **Títulos no menu (correção):** o cartão cortava o título em uma linha, e no celular as
+duas plantas ficavam “Planta no solo com oxi…”; agora usa até duas linhas.
+
+**Limites:** os tempos e a aparência das bolhas e da turvação são ilustrativos, não medidos. O azul da
+água e o reforço do alfa são escolhas para o WebGL e não vêm do acervo. As bolhas correm a 0,67× da
+velocidade do clipe para acompanhar a fala.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -827,6 +886,7 @@ SolosNaEscola/
 │   ├── inspection/ima/*.glb       # módulo 04: experimento do ímã (animado)
 │   ├── inspection/textura/*.glb   # módulo 05: placa, três copos e banner (derivado das fotos)
 │   ├── inspection/porosidade/*.glb # módulo 06: experimento da porosidade (animado, derivado do acervo)
+│   ├── inspection/ar/*.glb        # módulo 07: torrão na água (animado, derivado) e duas plantas
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -866,13 +926,15 @@ SolosNaEscola/
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
+│   │   ├── arNoSolo.ts            # módulo 07 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
 │   │   └── interactionManager.ts  # alvo, distância, destaque SVG e modo de calibração
 │   ├── lib/inspection/
 │   │   ├── inspectionViewer.ts    # visualizador PlayCanvas do objeto
-│   │   └── animationSync.ts       # narração → instante do clipe (testado)
+│   │   ├── animationSync.ts       # narração → instante do clipe (testado)
+│   │   └── stepLabels.ts          # “Próximo item”, “Próxima etapa”: concordância dos rótulos (testado)
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
@@ -1021,6 +1083,12 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 48 | Celular (emulação 375 × 812) | ✔ o toque em “Inspecionar” abre o experimento; legenda e botão “Ler” no lugar do painel; a bandeja fica menor, com a água ainda visível |
 | 49 | Descrição oculta ao abrir | ✔ sem painel na abertura, com narração e legenda; o botão do livro abre o painel no trecho falado, e o **X** ou **I** fecha; aberto, continua aberto ao trocar de item e ao voltar ao menu; ao reabrir a inspeção, oculto de novo; no menu, a legenda não cobre os cartões; em 375 × 812, a gaveta começa recolhida e abre pelo **Ler** no trecho falado |
 | 50 | Zoom de detalhes (eventos simulados; botão direito real só em clique rápido) | ✔ FOV de 90° para 43,6° em cerca de 0,2 s e de volta ao soltar; olhar cai de 11,2° para 5,4° com o mesmo movimento; sem menu de contexto; funciona com o botão esquerdo já pressionado; encerra ao perder o foco ou se o botão for solto fora da janela; não dispara com toque nem sobre os botões da interface; a ajuda encerra e impede o zoom; captura simulada: entra ao apertar e sai ao soltar, e fica se o visitante andou ou se já estava capturado |
+| 51 | Volume e menu do Ar no Solo | ✔ a caixa cobre as duas mesas; ao mirar, “Inspecionar · Ar no solo”; o menu abre com os três cartões na ordem do roteiro, sem painel nem narração, e **I** e **N** não fazem nada |
+| 52 | Torrão com a narração | ✔ narração tocando: 5,98 s → clipe em 0,268 s; 9,97 s → 2,088 s; 20,01 s → 8,833 s; 24,00 s → 11,512 s; 28,02 s → 14 s, parado (valores iguais aos calculados por `sync`). Forçando o relógio: impacto em 8,13 s, afundando com bolhas em 11,5 s, fragmentos em 20 s, água turva no fim |
+| 53 | Voltar ao item ouvido | ✔ sem tocar sozinho e no último quadro (14 s); **N** toca de novo do primeiro quadro, com o torrão inteiro acima do frasco, sem cobrir o título |
+| 54 | Plantas | ✔ as etiquetas “SOLO COM OXIGÊNIO” e “SOLO SEM OXIGÊNIO” ficam legíveis; a descrição abre pelo livro ou por **I**, com o trecho falado destacado |
+| 55 | Celular (emulação 375 × 812) | ✔ menu em duas colunas, com o título em duas linhas (corrigido); torrão e planta enquadrados, sem cobrir o título; gaveta recolhida que abre pelo **Ler** no trecho falado |
+| 56 | Sombra sem materiais transparentes, em outros módulos | ✔ pote do módulo 04, copo “Arenoso” do módulo 05 e bandeja do módulo 06 sem escurecer; caixa do Horizonte B com todas as sombras (GLB sem transparência); botão “Próximo item” com o rótulo certo |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1029,7 +1097,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), o módulo 06 num celular real (GLB de 12,7 MB, sem medida de tempo de carga nem de memória),
+fraco), os módulos 06 e 07 num celular real (GLBs de 12,7 MB e 9,2 MB, sem medida de tempo de carga nem de memória),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

@@ -242,6 +242,28 @@
         0.54
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "ar-no-solo",
+      "label": "Ar no solo",
+      "setId": "ar-no-solo",
+      "order": 12,
+      "position": [
+        0.89,
+        1.05,
+        -0.78
+      ],
+      "rotationDeg": [
+        0,
+        180,
+        0
+      ],
+      "size": [
+        1.12,
+        0.5,
+        0.62
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [
