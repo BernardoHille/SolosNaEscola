@@ -6,7 +6,8 @@
  * da gravação da equipe. Acervo de grupo único, sem texto geral: abre direto no menu dos itens, sem
  * narração nem painel de descrição.
  *
- * Modelos: derivados do acervo em que só as texturas do solo são reduzidas (`modulo08_glb_web.py`).
+ * Modelos: derivados do acervo em que só as texturas do solo mudam, menores e mais claras
+ * (`modulo08_glb_web.py`).
  * As leituras das balanças são ilustrativas: o roteiro só fixa a ordem das massas.
  */
 import type { InspectionCatalog, InspectionItem } from "./inspection";
@@ -15,7 +16,10 @@ const AUDIO = "/audio/inspection/densidade-do-solo";
 const MODELS = "/models/inspection/densidade";
 const THUMBS = "/models/inspection/thumbs";
 
-/** De frente e de cima, para a etiqueta e o visor da balança (ambos em +Z) ficarem legíveis. */
+/**
+ * De frente e de cima, com a etiqueta e o visor (ambos em +Z) legíveis. A inclinação é baixa porque a luz
+ * principal fica parada: com 26°, a frente da garrafa quase não recebia luz direta.
+ */
 const VIEW: InspectionItem["view"] = { rotationDeg: [0, 0, 0], yawDeg: -20, pitchDeg: 18, fitScale: 0.82 };
 
 const ITENS: InspectionItem[] = [
