@@ -120,7 +120,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -137,6 +137,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "porosidade-do-solo",
         "ar-no-solo",
         "densidade-do-solo",
+        "compactacao-do-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -201,6 +202,10 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.equal(density.length, 1);
   assert.deepEqual(density[0].rotationDeg, [0, 180, 0]);
   assert.ok(right(density[0]) <= left(air[0]), "não sobrepõe as mesas do Ar no Solo");
+  const compaction = volumes.filter((v) => v.setId === "compactacao-do-solo");
+  assert.equal(compaction.length, 1);
+  assert.deepEqual(compaction[0].rotationDeg, [0, 180, 0]);
+  assert.ok(right(compaction[0]) <= left(density[0]), "não sobrepõe a mesa da Densidade do Solo");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -639,6 +644,50 @@ test("dados: Densidade do Solo (menu sem texto geral, do mais leve ao mais pesad
     const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
     assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
     assert.ok(audio.length < 300_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(item.description), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  }
+});
+
+test("dados: Compactação do Solo (menu sem texto geral, duas caixas, cavalo só no compactado)", async () => {
+  const { COMPACTACAO_DO_SOLO: catalog } = await import("../src/data/compactacaoDoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  assert.ok(!catalog.overview, "o roteiro não tem texto geral");
+  assert.ok(!catalog.overviewNarration);
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => [it.title, it.id]),
+    [
+      ["Solo não compactado", "caixa-09-01-nao-compactado"],
+      ["Solo compactado", "caixa-09-02-compactado"],
+    ],
+  );
+  const expected = [
+    { has: ["Madeira_Solto", "Solo_Nao_Compactado", "Base_solto"], lacks: ["Solo_Compactado", "Cavalo"] },
+    { has: ["Madeira_Comp", "Solo_Compactado", "Base_comp", "Cavalo"], lacks: ["Solo_Nao_Compactado", "Madeira_Solto"] },
+  ];
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    assert.ok(!item.animation, item.id);
+    // Solo é material solto: pela regra de `inspection.ts`, não usa "Tirar da caixa".
+    assert.ok(!item.container, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+    assert.ok(item.model.sizeBytes < 7_000_000, item.model.url);
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    const gltf = glbJson(file);
+    assert.deepEqual(gltf.extensionsUsed ?? [], []);
+    const names = gltf.nodes.map((n) => n.name);
+    for (const node of expected[i].has) assert.ok(names.includes(node), `${item.id}: falta ${node}`);
+    for (const node of expected[i].lacks) assert.ok(!names.includes(node), `${item.id}: sobra ${node}`);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    const { narration } = item;
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 400_000, narration.audioUrl);
     assert.equal(narration.cues.length, blocks(item.description), narration.audioUrl);
     assert.equal(narration.cues[0], 0);
     for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);

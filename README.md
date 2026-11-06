@@ -18,8 +18,9 @@ computadores e dispositivos móveis.
 > **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) e a placa, os copos e o banner da
 > **Textura do Solo** (módulo 05, na mesa em frente à janela), o experimento animado da
 > **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde), o torrão na água e
-> as duas plantas do **Ar no Solo** (módulo 07, nas duas mesas ao lado) e as três garrafas sobre
-> balanças da **Densidade do Solo** (módulo 08, na mesa seguinte) podem ser
+> as duas plantas do **Ar no Solo** (módulo 07, nas duas mesas ao lado), as três garrafas sobre
+> balanças da **Densidade do Solo** (módulo 08, na mesa seguinte) e as duas caixas da
+> **Compactação do Solo** (módulo 09, na mesa depois dela) podem ser
 > inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
 > e narração automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -767,6 +768,47 @@ Medido na frente da garrafa, contra as fotos de referência:
 número do visor fica pequeno e pede zoom com os dedos. No museu há nove garrafas e uma balança; o modelo
 mostra cada solo sobre a própria balança, como pede o roteiro.
 
+### Módulo 09 · Compactação do Solo
+
+Na mesa depois da Densidade do Solo ficam dois potes, duas caixas de madeira com hastes e um cavalo de
+brinquedo. Um volume (`compactacao-do-solo`, ≈ 105 × 25 × 55 cm, centro em (−1,305; 0,905; −0,755), girado
+180° em Y como os vizinhos) cobre o tampo: medido no splat, ele ocupa x = −1,83 a −0,78 m e z = −1,03 a
+−0,48 m, em y ≈ 0,79 m, e o cavalo vai até y ≈ 1,01 m.
+
+É um **acervo de grupo único**, sem texto geral, como os módulos 07 e 08: abre no menu, com “Solo não
+compactado” e “Solo compactado”, nessa ordem.
+
+**Modelos** (`public/models/inspection/compactacao/`).
+
+- **Solo não compactado:** o GLB do acervo, sem alteração (6,5 MB).
+- **Solo compactado:** sai do conjunto do acervo, sem a outra caixa (5,8 MB, `modulo09_glb_web.py`). A
+  narração diz “repare no cavalo ao lado dela”, e o GLB isolado da caixa não traz o cavalo. Geometria,
+  materiais e texturas são copiados byte a byte.
+
+**Sem “Tirar da caixa”:** solo é material solto e não se sustenta sem a caixa, pela regra de `inspection.ts`.
+
+**Valores didáticos, definidos no acervo, não medidos no museu:**
+
+- As alturas do solo (8,8 e 5,5 cm) e a haste (entra 8,2 cm no solo solto e 0,8 cm no compactado). Nas fotos,
+  as alturas são parecidas e as duas hastes ficam deitadas na borda de trás.
+- As densidades (1,0 e 1,6 g/cm³), com a mesma massa nas duas caixas.
+- As faces laterais do solo são artificiais, e a escala é estimada.
+- O cavalo fica ao lado da caixa compactada, como pede o roteiro, numa posição definida no conjunto do
+  acervo. O dorso do modelo foi espelhado de uma silhueta de perfil.
+
+A gravação (`compactacao.aac`, 98,4 s) foi cortada nos dois itens, sem recodificar, deixando de fora os
+títulos lidos: 37,08 s e 54,97 s, com 258 kB e 372 kB. O texto do painel é o do roteiro enviado; a fala
+difere em poucas palavras (“com o solo não compactado”, “com o solo compactado e repare no cavalo”, numa
+frase só).
+
+**Luz e ângulo.** A vista usa +25° de giro e 28° de inclinação nas duas caixas, para que a comparação seja
+no mesmo ângulo. Com −20° e 30°, as duas faces externas à vista ficavam quase sem luz direta. Com a vista
+final, a lateral esquerda recebe luz, e o solo e a parede interna ficam claros.
+
+**Limites:** a face frontal da caixa continua escura nessa vista, porque a luz principal não gira com o
+modelo. A caixa compactada aparece menor na tela, porque o enquadramento inclui o cavalo. O buraco escuro no
+solo compactado, perto da parede de trás, já vem do modelo do acervo.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -930,6 +972,7 @@ SolosNaEscola/
 │   ├── inspection/porosidade/*.glb # módulo 06: experimento da porosidade (animado, derivado do acervo)
 │   ├── inspection/ar/*.glb        # módulo 07: torrão na água (animado, derivado) e duas plantas
 │   ├── inspection/densidade/*.glb # módulo 08: três garrafas sobre balanças (derivadas do acervo)
+│   ├── inspection/compactacao/*.glb # módulo 09: caixa de solo solto e caixa compactada com o cavalo
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -971,6 +1014,7 @@ SolosNaEscola/
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
 │   │   ├── arNoSolo.ts            # módulo 07 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── densidadeDoSolo.ts     # módulo 08 (gerado a partir do roteiro, da gravação e do acervo)
+│   │   ├── compactacaoDoSolo.ts   # módulo 09 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1137,6 +1181,9 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 58 | Itens | ✔ os três carregam com a narração tocando e a legenda certa (“Agora repare na balança.”, “Repare novamente na balança.”, “Veja o valor indicado na balança.”); visores legíveis com 527, 1065 e 1378; PET transparente acima do solo, sem fazer sombra; painel abre por **I** com o trecho falado destacado |
 | 59 | Zoom máximo no GLB web | ✔ grãos e etiqueta nítidos com as texturas reduzidas |
 | 60 | Celular (emulação 375 × 812) | ✔ garrafa e balança enquadradas; gaveta abre pelo **Ler**; o número do visor fica pequeno (ver limites do módulo) |
+| 61 | Volume e menu da Compactação do Solo | ✔ a caixa cobre os potes, as caixas e o cavalo; ao mirar, “Inspecionar · Compactação do solo”; o menu abre com não compactado e compactado, nessa ordem, sem painel nem narração |
+| 62 | Itens | ✔ os dois carregam com a narração tocando e a legenda certa (“Você já parou para pensar…”, “E repare no cavalo ao lado dela!”, “Quando um cavalo passa…”); setas trocam de item; sem erros no console |
+| 63 | Zoom e celular (emulação 375 × 812) | ✔ o zoom mostra o nível do solo e a haste; caixa e cavalo enquadrados no celular, com a legenda abaixo |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1145,7 +1192,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07 e 08 num celular real (GLBs de 12,7 MB, 9,2 MB e 5,5 MB, sem medida de tempo de carga nem de memória),
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

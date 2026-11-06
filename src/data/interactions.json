@@ -286,6 +286,28 @@
         0.5
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "compactacao-do-solo",
+      "label": "Compactação do solo",
+      "setId": "compactacao-do-solo",
+      "order": 14,
+      "position": [
+        -1.305,
+        0.905,
+        -0.755
+      ],
+      "rotationDeg": [
+        0,
+        180,
+        0
+      ],
+      "size": [
+        1.05,
+        0.25,
+        0.55
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [
