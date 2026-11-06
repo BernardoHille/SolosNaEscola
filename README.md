@@ -17,8 +17,9 @@ computadores e dispositivos móveis.
 > **Horizontes do Solo** (módulo 03, na mesa em frente à estante), o experimento animado da
 > **Atração do Solo pelo Ímã** (módulo 04, na mesa ao lado) e a placa, os copos e o banner da
 > **Textura do Solo** (módulo 05, na mesa em frente à janela), o experimento animado da
-> **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde) e o torrão na água e
-> as duas plantas do **Ar no Solo** (módulo 07, nas duas mesas ao lado) podem ser
+> **Porosidade do Solo** (módulo 06, na mesa em frente ao painel do campo verde), o torrão na água e
+> as duas plantas do **Ar no Solo** (módulo 07, nas duas mesas ao lado) e as três garrafas sobre
+> balanças da **Densidade do Solo** (módulo 08, na mesa seguinte) podem ser
 > inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
 > e narração automática. As demais estantes serão desenvolvidas nas próximas etapas.
 
@@ -725,6 +726,47 @@ duas plantas ficavam “Planta no solo com oxi…”; agora usa até duas linhas
 água e o reforço do alfa são escolhas para o WebGL e não vêm do acervo. As bolhas correm a 0,67× da
 velocidade do clipe para acompanhar a fala.
 
+### Módulo 08 · Densidade do Solo
+
+Na mesa depois das do Ar no Solo ficam as garrafas de tampa verde e uma balança. Um volume
+(`densidade-do-solo`, ≈ 54 × 28 × 50 cm, centro em (−0,205; 0,915; −0,68), girado 180° em Y como os
+vizinhos) cobre o tampo: medido no splat, ele ocupa x = −0,48 a 0,07 m e z = −0,93 a −0,41 m, em
+y ≈ 0,79 m, e as garrafas vão até y ≈ 1,03 m.
+
+É um **acervo de grupo único**, sem texto geral, como o módulo 07: abre no menu, com os três itens na
+ordem do roteiro, do mais leve ao mais pesado (“Solo orgânico”, “Solo argiloso”, “Solo arenoso”), o
+inverso da numeração das pastas do acervo (`garrafa-08-03`, `-02` e `-01`). Cada modelo tem a garrafa
+sobre a balança, e o visor é o que importa: 527, 1065 e 1378 g. **Essas leituras são ilustrativas:** o
+roteiro só fixa a ordem das massas, e os valores vêm das densidades adotadas no acervo.
+
+A gravação (`densidade.aac`, 110,8 s) foi cortada nos três itens, sem recodificar, deixando de fora os
+títulos lidos: 36,25 s, 29,16 s e 33,18 s, cada um com menos de 250 kB. O texto do painel é o do roteiro
+enviado; a fala difere em poucas palavras (“esse recipiente”, “como mais leve nessa comparação”, “mais
+denso nessa comparação”).
+
+**Modelos derivados** (`public/models/inspection/densidade/`, 5,2 a 5,5 MB cada, contra 8,0 a 10,1 MB no
+acervo). Só mudam as duas texturas do solo; geometria, balança, etiqueta e PET são copiados byte a byte.
+
+- **Resolução:** cor-base de 4096 para 2048 px e normal de 2048 para 1024 px, os tamanhos do conjunto do
+  próprio acervo. Com o zoom máximo, os grãos continuam nítidos.
+- **Ganho de 1,22 na cor-base, igual nos três solos:** é uma compensação de luz, não uma mudança de cor.
+
+**Luz e ângulo.** A vista gira o modelo, e a luz principal fica parada. Com a primeira vista (26° de
+inclinação), a face frontal da garrafa ficava voltada para baixo, quase sem luz direta: a areia saía
+marrom, com o ombro bem mais claro, embora a textura e o PET estivessem certos. A vista final usa 18° de
+inclinação e −20° de giro, o que dá cerca de 2,5 vezes mais luz direta na frente e mantém o visor legível.
+Medido na frente da garrafa, contra as fotos de referência:
+
+| Solo | Site (RGB) | Foto (RGB) |
+|---|---|---|
+| Arenoso | 175, 159, 135 | 182, 164, 140 |
+| Argiloso | 115, 68, 48 | 111, 76, 56 |
+| Orgânico | 43, 37, 33 | 69, 61, 52 |
+
+**Limites:** o orgânico sai um pouco mais escuro que na foto, e o ombro da areia, mais claro. No celular, o
+número do visor fica pequeno e pede zoom com os dedos. No museu há nove garrafas e uma balança; o modelo
+mostra cada solo sobre a própria balança, como pede o roteiro.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -887,6 +929,7 @@ SolosNaEscola/
 │   ├── inspection/textura/*.glb   # módulo 05: placa, três copos e banner (derivado das fotos)
 │   ├── inspection/porosidade/*.glb # módulo 06: experimento da porosidade (animado, derivado do acervo)
 │   ├── inspection/ar/*.glb        # módulo 07: torrão na água (animado, derivado) e duas plantas
+│   ├── inspection/densidade/*.glb # módulo 08: três garrafas sobre balanças (derivadas do acervo)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -927,6 +970,7 @@ SolosNaEscola/
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
 │   │   ├── arNoSolo.ts            # módulo 07 (gerado a partir do roteiro, da gravação e do acervo)
+│   │   ├── densidadeDoSolo.ts     # módulo 08 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1089,6 +1133,10 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 54 | Plantas | ✔ as etiquetas “SOLO COM OXIGÊNIO” e “SOLO SEM OXIGÊNIO” ficam legíveis; a descrição abre pelo livro ou por **I**, com o trecho falado destacado |
 | 55 | Celular (emulação 375 × 812) | ✔ menu em duas colunas, com o título em duas linhas (corrigido); torrão e planta enquadrados, sem cobrir o título; gaveta recolhida que abre pelo **Ler** no trecho falado |
 | 56 | Sombra sem materiais transparentes, em outros módulos | ✔ pote do módulo 04, copo “Arenoso” do módulo 05 e bandeja do módulo 06 sem escurecer; caixa do Horizonte B com todas as sombras (GLB sem transparência); botão “Próximo item” com o rótulo certo |
+| 57 | Volume e menu da Densidade do Solo | ✔ a caixa cobre o tampo, as garrafas e a balança; ao mirar, “Inspecionar · Densidade do solo”; o menu abre com orgânico, argiloso e arenoso, nessa ordem, sem painel nem narração |
+| 58 | Itens | ✔ os três carregam com a narração tocando e a legenda certa (“Agora repare na balança.”, “Repare novamente na balança.”, “Veja o valor indicado na balança.”); visores legíveis com 527, 1065 e 1378; PET transparente acima do solo, sem fazer sombra; painel abre por **I** com o trecho falado destacado |
+| 59 | Zoom máximo no GLB web | ✔ grãos e etiqueta nítidos com as texturas reduzidas |
+| 60 | Celular (emulação 375 × 812) | ✔ garrafa e balança enquadradas; gaveta abre pelo **Ler**; o número do visor fica pequeno (ver limites do módulo) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1097,7 +1145,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06 e 07 num celular real (GLBs de 12,7 MB e 9,2 MB, sem medida de tempo de carga nem de memória),
+fraco), os módulos 06, 07 e 08 num celular real (GLBs de 12,7 MB, 9,2 MB e 5,5 MB, sem medida de tempo de carga nem de memória),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

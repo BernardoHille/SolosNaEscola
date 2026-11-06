@@ -120,7 +120,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -136,6 +136,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "textura-do-solo",
         "porosidade-do-solo",
         "ar-no-solo",
+        "densidade-do-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -195,6 +196,11 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.equal(air.length, 1);
   assert.deepEqual(air[0].rotationDeg, [0, 180, 0]);
   assert.ok(right(air[0]) <= left(porosity[0]), "não sobrepõe a mesa da porosidade");
+  // Densidade do Solo: a mesa seguinte, depois das do Ar no Solo (x menor), de frente para −Z.
+  const density = volumes.filter((v) => v.setId === "densidade-do-solo");
+  assert.equal(density.length, 1);
+  assert.deepEqual(density[0].rotationDeg, [0, 180, 0]);
+  assert.ok(right(density[0]) <= left(air[0]), "não sobrepõe as mesas do Ar no Solo");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -591,4 +597,50 @@ test("dados: Ar no Solo (menu sem texto geral, torrão animado, duas plantas, si
   close(animationTimeAt(cueOf("Você acha"), sync, clip), 0);
   assert.equal(sync[0][1], 0);
   assert.ok(Math.abs(sync[sync.length - 1][1] - clip) < 0.05, `${sync[sync.length - 1][1]} vs ${clip}`);
+});
+
+test("dados: Densidade do Solo (menu sem texto geral, do mais leve ao mais pesado, garrafas e narração)", async () => {
+  const { DENSIDADE_DO_SOLO: catalog } = await import("../src/data/densidadeDoSolo.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  assert.ok(!catalog.overview, "o roteiro não tem texto geral");
+  assert.ok(!catalog.overviewNarration);
+  const items = catalog.groups[0].items;
+  // A ordem do roteiro é o inverso da numeração das pastas do acervo: o id tem de seguir o título.
+  assert.deepEqual(
+    items.map((it) => [it.title, it.id]),
+    [
+      ["Solo orgânico", "garrafa-08-03-organico"],
+      ["Solo argiloso", "garrafa-08-02-argiloso"],
+      ["Solo arenoso", "garrafa-08-01-arenoso"],
+    ],
+  );
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    assert.ok(!item.animation, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(statSync(file).size, item.model.sizeBytes, item.model.url);
+    assert.ok(item.model.sizeBytes < 6_500_000, item.model.url);
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    // Garrafa e balança no mesmo modelo, sem extensões; o PET é o único material transparente.
+    const gltf = glbJson(file);
+    const soil = item.id.split("-").pop();
+    assert.deepEqual(gltf.extensionsUsed ?? [], []);
+    for (const node of [`solo_${soil}`, `pet_${soil}`, `etiqueta_${soil}`, `balanca_painel_${soil}`]) {
+      assert.ok(gltf.nodes.some((n) => n.name === node), `${item.id}: ${node}`);
+    }
+    assert.deepEqual(
+      gltf.materials.filter((m) => m.alphaMode === "BLEND").map((m) => m.name),
+      [`pet_${soil}`],
+    );
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    const { narration } = item;
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 300_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(item.description), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  }
 });

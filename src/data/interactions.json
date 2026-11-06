@@ -264,6 +264,28 @@
         0.62
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "densidade-do-solo",
+      "label": "Densidade do solo",
+      "setId": "densidade-do-solo",
+      "order": 13,
+      "position": [
+        -0.205,
+        0.915,
+        -0.68
+      ],
+      "rotationDeg": [
+        0,
+        180,
+        0
+      ],
+      "size": [
+        0.54,
+        0.28,
+        0.5
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [
