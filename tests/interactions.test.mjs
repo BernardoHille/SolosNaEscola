@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { animationTimeAt } from "../src/lib/inspection/animationSync.ts";
+import { MICROSCOPE_HOME, MICROSCOPE_MAX_ZOOM, clampView, panBy, viewTransform, zoomAt } from "../src/lib/inspection/microscopeView.ts";
 import { goToStepLabel, nextStepLabel, stepPlural } from "../src/lib/inspection/stepLabels.ts";
 import {
   castRay,
@@ -120,7 +121,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -138,6 +139,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "ar-no-solo",
         "densidade-do-solo",
         "compactacao-do-solo",
+        "solo-ampliado",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -206,6 +208,10 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.equal(compaction.length, 1);
   assert.deepEqual(compaction[0].rotationDeg, [0, 180, 0]);
   assert.ok(right(compaction[0]) <= left(density[0]), "não sobrepõe a mesa da Densidade do Solo");
+  // Os microscópios ficam numa mesa ao longo de Z, com as telas voltadas para −X.
+  const zoomed = volumes.filter((v) => v.setId === "solo-ampliado");
+  assert.equal(zoomed.length, 1);
+  assert.deepEqual(zoomed[0].rotationDeg, [0, -90, 0]);
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -692,4 +698,63 @@ test("dados: Compactação do Solo (menu sem texto geral, duas caixas, cavalo s�
     assert.equal(narration.cues[0], 0);
     for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
   }
+});
+
+test("dados: Solo Ampliado (menu com texto geral, quatro imagens 2D, sem o encerramento)", async () => {
+  const { SOLO_AMPLIADO: catalog } = await import("../src/data/soloAmpliado.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkAudio = (narration, text) => {
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 300_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(text), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  };
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  checkAudio(catalog.overviewNarration, catalog.overview);
+  const items = catalog.groups[0].items;
+  assert.deepEqual(
+    items.map((it) => [it.title, it.id]),
+    [
+      ["Solo orgânico", "solo-organico"],
+      ["Solo cascalhento", "solo-cascalhento"],
+      ["Solo arenoso", "solo-arenoso"],
+      ["Solo argiloso", "solo-argiloso"],
+    ],
+  );
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    assert.ok(!item.model && !item.view, `${item.id}: item 2D, sem modelo`);
+    const { image, width, height } = item.microscope;
+    const file = readFileSync(resolve(root, "public", image.slice(1)));
+    assert.equal(file.subarray(8, 12).toString("latin1"), "WEBP", image);
+    assert.ok(file.length < 600_000, image);
+    assert.ok(Math.abs(width / height - 16 / 9) < 0.02, `${item.id}: proporção da tela`);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    checkAudio(item.narration, item.description);
+  }
+  // O usuário pediu para cortar o encerramento da gravação.
+  const all = [catalog.overview, ...items.map((it) => it.description)].join("\n");
+  assert.ok(!/encerramento|quatro amostras|Interessante, não é/i.test(all));
+});
+
+test("telinha do microscópio: a imagem sempre cobre a tela e o zoom mantém o ponto sob o cursor", () => {
+  assert.deepEqual(clampView({ zoom: 0.2, cx: 0.9, cy: 0.1 }), MICROSCOPE_HOME);
+  assert.equal(clampView({ zoom: 99, cx: 0.5, cy: 0.5 }).zoom, MICROSCOPE_MAX_ZOOM);
+  // Sem zoom, não há o que arrastar.
+  assert.deepEqual(panBy(MICROSCOPE_HOME, 0.3, -0.2), MICROSCOPE_HOME);
+  // O ponto da imagem sob (0,75; 0,25) continua sob ele depois de aproximar.
+  const under = (v, sx, sy) => [v.cx + (sx - 0.5) / v.zoom, v.cy + (sy - 0.5) / v.zoom];
+  const zoomed = zoomAt({ zoom: 2, cx: 0.5, cy: 0.5 }, 1.5, 0.75, 0.25);
+  assert.equal(zoomed.zoom, 3);
+  const [ax, ay] = under({ zoom: 2, cx: 0.5, cy: 0.5 }, 0.75, 0.25);
+  const [bx, by] = under(zoomed, 0.75, 0.25);
+  assert.ok(Math.abs(ax - bx) < 1e-9 && Math.abs(ay - by) < 1e-9);
+  // Arrastar para a direita mostra o que está à esquerda; o arraste para na borda da imagem.
+  assert.ok(panBy({ zoom: 2, cx: 0.5, cy: 0.5 }, 0.1, 0).cx < 0.5);
+  assert.equal(panBy({ zoom: 2, cx: 0.5, cy: 0.5 }, 5, 0).cx, 0.25);
+  assert.equal(viewTransform(MICROSCOPE_HOME), "scale(1) translate(0%, 0%)");
+  assert.equal(viewTransform({ zoom: 2, cx: 0.25, cy: 0.75 }), "scale(2) translate(25%, -25%)");
 });

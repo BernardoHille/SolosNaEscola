@@ -22,7 +22,9 @@ computadores e dispositivos móveis.
 > balanças da **Densidade do Solo** (módulo 08, na mesa seguinte) e as duas caixas da
 > **Compactação do Solo** (módulo 09, na mesa depois dela) podem ser
 > inspecionados em 3D (ver [Inspeção de objetos](#inspeção-de-objetos-etapa-3)), com textos educativos
-> e narração automática. As demais estantes serão desenvolvidas nas próximas etapas.
+> e narração automática. As quatro amostras do **Solo Ampliado** (módulo 10, na mesa dos microscópios)
+> abrem em 2D, numa telinha que lembra a do microscópio digital. As demais estantes serão desenvolvidas nas
+> próximas etapas.
 
 ---
 
@@ -809,6 +811,46 @@ final, a lateral esquerda recebe luz, e o solo e a parede interna ficam claros.
 modelo. A caixa compactada aparece menor na tela, porque o enquadramento inclui o cavalo. O buraco escuro no
 solo compactado, perto da parede de trás, já vem do modelo do acervo.
 
+### Módulo 10 · Solo Ampliado
+
+É o primeiro módulo em 2D. Na mesa encostada na parede ficam quatro microscópios digitais, em fila. Um volume
+(`solo-ampliado`, ≈ 105 × 30 × 45 cm, centro em (3,65; 0,94; 2,57), girado −90° em Y) cobre os aparelhos:
+medidos no splat, eles ficam em x ≈ 3,65 m e z = 2,17 a 2,97 m, sobre o tampo em y ≈ 0,81 m, e as telas vão até
+y ≈ 1,06 m, voltadas para −X.
+
+É um **acervo de grupo único, com texto geral**, como os módulos 03 e 05: o menu abre com a introdução narrada
+e as quatro amostras (“Solo orgânico”, “Solo cascalhento”, “Solo arenoso”, “Solo argiloso”).
+
+**A telinha** (`MicroscopeScreen.tsx`) substitui o modelo 3D em itens com `microscope` em vez de `model` e
+`view`. O resto da inspeção é o mesmo: menu, setas, miniaturas, painel de descrição, narração e legenda.
+
+- **Aparelho:** corpo escuro, tela na proporção da imagem, botões ovais brancos, luz azul e a haste com o anel
+  metálico, a partir das fotos enviadas.
+- **Aproximar e afastar:** botões do aparelho, roda do mouse (em torno do cursor), dois dedos, dois cliques e as
+  teclas + e −. Vai de 1 a 5 vezes o tamanho inicial.
+- **Mover:** arrastar, com o mouse ou o dedo, ou as teclas W, A, S e D. A imagem sempre cobre a tela, sem bordas
+  vazias, então sem zoom não há o que mover.
+- **Restaurar:** botão do aparelho ou tecla R. Trocar de amostra também volta à imagem inteira.
+- **Sem número de aumento:** a tela mostra só uma barra de zoom. “5×” seria lido como o aumento do microscópio,
+  e esse valor não é conhecido.
+
+A conta do enquadramento fica em `microscopeView.ts`, com teste. Em celular deitado, a tela é baixa: a legenda
+e a dica somem, porque cobririam os botões, e o aparelho vai para a direita, deixando o título livre. O texto
+continua no painel.
+
+**Imagens** (`public/images/inspection/solo-ampliado/`, 1672 × 941 px, 350 a 450 kB): as quatro enviadas pela
+equipe, sem alteração. As fotos dos aparelhos serviram só de referência para a aparência da telinha.
+
+**Texto e narração.** A equipe enviou só o áudio (`microscopio.aac`, 196,3 s). O texto vem da transcrição,
+com a grafia revisada à mão (“Aprocime”, “cascalento”, “escolhe”) e **ainda sem revisão da equipe**. O corte
+não recodifica, deixa de fora os títulos lidos e tira o encerramento, a pedido: o último trecho termina em
+164,3 s. Ficam 31,61 s na introdução e 29,08 s, 24,58 s, 26,37 s e 36,72 s nas amostras, cada um com menos de
+250 kB. A ordem é a da gravação e das imagens; o roteiro (p. 34 e 35) traz o argiloso antes do arenoso.
+
+**Limites:** com o zoom máximo, a imagem fica um pouco suave, porque tem cerca de 1670 px de largura. A
+sequência das amostras não segue a dos aparelhos na mesa do museu. O gesto de dois dedos foi testado com
+eventos simulados, não num aparelho de toque.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -973,6 +1015,7 @@ SolosNaEscola/
 │   ├── inspection/ar/*.glb        # módulo 07: torrão na água (animado, derivado) e duas plantas
 │   ├── inspection/densidade/*.glb # módulo 08: três garrafas sobre balanças (derivadas do acervo)
 │   ├── inspection/compactacao/*.glb # módulo 09: caixa de solo solto e caixa compactada com o cavalo
+│   ├── images/inspection/solo-ampliado/*.webp # módulo 10: imagens vistas na telinha do microscópio
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -995,6 +1038,7 @@ SolosNaEscola/
 │   │   │   ├── InspectionOverlay.tsx     # sobreposição, cabeçalho, navegação, legenda e atalhos
 │   │   │   ├── InspectionDescription.tsx # painel de texto e narração
 │   │   │   ├── InspectionMenuGrid.tsx    # cartões dos grupos e das peças (módulo 02)
+│   │   │   ├── MicroscopeScreen.tsx      # telinha 2D do microscópio digital (módulo 10)
 │   │   │   └── useInspection.ts          # estado: sequência ou menus do acervo
 │   │   ├── dev/CameraCalibration.tsx
 │   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
@@ -1015,12 +1059,14 @@ SolosNaEscola/
 │   │   ├── arNoSolo.ts            # módulo 07 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── densidadeDoSolo.ts     # módulo 08 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── compactacaoDoSolo.ts   # módulo 09 (gerado a partir do roteiro, da gravação e do acervo)
+│   │   ├── soloAmpliado.ts        # módulo 10 (gerado a partir da gravação e das imagens)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
 │   │   └── interactionManager.ts  # alvo, distância, destaque SVG e modo de calibração
 │   ├── lib/inspection/
 │   │   ├── inspectionViewer.ts    # visualizador PlayCanvas do objeto
+│   │   ├── microscopeView.ts      # zoom e arraste da telinha do microscópio (testado)
 │   │   ├── animationSync.ts       # narração → instante do clipe (testado)
 │   │   └── stepLabels.ts          # “Próximo item”, “Próxima etapa”: concordância dos rótulos (testado)
 │   └── lib/viewer/
@@ -1184,6 +1230,10 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 61 | Volume e menu da Compactação do Solo | ✔ a caixa cobre os potes, as caixas e o cavalo; ao mirar, “Inspecionar · Compactação do solo”; o menu abre com não compactado e compactado, nessa ordem, sem painel nem narração |
 | 62 | Itens | ✔ os dois carregam com a narração tocando e a legenda certa (“Você já parou para pensar…”, “E repare no cavalo ao lado dela!”, “Quando um cavalo passa…”); setas trocam de item; sem erros no console |
 | 63 | Zoom e celular (emulação 375 × 812) | ✔ o zoom mostra o nível do solo e a haste; caixa e cavalo enquadrados no celular, com a legenda abaixo |
+| 64 | Volume e menu do Solo Ampliado | ✔ a caixa cobre os quatro microscópios; o menu abre com as quatro amostras e a introdução narrada, com legenda |
+| 65 | Telinha: zoom e arraste | ✔ roda do mouse, botões do aparelho e teclas + e − aproximam e afastam, com os botões apagando nos limites; arrastar e W, A, S, D movem; R e a troca de amostra voltam à imagem inteira; a imagem nunca deixa borda vazia |
+| 66 | Telinha com o painel e a narração | ✔ **I** abre o painel, com o trecho falado destacado, e o aparelho se ajusta ao lado dele; legenda certa (“Agora, observe o solo orgânico.”, “Perceba que esta amostra…”) |
+| 67 | Telinha no celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, aparelho inteiro, com a gaveta **Ler** e a dica de toque; deitado, aparelho à direita, sem cobrir o título nem os botões; dois dedos testados com eventos simulados |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1192,7 +1242,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória),
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real,
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

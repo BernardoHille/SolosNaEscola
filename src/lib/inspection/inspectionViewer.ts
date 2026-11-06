@@ -56,7 +56,7 @@ import {
   Vec3,
 } from "playcanvas";
 
-import type { InspectionItem } from "@/data/inspection";
+import type { InspectionModelItem } from "@/data/inspection";
 import { animationTimeAt } from "@/lib/inspection/animationSync";
 
 export type MarkerPosition = { label: string; x: number; y: number; visible: boolean };
@@ -120,7 +120,7 @@ type Animation = {
 };
 
 type Loaded = {
-  item: InspectionItem;
+  item: InspectionModelItem;
   holder: EntityType;
   full: Frame;
   /** Enquadramento só do conteúdo (sem o recipiente), se houver recipiente. */
@@ -243,7 +243,7 @@ export class InspectionViewer {
   }
 
   /** Mostra um item (substitui o atual). Resolve quando o modelo estiver visível. */
-  async show(item: InspectionItem): Promise<void> {
+  async show(item: InspectionModelItem): Promise<void> {
     const token = ++this.loadToken;
     this.clearCurrent();
     const asset = await this.loadAsset(item.model.url);
@@ -310,7 +310,7 @@ export class InspectionViewer {
   }
 
   /** Baixa um modelo antecipadamente (ex.: a próxima etapa). */
-  preload(item: InspectionItem) {
+  preload(item: InspectionModelItem) {
     this.loadAsset(item.model.url).catch(() => undefined);
   }
 
@@ -734,7 +734,7 @@ function lightRotationFrom(from: [number, number, number]): Quat {
  * peças e a etiqueta). Vários nós são reunidos num grupo novo, filho da mesma raiz, com a
  * transformação local preservada — o arquivo não muda, só a hierarquia em memória.
  */
-function containerOf(root: EntityType, spec: NonNullable<InspectionItem["container"]>): EntityType | null {
+function containerOf(root: EntityType, spec: NonNullable<InspectionModelItem["container"]>): EntityType | null {
   if ("node" in spec) return (root.findByName(spec.node) as EntityType | null) ?? null;
   const parts = spec.nodes.map((n) => root.findByName(n) as EntityType | null).filter((e): e is EntityType => !!e);
   if (!parts.length) return null;

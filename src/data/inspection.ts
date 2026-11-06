@@ -29,7 +29,7 @@ export type InspectionNarration = {
   cues?: number[];
 };
 
-export type InspectionItem = {
+type InspectionItemBase = {
   id: string;
   /** Ordem na sequência (1 = primeira etapa). */
   order: number;
@@ -37,6 +37,24 @@ export type InspectionItem = {
   title: string;
   /** Título curto (indicador de interação e leitores de tela). */
   shortTitle: string;
+  /** Rótulos opcionais sobre partes do modelo (ex.: estágios da maquete). */
+  markers?: InspectionMarker[];
+  /** Miniatura da faixa de navegação (imagem gerada a partir do próprio modelo). */
+  thumbnail: string;
+  /**
+   * Texto educativo do item, exibido no painel de descrição. Parágrafos separados por uma
+   * linha em branco; frases curtas terminadas em "?", "!" ou "..." aparecem em destaque (falas).
+   * Se houver `markers` com `description`, a lista dos estágios vem logo depois deste texto.
+   */
+  description?: string;
+  /** Texto exibido depois da lista dos estágios (`markers`), no mesmo formato de `description`. */
+  closing?: string;
+  /** Narração do texto da etapa (controle na barra do painel de descrição). */
+  narration?: InspectionNarration;
+};
+
+/** Item com modelo 3D, a forma usual. */
+export type InspectionModelItem = InspectionItemBase & {
   model: {
     /** Caminho público do GLB. */
     url: string;
@@ -50,8 +68,6 @@ export type InspectionItem = {
    * aproxima o enquadramento inicial, que cabe a esfera envolvente e sobra em cenas largas e baixas.
    */
   view: { rotationDeg: [number, number, number]; yawDeg: number; pitchDeg: number; fitScale?: number };
-  /** Rótulos opcionais sobre partes do modelo (ex.: estágios da maquete). */
-  markers?: InspectionMarker[];
   /**
    * Recipiente do objeto (nó do GLB, ex.: a caixa de madeira). Clicar no recipiente ou no
    * conteúdo esmaece o recipiente e enquadra só o conteúdo (a rocha); clicar na rocha o devolve.
@@ -61,18 +77,6 @@ export type InspectionItem = {
    * sustenta, então o item fica sem esse recurso.
    */
   container?: { node: string } | { nodes: string[] };
-  /** Miniatura da faixa de navegação (imagem gerada a partir do próprio modelo). */
-  thumbnail: string;
-  /**
-   * Texto educativo do item, exibido no painel de descrição. Parágrafos separados por uma
-   * linha em branco; frases curtas terminadas em "?", "!" ou "..." aparecem em destaque (falas).
-   * Se houver `markers` com `description`, a lista dos estágios vem logo depois deste texto.
-   */
-  description?: string;
-  /** Texto exibido depois da lista dos estágios (`markers`), no mesmo formato de `description`. */
-  closing?: string;
-  /** Narração do texto da etapa (controle na barra do painel de descrição). */
-  narration?: InspectionNarration;
   /**
    * Animação do GLB (primeiro clipe) conduzida pela narração do item: pares
    * [segundos da narração, segundos do clipe], interpolados. Antes do primeiro par fica no quadro
@@ -80,7 +84,25 @@ export type InspectionItem = {
    * narração já ouvida (sem tocar de novo), mostra o último quadro.
    */
   animation?: { sync: [number, number][] };
+  microscope?: never;
 };
+
+/** Item em 2D: uma imagem vista na telinha do microscópio digital, no lugar do modelo 3D. */
+export type InspectionMicroscopeItem = InspectionItemBase & {
+  microscope: {
+    /** Caminho público da imagem. */
+    image: string;
+    /** Dimensões da imagem em pixels (a tela do aparelho tem a mesma proporção). */
+    width: number;
+    height: number;
+  };
+  model?: never;
+  view?: never;
+  container?: never;
+  animation?: never;
+};
+
+export type InspectionItem = InspectionModelItem | InspectionMicroscopeItem;
 
 export type InspectionSet = {
   id: string;

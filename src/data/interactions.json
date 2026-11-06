@@ -308,6 +308,28 @@
         0.55
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "solo-ampliado",
+      "label": "Solo ampliado",
+      "setId": "solo-ampliado",
+      "order": 15,
+      "position": [
+        3.65,
+        0.94,
+        2.57
+      ],
+      "rotationDeg": [
+        0,
+        -90,
+        0
+      ],
+      "size": [
+        1.05,
+        0.3,
+        0.45
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

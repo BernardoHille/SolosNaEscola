@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import InspectionDescription, { type DescriptionLayout, narrationHeard } from "@/components/inspection/InspectionDescription";
 import InspectionMenuGrid from "@/components/inspection/InspectionMenuGrid";
+import MicroscopeScreen, { type MicroscopeHandle } from "@/components/inspection/MicroscopeScreen";
 import type { InspectionMenu } from "@/components/inspection/useInspection";
 import {
   BookIcon,
@@ -16,7 +17,7 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from "@/components/ui/icons";
-import { INSPECTION_DIM_OPACITY, type InspectionSet } from "@/data/inspection";
+import { INSPECTION_DIM_OPACITY, type InspectionItem, type InspectionSet } from "@/data/inspection";
 import type { ContainerState, InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
 import { nextStepLabel, stepPlural } from "@/lib/inspection/stepLabels";
 import { IS_DEV } from "@/lib/viewer/spawnOverride";
@@ -73,6 +74,9 @@ const useMedia = (query: string) =>
 /** Distância do painel lateral até a borda direita (px). */
 const DOCK_GAP = 16;
 
+/** Quanto uma tecla move a imagem do microscópio (fração da tela). */
+const PAN_STEP = 0.12;
+
 /** Altura reservada à legenda no menu com a descrição oculta (px): até três linhas, sem cobrir os cartões. */
 const MENU_CAPTION_ROOM = 72;
 
@@ -114,6 +118,9 @@ export default function InspectionOverlay({
 }: InspectionOverlayProps) {
   const item = menu ? undefined : set.items[index];
   const inMenu = !!menu;
+  // Item em 2D (telinha do microscópio): no lugar do modelo; o visualizador 3D fica sem uso.
+  const microscope = item?.microscope ?? null;
+  const microscopeRef = useRef<MicroscopeHandle | null>(null);
   const count = set.items.length;
   // Conjunto de um item só (ex.: Atração do Solo pelo Ímã): sem contador, setas nem faixa.
   const single = count === 1;
@@ -227,8 +234,8 @@ export default function InspectionOverlay({
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewerReady || !viewer) return;
-    // Menu: nada a carregar (o último modelo fica guardado, invisível).
-    if (!item) return;
+    // Menu: nada a carregar (o último modelo fica guardado, invisível). Item 2D: a telinha carrega a imagem.
+    if (!item || item.microscope) return;
     let current = true;
     const key = `${item.id}#${retry}`;
     viewer
@@ -237,7 +244,7 @@ export default function InspectionOverlay({
         if (!current) return;
         setLoaded({ key, error: null });
         const next = set.items[index + 1];
-        if (next) viewer.preload(next);
+        if (next && !next.microscope) viewer.preload(next);
       })
       .catch(() => current && setLoaded({ key, error: "Não foi possível carregar este modelo." }));
     return () => {
@@ -245,9 +252,21 @@ export default function InspectionOverlay({
     };
   }, [viewerReady, item, index, set, retry]);
 
+  const preload = useCallback((it: InspectionItem) => {
+    if (it.microscope) new Image().src = it.microscope.image;
+    else viewerRef.current?.preload(it);
+  }, []);
+
+  // Item 2D: já deixa a imagem da amostra seguinte pronta.
+  useEffect(() => {
+    const next = microscope ? set.items[index + 1] : null;
+    if (next) preload(next);
+  }, [microscope, set, index, preload]);
+
   const current = item && loaded?.key === `${item.id}#${retry}` ? loaded : null;
-  const error = viewerError ?? current?.error ?? null;
-  const loading = !!item && !current && !viewerError;
+  // O item 2D não depende do 3D: funciona mesmo num navegador em que o visualizador não abre.
+  const error = (microscope ? null : viewerError) ?? current?.error ?? null;
+  const loading = !!item && !current && (!!microscope || !viewerError);
 
   // Foco no diálogo ao abrir; devolvido ao fechar.
   useEffect(() => {
@@ -257,7 +276,7 @@ export default function InspectionOverlay({
   }, []);
 
   // Teclado: Esc volta (menus) ou fecha, setas navegam, R restaura, C tira/devolve a caixa,
-  // + e − aproximam.
+  // + e − aproximam; no item 2D, W, A, S e D movem a imagem.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -269,6 +288,7 @@ export default function InspectionOverlay({
       }
       if (isTyping(e.target) || inMenu) return;
       const viewer = viewerRef.current;
+      const zoomable = microscopeRef.current ?? viewer;
       switch (e.key) {
         case "ArrowRight":
           e.preventDefault();
@@ -280,7 +300,7 @@ export default function InspectionOverlay({
           break;
         case "r":
         case "R":
-          viewer?.reset();
+          zoomable?.reset();
           break;
         case "c":
         case "C":
@@ -292,11 +312,27 @@ export default function InspectionOverlay({
           break;
         case "+":
         case "=":
-          viewer?.zoomBy(0.8);
+          zoomable?.zoomBy(0.8);
           break;
         case "-":
         case "_":
-          viewer?.zoomBy(1.25);
+          zoomable?.zoomBy(1.25);
+          break;
+        case "w":
+        case "W":
+          microscopeRef.current?.panBy(0, PAN_STEP);
+          break;
+        case "s":
+        case "S":
+          microscopeRef.current?.panBy(0, -PAN_STEP);
+          break;
+        case "a":
+        case "A":
+          microscopeRef.current?.panBy(PAN_STEP, 0);
+          break;
+        case "d":
+        case "D":
+          microscopeRef.current?.panBy(-PAN_STEP, 0);
           break;
       }
     };
@@ -347,14 +383,29 @@ export default function InspectionOverlay({
       >
         <canvas
           ref={canvasRef}
-          className="block touch-none select-none"
+          className={`block touch-none select-none ${microscope ? "invisible" : ""}`}
           role="img"
+          aria-hidden={!!microscope}
           aria-label={
-            item
+            item && !microscope
               ? `Modelo 3D: ${item.title}. ${touch ? "Arraste para girar e use dois dedos para aproximar." : "Arraste para girar e use a roda do mouse para aproximar."}`
               : undefined
           }
         />
+        {item && microscope && (
+          <MicroscopeScreen
+            key={`${item.id}#${retry}`}
+            ref={microscopeRef}
+            image={microscope.image}
+            width={microscope.width}
+            height={microscope.height}
+            title={item.title}
+            short={short}
+            maxWidth={showDock && centered ? viewportWidth - 2 * dockSpace - DOCK_GAP : undefined}
+            onLoad={() => setLoaded({ key: `${item.id}#${retry}`, error: null })}
+            onError={() => setLoaded({ key: `${item.id}#${retry}`, error: "Não foi possível carregar esta imagem." })}
+          />
+        )}
       </div>
 
       {/* Menu do acervo: grupos ou peças, no lugar do modelo. */}
@@ -365,7 +416,7 @@ export default function InspectionOverlay({
             bottom: controlsHeight + sheetHeight + (hasDescription && !descriptionOpen ? MENU_CAPTION_ROOM : 0),
             right: menuRight,
           }}
-          onPreload={(it) => viewerRef.current?.preload(it)}
+          onPreload={preload}
         />
       )}
 
@@ -393,7 +444,7 @@ export default function InspectionOverlay({
       {item && loading && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
           <span className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-[#FFD54A] motion-reduce:animate-none" />
-          <span className="sr-only">Carregando modelo 3D…</span>
+          <span className="sr-only">{microscope ? "Carregando imagem…" : "Carregando modelo 3D…"}</span>
         </div>
       )}
       {item && error && (
@@ -481,7 +532,8 @@ export default function InspectionOverlay({
       )}
 
       {/* Legenda da narração com o painel de descrição recolhido. */}
-      {hasDescription && !descriptionOpen && caption && (
+      {/* Em tela baixa, a legenda cobriria os botões do aparelho; o texto continua no painel. */}
+      {hasDescription && !descriptionOpen && caption && !(microscope && short) && (
         <div
           className="pointer-events-none absolute left-0 flex justify-center px-4"
           style={{ bottom: controlsHeight + sheetHeight + 8, right: menu ? menuRight : rightInset }}
@@ -529,11 +581,17 @@ export default function InspectionOverlay({
         {/* Sempre ocupa o espaço (a altura dos controles não muda entre as etapas). */}
         <p
           className={`pointer-events-none rounded-full bg-black/55 px-3 py-1 text-center text-xs text-[#FFE89A] ring-1 ring-[#FFD54A]/30 backdrop-blur-sm transition-opacity duration-200 sm:text-[13px] ${
-            container.available && !container.detached && !loading ? "opacity-100" : "opacity-0"
-          }`}
-          aria-hidden={!container.available || container.detached}
+            (microscope || (container.available && !container.detached)) && !loading ? "opacity-100" : "opacity-0"
+          } ${microscope && short ? "hidden" : ""}`}
+          aria-hidden={!microscope && (!container.available || container.detached)}
         >
-          {touch ? "Toque na caixa ou na rocha para tirar a rocha da caixa" : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
+          {microscope
+            ? touch
+              ? "Aproxime com dois dedos e arraste a imagem"
+              : "Aproxime com a roda do mouse e arraste a imagem"
+            : touch
+              ? "Toque na caixa ou na rocha para tirar a rocha da caixa"
+              : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
         </p>
         <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
           <button
@@ -547,33 +605,38 @@ export default function InspectionOverlay({
           >
             <ChevronLeftIcon />
           </button>
-          <button
-            type="button"
-            onClick={() => viewerRef.current?.zoomBy(1.25)}
-            className={`${iconButton} max-sm:hidden`}
-            aria-label="Afastar"
-            title="Afastar (−)"
-          >
-            <ZoomOutIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => viewerRef.current?.reset()}
-            className={iconButton}
-            aria-label="Restaurar orientação"
-            title="Restaurar orientação (R)"
-          >
-            <ResetViewIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => viewerRef.current?.zoomBy(0.8)}
-            className={`${iconButton} max-sm:hidden`}
-            aria-label="Aproximar"
-            title="Aproximar (+)"
-          >
-            <ZoomInIcon />
-          </button>
+          {/* No item 2D, aproximar, afastar e restaurar são os botões do próprio aparelho. */}
+          {!microscope && (
+            <>
+              <button
+                type="button"
+                onClick={() => viewerRef.current?.zoomBy(1.25)}
+                className={`${iconButton} max-sm:hidden`}
+                aria-label="Afastar"
+                title="Afastar (−)"
+              >
+                <ZoomOutIcon />
+              </button>
+              <button
+                type="button"
+                onClick={() => viewerRef.current?.reset()}
+                className={iconButton}
+                aria-label="Restaurar orientação"
+                title="Restaurar orientação (R)"
+              >
+                <ResetViewIcon />
+              </button>
+              <button
+                type="button"
+                onClick={() => viewerRef.current?.zoomBy(0.8)}
+                className={`${iconButton} max-sm:hidden`}
+                aria-label="Aproximar"
+                title="Aproximar (+)"
+              >
+                <ZoomInIcon />
+              </button>
+            </>
+          )}
           {container.available && (
             <button
               type="button"
