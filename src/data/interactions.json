@@ -638,6 +638,50 @@
         0.38
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "maquete-15-urbano",
+      "label": "Solo urbano",
+      "setId": "solo-urbano-e-solo-rural",
+      "order": 30,
+      "position": [
+        -2.76,
+        0.96,
+        1.055
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.5,
+        0.42,
+        0.38
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "maquete-15-rural",
+      "label": "Solo rural",
+      "setId": "solo-urbano-e-solo-rural",
+      "order": 31,
+      "position": [
+        -2.24,
+        0.96,
+        1.055
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.52,
+        0.42,
+        0.38
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import InspectionDescription, { type DescriptionLayout, narrationHeard } from "@/components/inspection/InspectionDescription";
+import InspectionDescription, {
+  type DescriptionLayout,
+  markNarrationHeard,
+  narrationHeard,
+} from "@/components/inspection/InspectionDescription";
 import InspectionMenuGrid from "@/components/inspection/InspectionMenuGrid";
 import MicroscopeScreen, { type MicroscopeHandle } from "@/components/inspection/MicroscopeScreen";
 import type { InspectionMenu } from "@/components/inspection/useInspection";
@@ -142,6 +146,8 @@ export default function InspectionOverlay({
   // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
   const [speakingMarker, setSpeakingMarker] = useState<string | null>(null);
   const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
+  // Caixa com tampa ainda fechada (`animation.openOnClick`): a dica vira o botão "Abrir a tampa".
+  const [openable, setOpenable] = useState(false);
   // Áudio da narração do painel: relógio da animação do modelo (itens com `animation`).
   const narrationAudioRef = useRef<HTMLAudioElement | null>(null);
   const setNarrationAudio = useCallback((audio: HTMLAudioElement | null) => {
@@ -151,6 +157,18 @@ export default function InspectionOverlay({
   useEffect(() => {
     itemRef.current = item;
   }, [item]);
+  // Abrir a tampa: a narração salta para o fim do trecho da caixa fechada (1º par de `sync`) e toca
+  // dali; a tampa abre junto, conduzida por ela.
+  const openLid = useCallback(() => {
+    const it = itemRef.current;
+    const audio = narrationAudioRef.current;
+    const url = it?.narration?.audioUrl;
+    const at = it?.animation?.openOnClick ? it.animation.sync[0]?.[0] : undefined;
+    if (!audio || !url || at === undefined || audio.src !== new URL(url, window.location.href).href) return;
+    if (audio.currentTime < at || audio.ended) audio.currentTime = at;
+    audio.play().then(() => markNarrationHeard(url), () => {});
+  }, []);
+  const openLidRef = useRef(openLid);
   // Altura dos controles inferiores: o modelo é enquadrado no espaço acima deles.
   const controlsRef = useRef<HTMLDivElement>(null);
   const [controlsHeight, setControlsHeight] = useState(0);
@@ -205,7 +223,12 @@ export default function InspectionOverlay({
       .then(({ InspectionViewer }) => {
         const canvas = canvasRef.current;
         if (disposed || !canvas) return;
-        viewer = new InspectionViewer(canvas, { onMarkers: setMarkers, onContainer: setContainer });
+        viewer = new InspectionViewer(canvas, {
+          onMarkers: setMarkers,
+          onContainer: setContainer,
+          onOpenable: setOpenable,
+          onOpenRequest: () => openLidRef.current(),
+        });
         viewerRef.current = viewer;
         // A animação segue a narração do item: parada antes do play, pausada com ela e, depois do
         // fim (ou com a narração já ouvida numa visita anterior, sem tocar de novo), no último quadro.
@@ -214,7 +237,9 @@ export default function InspectionOverlay({
           const url = itemRef.current?.narration?.audioUrl;
           if (!audio || !url || audio.src !== new URL(url, window.location.href).href) return null;
           if (audio.ended) return Infinity;
-          if (audio.paused && audio.currentTime === 0) return narrationHeard(url) ? Infinity : 0;
+          // A caixa com tampa volta fechada numa nova visita: abre-se de novo pelo clique.
+          const reopen = !!itemRef.current?.animation?.openOnClick;
+          if (audio.paused && audio.currentTime === 0) return narrationHeard(url) && !reopen ? Infinity : 0;
           return audio.currentTime;
         });
         // Desenvolvimento: handle no console para testes manuais.
@@ -309,6 +334,10 @@ export default function InspectionOverlay({
         case "i":
         case "I":
           setDescriptionOpen((v) => !v);
+          break;
+        case "o":
+        case "O":
+          openLidRef.current();
           break;
         case "+":
         case "=":
@@ -578,7 +607,17 @@ export default function InspectionOverlay({
           short ? "gap-1.5" : "gap-2 sm:pb-6"
         }`}
       >
-        {/* Sempre ocupa o espaço (a altura dos controles não muda entre as etapas). */}
+        {/* Sempre ocupa o espaço (a altura dos controles não muda entre as etapas). Caixa com tampa
+            fechada: no lugar da dica, o botão que abre a tampa (o mesmo que clicar na caixa). */}
+        {openable && !microscope && !loading ? (
+          <button
+            type="button"
+            onClick={openLid}
+            className="rounded-full bg-[#FFD54A] px-3 py-1 text-center text-xs font-semibold text-stone-950 shadow-[0_0_16px_rgba(255,213,74,0.45)] transition-colors hover:bg-[#FFE89A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE89A] sm:text-[13px]"
+          >
+            {touch ? "Abrir a tampa · ou toque na caixa" : "Abrir a tampa · ou clique na caixa"}
+          </button>
+        ) : (
         <p
           className={`pointer-events-none rounded-full bg-black/55 px-3 py-1 text-center text-xs text-[#FFE89A] ring-1 ring-[#FFD54A]/30 backdrop-blur-sm transition-opacity duration-200 sm:text-[13px] ${
             (microscope || (container.available && !container.detached)) && !loading ? "opacity-100" : "opacity-0"
@@ -593,6 +632,7 @@ export default function InspectionOverlay({
               ? "Toque na caixa ou na rocha para tirar a rocha da caixa"
               : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
         </p>
+        )}
         <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
           <button
             type="button"

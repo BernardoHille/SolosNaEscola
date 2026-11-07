@@ -26,7 +26,9 @@ computadores e dispositivos móveis.
 > abrem em 2D, numa telinha que lembra a do microscópio digital. Na parede da **Coleção de Perfis de Solo**
 > (módulo 11), cada uma das doze placas e o mapa têm o seu destaque e levam ao mesmo menu, com o mapa e os solos
 > em 3D. A **Maquete do Solo na Paisagem** (módulo 14, na mesa das maquetes) abre como a maquete 01: um modelo só,
-> com o rótulo de cada região aceso enquanto a narração fala dela. As demais estantes serão desenvolvidas nas próximas etapas.
+> com o rótulo de cada região aceso enquanto a narração fala dela. As duas caixas do **Solo Urbano e Solo Rural**
+> (módulo 15, na mesma mesa) abrem um menu; cada maquete começa fechada e abre a tampa no fim da narração da caixa
+> fechada, ou antes, com um clique na caixa. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -362,6 +364,7 @@ da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada�
 | Deslocar | arrastar com botão direito ou com **Shift** | arrastar com dois dedos |
 | Restaurar a vista | **R**, duplo clique ou botão | botão |
 | Tirar da caixa / devolver | clique na caixa ou na rocha, **C** ou botão da caixa | toque na caixa ou na rocha, ou botão |
+| Abrir a tampa (caixas do módulo 15) | clique na caixa, **O** ou botão “Abrir a tampa” | toque na caixa ou botão |
 | Anterior / próximo | **←** / **→** ou botões | botões |
 | Ir direto a uma etapa | miniaturas abaixo dos botões | miniaturas |
 | Mostrar / ocultar a descrição | **I**, botão do livro ou **X** do painel | **Ler** / **Recolher** |
@@ -917,6 +920,40 @@ ponto, a transcrição ouviu “E este escoamento” em vez de “E esse”. A l
 - No celular deitado, a maquete fica pequena e alguns rótulos se sobrepõem (A com B, Horizontes com Parte baixa).
   O rótulo narrado fica sempre por cima, e o zoom ou o botão de camadas resolvem.
 
+### Módulo 15 · Solo Urbano e Solo Rural
+
+As duas maquetes em caixa ficam na mesa das maquetes, à esquerda da maquete 14: a urbana em x −3,00 a −2,52 e a rural
+em x −2,49 a −1,99, ambas em z 0,88 a 1,23, do tampo (y ≈ 0,76) ao alto das árvores e dos prédios (≈ 1,16). Cada uma
+tem um volume (`maquete-15-urbano`, `maquete-15-rural`), de frente para +Z, o lado do puxador. Os dois abrem o
+mesmo menu (`solo-urbano-e-solo-rural`, grupo único, sem texto geral), com a rural primeiro, como no roteiro.
+
+**Dois estados: fechada e aberta.** Cada GLB do acervo (sem alteração) tem um clipe, `abrir_tampa`, de 2,2 s. O item
+traz `animation: { sync, openOnClick: true }`, e a sincronia é um par só: a tampa abre de `abre` a `abre` + 2,2 s da
+narração, e `abre` é o fim do trecho da caixa fechada (27,31 s na rural, 37,29 s na urbana). Assim:
+
+- **Sozinha:** a narração da caixa fechada vai até o fim (“…observe o que está escondido debaixo da terra.”), e a
+  tampa abre, como qualquer animação conduzida pela narração.
+- **Forçada:** enquanto a caixa está fechada, clicar ou tocar no modelo, apertar **O** ou o botão “Abrir a tampa”
+  (no lugar da dica, acima dos controles) leva a narração até `abre` e a toca dali. A tampa abre junto, e a narração
+  segue com a caixa aberta. O cursor vira “mão” sobre a caixa.
+- **De volta à maquete:** ela reaparece fechada, mesmo com a narração já ouvida, e não toca sozinha. Um clique a
+  abre de novo, com a parte da caixa aberta.
+
+**Texto e narração.** Não houve texto enviado: as frases são as da gravação (`urbanorural.aac`, 180,9 s), com a
+pontuação revista. Os títulos lidos (“01. Solo rural, maquete fechada”…) ficam de fora. A transcrição completa
+inventou “frequentam o solo. E” num trecho; transcrito sozinho, com dois modelos, ele dá “as obras e construções
+frequentemente misturam e modificam esses horizontes”. Cada maquete é um arquivo: trecho fechado, 1,6 s de silêncio
+(o único trecho codificado, para a tampa abrir antes da fala) e trecho aberto, emendados em ADTS sem recodificar. A
+rural tem 68,6 s e 15 cues; a urbana, 100,3 s e 22 cues. O último parágrafo da urbana fala do cotidiano (asfalto,
+alagamentos, áreas verdes), o item 4 do roteiro.
+
+**Limites:**
+
+- O texto não foi revisado pela equipe.
+- A escala é estimada no acervo (50 cm de largura) e confere com as caixas no splat.
+- O enquadramento reserva o espaço da tampa aberta: com a caixa fechada, ela fica na parte de cima da tela. No
+  celular deitado, a caixa fica pequena.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1024,7 +1061,8 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
 2. Crie um `InspectionSet` (id, título e itens; tipos em `inspection.ts`) num arquivo de
    `src/data/` e inclua-o em `INSPECTION_SETS` (`inspectionSets.ts`); para um acervo com grupos e
    menu, crie um `InspectionCatalog` e inclua-o em `INSPECTION_CATALOGS`. GLB com animação: dê ao
-   item `animation.sync` para o clipe seguir a narração.
+   item `animation.sync` para o clipe seguir a narração; caixa com tampa que o visitante pode abrir: some
+   `openOnClick: true` (o primeiro par de `sync` marca a abertura).
 3. Gere as miniaturas (acima) em `public/models/inspection/thumbs/`.
 4. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
    `order` na sequência; calibre com `?debugInteractions=1`. Se outro móvel puder ser visto
@@ -1084,6 +1122,7 @@ SolosNaEscola/
 │   ├── images/inspection/solo-ampliado/*.webp # módulo 10: imagens vistas na telinha do microscópio
 │   ├── models/inspection/perfis/*.glb # módulo 11: placas de solo (juntas por tipo) e mapa
 │   ├── models/inspection/paisagem/*.glb # módulo 14: maquete com pontos de marcação dos rótulos
+│   ├── models/inspection/urbano-rural/*.glb # módulo 15: caixas rural e urbana, com a tampa animada
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1130,6 +1169,7 @@ SolosNaEscola/
 │   │   ├── soloAmpliado.ts        # módulo 10 (gerado a partir da gravação e das imagens)
 │   │   ├── colecaoDePerfisDeSolo.ts # módulo 11 (gerado a partir do texto e da gravação)
 │   │   ├── soloNaPaisagem.ts      # módulo 14 (gerado a partir do texto e da gravação)
+│   │   ├── soloUrbanoESoloRural.ts # módulo 15 (gerado a partir da gravação)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1208,7 +1248,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **28 de 28 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **29 de 29 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1310,6 +1350,11 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 71 | Volume e abertura da Maquete do Solo na Paisagem | ✔ no modo de calibração, a caixa envolve a maquete; ao mirar, “Inspecionar · Solo na paisagem”; **E** abre o modelo enquadrado e iluminado, com a narração e a legenda |
 | 72 | Rótulos das regiões | ✔ Área plana no alto do morro, Encosta e Transporte ao longo do declive, Parte baixa na água, Horizontes nas rochas; A, B, C e R nas suas faixas; “Área plana” acesa aos 27 s, “Encosta” aos 50 s; com o painel aberto, o cartão “Horizontes” ativo junto com o rótulo; sem erros no console |
 | 73 | Celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, todos os rótulos legíveis, com A e B bem juntos; deitado, a maquete fica pequena e alguns rótulos se sobrepõem (ver limites do módulo) |
+| 74 | Volumes e menu do Solo Urbano e Solo Rural | ✔ no modo de calibração, cada caixa no seu volume; ao mirar a rural, “Inspecionar · Solo rural”; **E** abre o menu com as duas maquetes |
+| 75 | Abrir com um clique | ✔ a rural abre fechada, com a narração, a legenda e o botão “Abrir a tampa”; o clique na caixa leva a narração ao fim do trecho fechado, a tampa abre e vem “Olhe só o que encontramos…”; o botão some |
+| 76 | Abrir sozinha | ✔ na urbana, depois de “Abra a maquete e vamos descobrir!”, a tampa abre sem clique e a narração segue com “Surpresa!…” |
+| 77 | Voltar a uma maquete já ouvida | ✔ a rural reaparece fechada, sem tocar sozinha, com o botão; a tecla **O** abre a tampa e toca a parte da caixa aberta |
+| 78 | Celular (emulação 375 × 812 e 667 × 375) | ✔ toque simulado na caixa urbana abre a tampa; deitado, a caixa fica pequena, no alto, com o botão à vista |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1318,7 +1363,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB),
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto,
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

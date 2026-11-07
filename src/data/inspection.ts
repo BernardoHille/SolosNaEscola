@@ -82,8 +82,13 @@ export type InspectionModelItem = InspectionItemBase & {
    * [segundos da narração, segundos do clipe], interpolados. Antes do primeiro par fica no quadro
    * do primeiro; depois do último, parada no último. Pausar a narração pausa a animação; com a
    * narração já ouvida (sem tocar de novo), mostra o último quadro.
+   *
+   * `openOnClick`: item de dois estados (caixa fechada e aberta, clipe = abrir a tampa). O primeiro par
+   * de `sync` marca o fim da narração da caixa fechada; ali a tampa abre sozinha. Antes disso, clicar
+   * no modelo (ou no botão "Abrir a tampa") leva a narração até esse ponto. Numa nova visita, a caixa
+   * volta fechada, mesmo com a narração já ouvida.
    */
-  animation?: { sync: [number, number][] };
+  animation?: { sync: [number, number][]; openOnClick?: boolean };
   microscope?: never;
 };
 

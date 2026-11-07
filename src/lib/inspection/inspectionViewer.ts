@@ -17,7 +17,8 @@
  *   caixa e reenquadra só o conteúdo; clicar na rocha de novo devolve a caixa.
  * - Itens com animação (`animation`): o primeiro clipe do GLB segue a narração do item
  *   (`setNarrationClock`), quadro a quadro, sem tocar sozinho; pausar a narração pausa a animação.
- *   Depois do último ponto de sincronia ela fica parada no último quadro.
+ *   Depois do último ponto de sincronia ela fica parada no último quadro. Caixa com tampa
+ *   (`openOnClick`): enquanto fechada, clicar/tocar no modelo pede para abrir (`onOpenRequest`).
  * - Modelos carregados sob demanda e guardados enquanto a inspeção está aberta (voltar a uma
  *   etapa não baixa de novo); `destroy()` libera tudo.
  */
@@ -69,6 +70,10 @@ export type InspectionViewerCallbacks = {
   onMarkers?: (markers: MarkerPosition[]) => void;
   /** O item atual tem recipiente? O conteúdo está fora dele? */
   onContainer?: (state: ContainerState) => void;
+  /** Caixa com tampa (`animation.openOnClick`) ainda fechada? Muda quando a tampa começa a abrir. */
+  onOpenable?: (openable: boolean) => void;
+  /** Clique no modelo com a caixa fechada: pede para abrir (a narração vai até a abertura). */
+  onOpenRequest?: () => void;
 };
 
 const FOV = 30;
@@ -167,6 +172,7 @@ export class InspectionViewer {
   private lastMarkers = "";
   private destroyed = false;
   private narrationClock: NarrationClock | null = null;
+  private openable = false;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -296,6 +302,7 @@ export class InspectionViewer {
       animation,
     };
     if (animation) this.updateAnimation(true);
+    this.emitOpenable();
     this.detached = false;
     this.containerOpacity = 1;
     this.containerTarget = 1;
@@ -434,6 +441,7 @@ export class InspectionViewer {
     this.detached = false;
     this.emitMarkers([]);
     this.emitContainer();
+    this.emitOpenable();
     this.app.renderNextFrame = true;
   }
 
@@ -529,7 +537,32 @@ export class InspectionViewer {
     const time = narration === null ? a.time : animationTimeAt(narration, a.sync, a.duration);
     if (!force && Math.abs(time - a.time) < 1e-4) return;
     setAnimationTime(a, time);
+    this.emitOpenable();
     this.app.renderNextFrame = true;
+  }
+
+  /** Caixa com tampa ainda no primeiro quadro (fechada)? */
+  private isOpenable() {
+    const c = this.current;
+    return !!(c?.animation && c.item.animation?.openOnClick && c.animation.time <= 1e-4);
+  }
+
+  private emitOpenable() {
+    const openable = this.isOpenable();
+    if (openable === this.openable) return;
+    this.openable = openable;
+    this.callbacks.onOpenable?.(openable);
+  }
+
+  /** O ponto da tela (px do canvas) está sobre o modelo? (caixas delimitadoras das malhas) */
+  private hitsModel(x: number, y: number) {
+    const c = this.current;
+    const camera = this.camera.camera;
+    if (!c || !camera) return false;
+    const near = camera.screenToWorld(x, y, camera.nearClip);
+    const far = camera.screenToWorld(x, y, camera.farClip);
+    const ray = new Ray(near, far.sub(near).normalize());
+    return meshInstancesOf(c.holder).some((mi) => mi.aabb.intersectsRay(ray));
   }
 
   private applyContainerOpacity() {
@@ -633,7 +666,10 @@ export class InspectionViewer {
       const prev = this.pointers.get(e.pointerId);
       if (!prev) {
         // Sem botão pressionado: indica onde o clique tira a rocha da caixa (ou a devolve).
-        if (e.pointerType === "mouse") canvas.style.cursor = this.hitsContent(...local(e)) ? "pointer" : "grab";
+        if (e.pointerType === "mouse") {
+          const hit = this.hitsContent(...local(e)) || (this.openable && this.hitsModel(...local(e)));
+          canvas.style.cursor = hit ? "pointer" : "grab";
+        }
         return;
       }
       const dx = e.clientX - prev.x;
@@ -661,13 +697,10 @@ export class InspectionViewer {
     const end = (e: PointerEvent) => {
       const press = this.press;
       this.press = null;
-      if (
-        e.type === "pointerup" &&
-        press &&
-        this.pointers.size === 1 &&
-        performance.now() - press.time < CLICK_MAX_MS &&
-        this.hitsContent(...local(e))
-      ) {
+      const click = e.type === "pointerup" && press && this.pointers.size === 1 && performance.now() - press.time < CLICK_MAX_MS;
+      // Caixa fechada: o clique abre a tampa (sem esperar o duplo clique, que só restaura a vista).
+      if (click && this.openable && this.hitsModel(...local(e))) this.callbacks.onOpenRequest?.();
+      else if (click && this.hitsContent(...local(e))) {
         // Aguarda um possível segundo clique (duplo clique restaura a vista).
         window.clearTimeout(this.clickTimer);
         this.clickTimer = window.setTimeout(() => this.setDetached(), DOUBLE_CLICK_MS);

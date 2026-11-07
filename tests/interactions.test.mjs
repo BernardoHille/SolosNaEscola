@@ -121,7 +121,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -142,6 +142,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "solo-ampliado",
         "colecao-de-perfis-de-solo",
         "solo-na-paisagem",
+        "solo-urbano-e-solo-rural",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -237,6 +238,12 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.deepEqual(landscape.map((v) => v.id), ["maquete-14"]);
   assert.deepEqual(landscape[0].rotationDeg, [0, 0, 0]);
   assert.ok(landscape[0].position[2] > 0.5, "mesa das maquetes");
+  // Solo Urbano e Solo Rural: as duas caixas na mesma mesa, a urbana à esquerda (x menor), de frente para +Z.
+  const boxes = volumes.filter((v) => v.setId === "solo-urbano-e-solo-rural");
+  assert.deepEqual(boxes.map((v) => v.label), ["Solo urbano", "Solo rural"]);
+  for (const b of boxes) assert.deepEqual(b.rotationDeg, [0, 0, 0]);
+  assert.ok(right(boxes[0]) <= left(boxes[1]), "as caixas não se sobrepõem");
+  assert.ok(right(boxes[1]) <= left(landscape[0]), "à esquerda da maquete 14");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -842,6 +849,51 @@ test("dados: Maquete do Solo na Paisagem (um modelo, rótulos das regiões aceso
   const all = [item.description, ...item.markers.map((m) => m.description ?? ""), item.closing].join("\n");
   assert.ok(!/Introdução|Parte superior|Encerramento|^\s*0\d/im.test(all));
   assert.match(item.closing, /ajuda a contar a história da paisagem/);
+});
+
+test("dados: Solo Urbano e Solo Rural (menu, duas caixas que abrem no fim da narração da caixa fechada ou no clique)", async () => {
+  const { SOLO_URBANO_E_SOLO_RURAL: catalog } = await import("../src/data/soloUrbanoESoloRural.ts");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  assert.equal(catalog.overview, undefined, "sem texto geral");
+  const items = catalog.groups[0].items;
+  assert.deepEqual(items.map((it) => it.title), ["Solo rural", "Solo urbano"]);
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    assert.equal(item.model.sizeBytes, statSync(file).size, item.id);
+    const gltf = glbJson(file);
+    assert.deepEqual(gltf.animations.map((a) => a.name), ["abrir_tampa"], item.id);
+    const clip = gltf.accessors[gltf.animations[0].samplers[0].input].max[0];
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    // A tampa abre do primeiro ao último quadro do clipe, a partir do fim do trecho da caixa fechada.
+    assert.equal(item.animation.openOnClick, true, item.id);
+    const [[opens, first], [opened, last]] = item.animation.sync;
+    assert.equal(item.animation.sync.length, 2);
+    assert.equal(first, 0);
+    close(last, clip, 1e-6);
+    close(opened - opens, clip, 0.011);
+    assert.equal(animationTimeAt(opens - 1, item.animation.sync, clip), 0, "fechada antes");
+    close(animationTimeAt(opens + clip / 2, item.animation.sync, clip), clip / 2, 1e-6);
+    assert.equal(animationTimeAt(Infinity, item.animation.sync, clip), clip, "aberta no fim");
+    // Narração: um cue por parágrafo; a parte da caixa aberta começa depois que a tampa começa a abrir.
+    const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", item.narration.audioUrl);
+    assert.ok(audio.length < 1_000_000, item.narration.audioUrl);
+    const { cues } = item.narration;
+    assert.equal(cues.length, blocks(item.description), item.id);
+    assert.equal(cues[0], 0);
+    for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1], item.id);
+    const after = cues.findIndex((c) => c > opens);
+    assert.ok(after > 0 && cues[after] - opens > 1 && cues[after] - opens < 2.5, `${item.id}: pausa da tampa`);
+  }
+  // Sem os títulos lidos ("01. Solo rural, maquete fechada"...).
+  const all = items.map((it) => it.description).join("\n");
+  assert.ok(!/maquete (fechada|aberta)|^\s*0\d/im.test(all));
+  assert.match(items[0].description, /^Vamos começar observando esta paisagem rural\./);
+  assert.match(items[1].description, /qualidade ambiental das nossas cidades\.$/);
 });
 
 test("telinha do microscópio: a imagem sempre cobre a tela e o zoom mantém o ponto sob o cursor", () => {

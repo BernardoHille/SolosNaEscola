@@ -69,6 +69,9 @@ const HEARD = new Set<string>();
 /** A narração deste endereço já começou a tocar nesta visita? */
 export const narrationHeard = (url: string) => HEARD.has(url);
 
+/** Conta como ouvida a narração que começou a tocar fora do painel (ex.: ao abrir a tampa da caixa). */
+export const markNarrationHeard = (url: string) => void HEARD.add(url);
+
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
 
