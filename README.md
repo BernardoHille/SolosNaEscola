@@ -25,7 +25,8 @@ computadores e dispositivos móveis.
 > e narração automática. As quatro amostras do **Solo Ampliado** (módulo 10, na mesa dos microscópios)
 > abrem em 2D, numa telinha que lembra a do microscópio digital. Na parede da **Coleção de Perfis de Solo**
 > (módulo 11), cada uma das doze placas e o mapa têm o seu destaque e levam ao mesmo menu, com o mapa e os solos
-> em 3D. As demais estantes serão desenvolvidas nas próximas etapas.
+> em 3D. A **Maquete do Solo na Paisagem** (módulo 14, na mesa das maquetes) abre como a maquete 01: um modelo só,
+> com o rótulo de cada região aceso enquanto a narração fala dela. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -887,6 +888,35 @@ diferente do texto: “Este tipo de solo” no Organossolo e “Esse é um solo�
 - No celular deitado, os controles cobrem a parte de baixo das placas altas até o visitante mover o modelo.
 - O mapa é o PDF original: as cores e o bloco de logos diferem um pouco da folha da parede.
 
+### Módulo 14 · Maquete do Solo na Paisagem
+
+A caixa de madeira com o morro em corte, a manta verde por cima e o rio na parte baixa fica na mesa das maquetes,
+ao lado das do solo rural e urbano. Um volume (`maquete-14`, 78 × 50 × 38 cm, centro em (−1,135; 1,01; 1,055),
+de frente para +Z) foi medido no splat pelo verde da manta (x −1,52 a −0,75, z 0,87 a 1,24, tampo em y ≈ 0,76).
+
+**Como a maquete 01.** É um item só (`soloNaPaisagem.ts`, conjunto sem menu): a abertura, uma etapa por região e o
+encerramento. As etapas são **Área plana, Encosta, Parte baixa, Transporte e Horizontes**, na ordem do texto. Cada
+uma tem um rótulo sobre o modelo, que acende (amarelo, maior, por cima dos outros) enquanto é narrada. Os
+horizontes **A, B, C e R** aparecem só como rótulo, na face do perfil.
+
+**Pontos dos rótulos.** O GLB do acervo tem um nó por peça (manta, perfil, rio, caixa), não por região. Por isso,
+`modulo14_glb_web.py` gera uma cópia com nove nós de marcação. Cada nó é um triângulo degenerado (os três vértices
+no mesmo ponto): ele não aparece, e a sua caixa é o próprio ponto. O resto do arquivo é copiado byte a byte
+(5,8 MB). As faixas dos horizontes saem da cor da textura do perfil, em x = −17 cm: A de 4,5 a 8,5 cm, B de 0 a
+4,5 cm, C de −6,5 a 0 cm e R abaixo.
+
+**Texto e narração.** O texto é o enviado pela equipe, sem alteração, e o encerramento fica. O corte de
+`maquete_solo.aac` tira os títulos lidos (“01 Introdução à maquete”…). As sete partes são cortadas nas pausas, sem
+recodificar, e os quadros ADTS são emendados um após o outro antes de virar M4A. O demuxer `concat` deixava buracos
+de 1 a 4 s nos tempos. O resultado tem 188,3 s e 18 cues: 6 da abertura, 5 das regiões e 7 do encerramento. Num
+ponto, a transcrição ouviu “E este escoamento” em vez de “E esse”. A legenda segue o texto.
+
+**Limites:**
+
+- A água é artificial no acervo: na maquete real, o rio é um bloco de plástico azul. A largura de 65 cm é estimada.
+- No celular deitado, a maquete fica pequena e alguns rótulos se sobrepõem (A com B, Horizontes com Parte baixa).
+  O rótulo narrado fica sempre por cima, e o zoom ou o botão de camadas resolvem.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1053,6 +1083,7 @@ SolosNaEscola/
 │   ├── inspection/compactacao/*.glb # módulo 09: caixa de solo solto e caixa compactada com o cavalo
 │   ├── images/inspection/solo-ampliado/*.webp # módulo 10: imagens vistas na telinha do microscópio
 │   ├── models/inspection/perfis/*.glb # módulo 11: placas de solo (juntas por tipo) e mapa
+│   ├── models/inspection/paisagem/*.glb # módulo 14: maquete com pontos de marcação dos rótulos
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1098,6 +1129,7 @@ SolosNaEscola/
 │   │   ├── compactacaoDoSolo.ts   # módulo 09 (gerado a partir do roteiro, da gravação e do acervo)
 │   │   ├── soloAmpliado.ts        # módulo 10 (gerado a partir da gravação e das imagens)
 │   │   ├── colecaoDePerfisDeSolo.ts # módulo 11 (gerado a partir do texto e da gravação)
+│   │   ├── soloNaPaisagem.ts      # módulo 14 (gerado a partir do texto e da gravação)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1176,7 +1208,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **19 de 19 passaram** em 5/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **28 de 28 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1275,6 +1307,9 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 68 | Volumes da Coleção de Perfis | ✔ no modo de calibração, as caixas inclinadas coincidem com as placas; ao mirar, destaque e “Inspecionar” com o nome do solo (Organossolo, Latossolo, Nitossolo) e no mapa; a foto da soja e a parede não destacam |
 | 69 | Menu e itens | ✔ placa abre o menu com os nove cartões e a introdução narrada, com legenda; mapa e os oito solos carregam com narração e legenda certas; Organossolo, Neossolo e Latossolo mostram todas as placas; sem erros no console |
 | 70 | Celular (emulação 375 × 812 e 667 × 375) | ✔ toque simulado na placa abre o menu; em pé, mapa e Nitossolo enquadrados; deitado, os controles cobrem a parte de baixo do Nitossolo (ver limites do módulo) |
+| 71 | Volume e abertura da Maquete do Solo na Paisagem | ✔ no modo de calibração, a caixa envolve a maquete; ao mirar, “Inspecionar · Solo na paisagem”; **E** abre o modelo enquadrado e iluminado, com a narração e a legenda |
+| 72 | Rótulos das regiões | ✔ Área plana no alto do morro, Encosta e Transporte ao longo do declive, Parte baixa na água, Horizontes nas rochas; A, B, C e R nas suas faixas; “Área plana” acesa aos 27 s, “Encosta” aos 50 s; com o painel aberto, o cartão “Horizontes” ativo junto com o rótulo; sem erros no console |
+| 73 | Celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, todos os rótulos legíveis, com A e B bem juntos; deitado, a maquete fica pequena e alguns rótulos se sobrepõem (ver limites do módulo) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1283,7 +1318,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB),
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

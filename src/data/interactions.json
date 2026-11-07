@@ -616,6 +616,28 @@
         0.06
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "maquete-14",
+      "label": "Solo na paisagem",
+      "setId": "solo-na-paisagem",
+      "order": 29,
+      "position": [
+        -1.135,
+        1.01,
+        1.055
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.78,
+        0.5,
+        0.38
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

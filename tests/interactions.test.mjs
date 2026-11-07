@@ -121,7 +121,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -141,6 +141,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "compactacao-do-solo",
         "solo-ampliado",
         "colecao-de-perfis-de-solo",
+        "solo-na-paisagem",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -231,6 +232,11 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   for (const p of plates.slice(0, 2)) {
     assert.ok(map[0].position[1] - map[0].size[1] / 2 > p.position[1] + p.size[1] / 2, "o mapa fica acima das placas");
   }
+  // Maquete do Solo na Paisagem: um volume, na mesa das maquetes (z > 0), de frente para +Z.
+  const landscape = volumes.filter((v) => v.setId === "solo-na-paisagem");
+  assert.deepEqual(landscape.map((v) => v.id), ["maquete-14"]);
+  assert.deepEqual(landscape[0].rotationDeg, [0, 0, 0]);
+  assert.ok(landscape[0].position[2] > 0.5, "mesa das maquetes");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -801,6 +807,41 @@ test("dados: Coleção de Perfis de Solo (menu com texto geral, mapa e oito solo
   // O usuário pediu para cortar o encerramento da gravação.
   const all = [catalog.overview, ...items.map((it) => it.description)].join("\n");
   assert.ok(!/encerramento|Agora que você observou|debaixo dos nossos pés/i.test(all));
+});
+
+test("dados: Maquete do Solo na Paisagem (um modelo, rótulos das regiões acesos pela narração, com o encerramento)", async () => {
+  const { SOLO_NA_PAISAGEM: set } = await import("../src/data/soloNaPaisagem.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionSets.ts"), "utf8");
+  assert.match(registry, /\[SOLO_NA_PAISAGEM\.id\]: SOLO_NA_PAISAGEM/, "conjunto registrado");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(set.items.length, 1);
+  const [item] = set.items;
+  // As regiões na ordem da narração; os horizontes só como rótulo.
+  assert.deepEqual(
+    item.markers.map((m) => m.label),
+    ["Área plana", "Encosta", "Parte baixa", "Transporte", "Horizontes", "A", "B", "C", "R"],
+  );
+  assert.deepEqual(item.markers.filter((m) => m.description).length, 5);
+  const file = resolve(root, "public", item.model.url.slice(1));
+  assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF");
+  assert.equal(item.model.sizeBytes, statSync(file).size);
+  const names = new Set(glbJson(file).nodes.map((n) => n.name));
+  for (const m of item.markers) assert.ok(names.has(m.node), `nó ausente no GLB: ${m.node}`);
+  const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+  assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP");
+  // Narração: um cue por parágrafo da abertura, um por região e um por parágrafo do encerramento.
+  const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+  assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp");
+  assert.ok(audio.length < 1_500_000);
+  const { cues } = item.narration;
+  assert.equal(cues.length, blocks(item.description) + 5 + blocks(item.closing));
+  assert.equal(cues.length, 18);
+  assert.equal(cues[0], 0);
+  for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1]);
+  // Os títulos lidos ("01. Introdução...") saíram; o encerramento ficou.
+  const all = [item.description, ...item.markers.map((m) => m.description ?? ""), item.closing].join("\n");
+  assert.ok(!/Introdução|Parte superior|Encerramento|^\s*0\d/im.test(all));
+  assert.match(item.closing, /ajuda a contar a história da paisagem/);
 });
 
 test("telinha do microscópio: a imagem sempre cobre a tela e o zoom mantém o ponto sob o cursor", () => {
