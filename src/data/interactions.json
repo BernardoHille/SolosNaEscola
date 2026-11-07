@@ -704,6 +704,28 @@
         0.48
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "erosao-eolica",
+      "label": "Erosão eólica",
+      "setId": "erosao-eolica-do-solo",
+      "order": 33,
+      "position": [
+        -4.84,
+        0.93,
+        -2.045
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.84,
+        0.32,
+        0.28
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

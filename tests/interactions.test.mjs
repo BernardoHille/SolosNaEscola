@@ -122,7 +122,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -145,6 +145,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "solo-na-paisagem",
         "solo-urbano-e-solo-rural",
         "erosao-hidrica-do-solo",
+        "erosao-eolica-do-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -251,6 +252,12 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.deepEqual(erosion.map((v) => v.id), ["erosao-hidrica"]);
   assert.deepEqual(erosion[0].rotationDeg, [0, 90, 0]);
   assert.ok(erosion[0].position[0] < -4.5 && erosion[0].position[0] - erosion[0].size[2] / 2 > -5.3, "junto à parede esquerda");
+  // Erosão Eólica: os dois aquários num volume só, na mesma parede, mais perto do fundo (z menor) que o módulo 16.
+  const wind = volumes.filter((v) => v.setId === "erosao-eolica-do-solo");
+  assert.deepEqual(wind.map((v) => v.id), ["erosao-eolica"]);
+  assert.deepEqual(wind[0].rotationDeg, [0, 90, 0]);
+  assert.ok(wind[0].position[0] < -4.5 && wind[0].position[0] - wind[0].size[2] / 2 > -5.3, "junto à parede esquerda");
+  assert.ok(wind[0].position[2] + wind[0].size[0] / 2 < -1.5, "antes dos tanques do módulo 18 (z > −1,3)");
   assert.ok(erosion[0].position[1] - erosion[0].size[1] / 2 > 0.7, "acima do tampo");
 });
 
@@ -963,6 +970,56 @@ test("dados: Erosão Hídrica do Solo (animação em três etapas sincronizada c
   assert.ok(!/observe esta animação/i.test(all));
   assert.match(item.description, /^Aqui vemos três situações diferentes/);
   assert.match(item.closing, /manter o solo coberto/);
+});
+
+test("dados: Erosão Eólica do Solo (dois aquários em sequência, o vento liga com a narração)", async () => {
+  const { EROSAO_EOLICA_DO_SOLO: set } = await import("../src/data/erosaoEolicaDoSolo.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionSets.ts"), "utf8");
+  assert.match(registry, /\[EROSAO_EOLICA_DO_SOLO\.id\]: EROSAO_EOLICA_DO_SOLO/, "conjunto registrado");
+  assert.equal(nextStepLabel(set.stepNoun), "Próximo aquário");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  // Na ordem do roteiro: primeiro com cobertura, depois sem.
+  assert.deepEqual(set.items.map((it) => it.title), ["Solo com cobertura vegetal", "Solo sem cobertura vegetal"]);
+  // A frase em que o vento liga (1,5 s do clipe), em cada aquário.
+  const wind = [/^Quando o vento começa a soprar/, /^Sem a proteção das plantas/];
+  for (const [i, item] of set.items.entries()) {
+    assert.equal(item.order, i + 1);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    assert.equal(item.model.sizeBytes, statSync(file).size, item.id);
+    const gltf = glbJson(file);
+    assert.deepEqual(gltf.animations.map((a) => a.name), ["erosao_eolica"], item.id);
+    assert.equal(gltf.extensionsUsed, undefined, item.id);
+    const clip = Math.max(...gltf.animations[0].samplers.map((s) => gltf.accessors[s.input].max[0]));
+    close(clip, 24, 1e-4);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    // Narração: um cue por parágrafo (uma frase cada), em ordem.
+    const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", item.narration.audioUrl);
+    assert.ok(audio.length < 600_000, item.narration.audioUrl);
+    const { cues } = item.narration;
+    assert.equal(cues.length, blocks(item.description), item.id);
+    assert.equal(cues[0], 0);
+    for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1], item.id);
+    // Sincronia: parado no primeiro quadro até o vento ligar no começo da frase do vento; depois, até o fim do clipe.
+    const paragraphs = item.description.split(/\n\s*\n/);
+    const k = paragraphs.findIndex((p) => wind[i].test(p));
+    assert.ok(k > 0, `${item.id}: frase do vento`);
+    const { sync } = item.animation;
+    assert.equal(animationTimeAt(cues[k] - 2, sync, clip), 0, `${item.id}: parado antes do vento`);
+    close(animationTimeAt(cues[k], sync, clip), 1.5, 1e-6);
+    close(sync.at(-1)[1], clip, 1e-6);
+    for (let s = 1; s < sync.length; s++) assert.ok(sync[s][0] > sync[s - 1][0] && sync[s][1] >= sync[s - 1][1], item.id);
+    const speed = (sync.at(-1)[1] - 1.5) / (sync.at(-1)[0] - cues[k]);
+    assert.ok(speed >= 1 - 1e-9 && speed < 1.2, `${item.id}: velocidade ${speed}`);
+    assert.equal(animationTimeAt(Infinity, sync, clip), clip, "narração já ouvida: último quadro");
+  }
+  // Sem os títulos lidos ("01. Solo com cobertura vegetal"...); com o texto enviado.
+  const all = set.items.map((it) => it.description).join("\n");
+  assert.ok(!/^\s*0\d|Solo (com|sem) cobertura vegetal/im.test(all));
+  assert.match(set.items[0].description, /^O vento também pode provocar erosão no solo!/);
+  assert.match(set.items[1].description, /reduzir a erosão causada pelo vento!$/);
 });
 
 test("rótulos sobre o modelo: os que se encostariam sobem uma linha", () => {

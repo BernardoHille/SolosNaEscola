@@ -29,8 +29,9 @@ computadores e dispositivos móveis.
 > com o rótulo de cada região aceso enquanto a narração fala dela. As duas caixas do **Solo Urbano e Solo Rural**
 > (módulo 15, na mesma mesa) abrem um menu; cada maquete começa fechada e abre a tampa no fim da narração da caixa
 > fechada, ou antes, com um clique na caixa. A **Erosão Hídrica do Solo** (módulo 16, na mesa da parede esquerda)
-> mostra a chuva sobre três galões (plantas, folhas, solo nu) em três etapas que andam junto com a narração.
-> As demais estantes serão desenvolvidas nas próximas etapas.
+> mostra a chuva sobre três galões (plantas, folhas, solo nu) em três etapas que andam junto com a narração. Na
+> mesma parede, os dois aquários da **Erosão Eólica do Solo** (módulo 17) recebem o mesmo vento, um de cada vez:
+> com cobertura, o capim dobra e o solo fica; sem cobertura, abre a cratera e sobe a poeira. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -993,6 +994,43 @@ cobriam. Agora o que se encostaria num já posto sobe uma linha (`markerRows`, e
 - A escala é estimada no acervo (50 cm) e confere com a mesa no splat.
 - No celular deitado, o experimento fica pequeno e os rótulos sobem em escada.
 
+### Módulo 17 · Erosão Eólica do Solo
+
+Os dois aquários ficam lado a lado na mesma mesa da parede esquerda, mais perto do fundo que o módulo 16: o com
+cobertura em z −2,45 a −2,09 e o sem cobertura em z −2,09 a −1,64, ambos em x −4,96 a −4,72, do tampo (y ≈ 0,78) ao
+alto dos vidros e das placas (≈ 1,06). As placas ficam nas pontas de fora, como nos modelos, então a frente dá para a
+sala: um volume só (`erosao-eolica`), com `rotationDeg: [0, 90, 0]`. Logo depois (z −1,25 a −0,35) ficam os tanques
+com tubo e rampa, que devem ser o módulo 18.
+
+O conjunto (`erosao-eolica-do-solo`, passo “Aquário”) é uma sequência de dois itens, como a maquete 01: primeiro o
+com cobertura, depois o sem, na ordem do roteiro e da narração (“Percebeu a diferença em relação à primeira
+animação???”). O volume abre no primeiro; **→** ou a miniatura levam ao segundo, que toca sozinho.
+
+**Animação sincronizada com a narração.** Os GLBs do acervo vão sem alteração (clipe `erosao_eolica`, 24 s, vento de
+1,5 a 19,6 s; o solo e o capim se deformam por esqueleto, porque o visualizador não anima morphs). Em cada aquário, o
+clipe espera parado no primeiro quadro e o vento liga (1,5 s do clipe) no começo da frase que fala dele:
+
+- **com cobertura:** “Quando o vento começa a soprar…” (16,45 s). Daí até a última frase sobram 19,8 s para 22,5 s
+  de clipe, então ele roda 13 % mais rápido e o capim assenta junto com “…contra a ação do vento.”;
+- **sem cobertura:** “Sem a proteção das plantas…” (4,51 s), em velocidade normal. “Veja como as partículas começam a
+  se movimentar!” cai com a cratera aberta, e “Parte do solo é levantada…”, com a poeira no ar. A animação acaba aos
+  27 s; o resto da narração (consequências) fica sobre o quadro final, com a cratera e os torrões à mostra.
+
+**Texto e narração.** O texto é o enviado pelo usuário, uma frase por parágrafo (um cue cada: 9 e 10). A gravação
+(`erosaoeolica.aac`, ~94 s) foi cortada em dois arquivos, sem os títulos lidos (“01. Solo com cobertura vegetal”,
+“02. Solo sem cobertura vegetal”), nas pausas, sem recodificar: 36,5 s e 49,7 s. Duas correções da transcrição: o
+“O vento” do começo vinha 0,7 s adiantado (o silêncio real vai de 2,60 a 3,37 s; sem a correção, o corte pegaria o
+fim do “vegetal” do título), e a transcrição completa inventou um “03. Solo sem cobertura vegetal.” aos 84,7 s, que
+o trecho transcrito sozinho não tem. “Observe esta primeira animação!” ficou, porque está no texto enviado.
+
+**Limites:**
+
+- O splat mede os aquários ~15 % maiores que a escala estimada no acervo (30 e 40 cm de largura); não afeta o
+  visualizador, que enquadra o modelo.
+- O volume abre sempre no primeiro aquário, mesmo mirando o segundo (como as caixas do módulo 01).
+- Os traços do vento são finos e somem um pouco de longe; com o zoom, ficam claros.
+- No celular deitado, o aquário fica pequeno, no alto, com a legenda logo abaixo.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1163,6 +1201,7 @@ SolosNaEscola/
 │   ├── models/inspection/paisagem/*.glb # módulo 14: maquete com pontos de marcação dos rótulos
 │   ├── models/inspection/urbano-rural/*.glb # módulo 15: caixas rural e urbana, com a tampa animada
 │   ├── models/inspection/erosao/*.glb # módulo 16: galões, regador e copos (clipe espaçado, derivado)
+│   ├── models/inspection/erosao-eolica/*.glb # módulo 17: aquários com e sem cobertura (animados, do acervo)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1199,7 +1238,7 @@ SolosNaEscola/
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
 │   │   ├── atracaoDoIma.ts        # módulo 04 (gerado a partir do texto, da gravação e do acervo)
 │   │   ├── porosidadeDoSolo.ts    # módulo 06 (gerado a partir da gravação e do acervo)
-│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04, 06, 14 e 16)
+│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04, 06, 14, 16 e 17)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
@@ -1211,6 +1250,7 @@ SolosNaEscola/
 │   │   ├── soloNaPaisagem.ts      # módulo 14 (gerado a partir do texto e da gravação)
 │   │   ├── soloUrbanoESoloRural.ts # módulo 15 (gerado a partir da gravação)
 │   │   ├── erosaoHidricaDoSolo.ts # módulo 16 (gerado a partir da gravação e do acervo)
+│   │   ├── erosaoEolicaDoSolo.ts  # módulo 17 (gerado a partir do texto, da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1290,7 +1330,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **31 de 31 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **32 de 32 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1401,6 +1441,10 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 80 | Sincronia das etapas | ✔ narração levada a 20, 36 e 54 s: a rega e o jato de cada galão (plantas, folhas, solo nu) com o rótulo dele aceso; a 28, 46 e 62 s, o clipe parado sem água no ar e o regador sobre o próximo galão |
 | 81 | Fechamento | ✔ a 80 s, os copos na frente, lado a lado, o das plantas mais limpo e o do solo nu mais barrento, com a legenda “Essa terra transportada…” |
 | 82 | Rótulos (desktop e celular, emulação 375 × 812 e 667 × 375) | ✔ desktop: os três na mesma linha; em pé, “Folhas” sobe acima de “Plantas” e “Solo nu”; deitado, em escada, legíveis; maquetes 01 e 14 sem mudança; sem erros no console (fora o HMR) |
+| 83 | Volume e abertura da Erosão Eólica | ✔ no modo de calibração, a caixa envolve os dois aquários (sem cobertura à esquerda, com cobertura à direita, como nos modelos); **E** abre “Solo com cobertura vegetal”, 01 / 02, com a narração, a legenda e as duas miniaturas |
+| 84 | Vento com cobertura | ✔ narração levada a 13 s: tudo parado; a 20 s, traços do vento e o capim dobrado; a 36,2 s, assentado e sem vento |
+| 85 | Vento sem cobertura | ✔ **→** abre o segundo aquário, que toca sozinho (“Sem a proteção das plantas…” na legenda); a 12 e a 20 s, poeira no ar e a cratera abrindo; a 32 s, cratera, torrões e poeira assentada |
+| 86 | Celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, o aquário na largura da tela, com a gaveta “Aquário 1”; deitado, pequeno, no alto, com a legenda abaixo; sem erros no console (fora o HMR) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1409,7 +1453,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa),
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa), o módulo 17 num celular real (6,4 e 6,7 MB, com esqueletos de 46 e 287 ossos) e o som dos cortes no começo de cada aquário,
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real
