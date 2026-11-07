@@ -66,8 +66,16 @@ export type InspectionModelItem = InspectionItemBase & {
    * (aplicada primeiro, em X, Y e Z). `yawDeg` (em torno de Y) e `pitchDeg` (inclina o
    * topo em direção ao visitante) definem a vista de três quartos inicial. `fitScale` (< 1)
    * aproxima o enquadramento inicial, que cabe a esfera envolvente e sobra em cenas largas e baixas.
+   * `fitIgnore`: prefixos de nome de nó cujas malhas não entram no enquadramento (ex.: a chuva do
+   * módulo 18, que cai de bem acima do aquário).
    */
-  view: { rotationDeg: [number, number, number]; yawDeg: number; pitchDeg: number; fitScale?: number };
+  view: {
+    rotationDeg: [number, number, number];
+    yawDeg: number;
+    pitchDeg: number;
+    fitScale?: number;
+    fitIgnore?: string[];
+  };
   /**
    * Recipiente do objeto (nó do GLB, ex.: a caixa de madeira). Clicar no recipiente ou no
    * conteúdo esmaece o recipiente e enquadra só o conteúdo (a rocha); clicar na rocha o devolve.

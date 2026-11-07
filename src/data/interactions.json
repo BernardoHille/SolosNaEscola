@@ -726,6 +726,28 @@
         0.28
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "deslizamento-e-inundacao",
+      "label": "Deslizamento e inundação",
+      "setId": "deslizamento-e-inundacao",
+      "order": 34,
+      "position": [
+        -4.86,
+        0.96,
+        -0.825
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        1.03,
+        0.38,
+        0.34
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

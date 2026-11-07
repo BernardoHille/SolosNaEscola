@@ -122,7 +122,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts", "deslizamentoEInundacao.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -146,6 +146,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "solo-urbano-e-solo-rural",
         "erosao-hidrica-do-solo",
         "erosao-eolica-do-solo",
+        "deslizamento-e-inundacao",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -258,6 +259,13 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.deepEqual(wind[0].rotationDeg, [0, 90, 0]);
   assert.ok(wind[0].position[0] < -4.5 && wind[0].position[0] - wind[0].size[2] / 2 > -5.3, "junto à parede esquerda");
   assert.ok(wind[0].position[2] + wind[0].size[0] / 2 < -1.5, "antes dos tanques do módulo 18 (z > −1,3)");
+  // Deslizamento e Inundação: os dois tanques num volume só, entre o módulo 17 e o 16, na mesma parede.
+  const rain = volumes.filter((v) => v.setId === "deslizamento-e-inundacao");
+  assert.deepEqual(rain.map((v) => v.id), ["deslizamento-e-inundacao"]);
+  assert.deepEqual(rain[0].rotationDeg, [0, 90, 0]);
+  assert.ok(rain[0].position[0] < -4.5 && rain[0].position[0] - rain[0].size[2] / 2 > -5.3, "junto à parede esquerda");
+  assert.ok(rain[0].position[2] - rain[0].size[0] / 2 >= wind[0].position[2] + wind[0].size[0] / 2, "depois do módulo 17");
+  assert.ok(rain[0].position[2] + rain[0].size[0] / 2 <= erosion[0].position[2] - erosion[0].size[0] / 2, "antes do módulo 16");
   assert.ok(erosion[0].position[1] - erosion[0].size[1] / 2 > 0.7, "acima do tampo");
 });
 
@@ -1020,6 +1028,69 @@ test("dados: Erosão Eólica do Solo (dois aquários em sequência, o vento liga
   assert.ok(!/^\s*0\d|Solo (com|sem) cobertura vegetal/im.test(all));
   assert.match(set.items[0].description, /^O vento também pode provocar erosão no solo!/);
   assert.match(set.items[1].description, /reduzir a erosão causada pelo vento!$/);
+});
+
+test("dados: Deslizamento e Inundação (dois aquários em sequência, a chuva e o deslizamento com a narração)", async () => {
+  const { DESLIZAMENTO_E_INUNDACAO: set } = await import("../src/data/deslizamentoEInundacao.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionSets.ts"), "utf8");
+  assert.match(registry, /\[DESLIZAMENTO_E_INUNDACAO\.id\]: DESLIZAMENTO_E_INUNDACAO/, "conjunto registrado");
+  assert.equal(nextStepLabel(set.stepNoun), "Próximo aquário");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  // Na ordem do roteiro: primeiro o deslizamento, depois a inundação.
+  assert.deepEqual(set.items.map((it) => it.title), ["Deslizamento de terra", "Inundação"]);
+  // Frases que movem o clipe: a chuva liga (1,5 s) e, no deslizamento, o solo cede (7 s).
+  const anchors = [
+    [[/^Observe o que acontece quando a chuva/, 1.5], [/^O solo começa a ceder!/, 7]],
+    [[/^Observe a animação!/, 1.5]],
+  ];
+  for (const [i, item] of set.items.entries()) {
+    assert.equal(item.order, i + 1);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    assert.equal(item.model.sizeBytes, statSync(file).size, item.id);
+    const gltf = glbJson(file);
+    assert.equal(gltf.animations.length, 1, item.id);
+    assert.equal(gltf.extensionsUsed, undefined, item.id);
+    const clip = Math.max(...gltf.animations[0].samplers.map((s) => gltf.accessors[s.input].max[0]));
+    close(clip, 24, 1e-4);
+    // A chuva (nós "Chuva…") fica fora do enquadramento: ela cai de bem acima do vidro.
+    assert.deepEqual(item.view.fitIgnore, ["Chuva"]);
+    assert.ok(gltf.nodes.some((n) => n.name?.startsWith("Chuva")), `${item.id}: nós da chuva`);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    // Narração: um cue por parágrafo (uma frase cada), em ordem.
+    const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", item.narration.audioUrl);
+    assert.ok(audio.length < 600_000, item.narration.audioUrl);
+    const { cues } = item.narration;
+    assert.equal(cues.length, blocks(item.description), item.id);
+    assert.equal(cues.length, 12, item.id);
+    assert.equal(cues[0], 0);
+    for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1], item.id);
+    // Sincronia: parado no primeiro quadro até a chuva; cada âncora dentro da sua frase; depois, velocidade normal.
+    const { sync } = item.animation;
+    const paragraphs = item.description.split(/\n\s*\n/);
+    for (const [pattern, at] of anchors[i]) {
+      const k = paragraphs.findIndex((p) => pattern.test(p));
+      assert.ok(k > 0, `${item.id}: ${pattern}`);
+      const pair = sync.find(([, c]) => c === at);
+      assert.ok(pair && pair[0] >= cues[k] && pair[0] < cues[k + 1], `${item.id}: ${at} s do clipe na frase ${k}`);
+    }
+    assert.equal(animationTimeAt(sync[1][0], sync, clip), 0, `${item.id}: parado antes da chuva`);
+    for (let s = 1; s < sync.length; s++) assert.ok(sync[s][0] > sync[s - 1][0] && sync[s][1] >= sync[s - 1][1], item.id);
+    const [t1, c1] = sync.at(-2);
+    const [t2, c2] = sync.at(-1);
+    close(c2, clip, 1e-6);
+    close((c2 - c1) / (t2 - t1), 1, 0.01);
+    assert.ok(t2 < item.narration.cues.at(-1) + 10, `${item.id}: o clipe acaba antes do fim da narração`);
+    assert.equal(animationTimeAt(Infinity, sync, clip), clip, "narração já ouvida: último quadro");
+  }
+  // Sem os títulos lidos ("01. Deslizamento de terra", "2. Inundação") e sem a repetição inventada pela transcrição.
+  const all = set.items.map((it) => it.description).join("\n");
+  assert.ok(!/^\s*0?\d\.|^Deslizamento de terra|^Inundação/m.test(all));
+  assert.equal((all.match(/Veja como o nível da água sobe rapidamente/g) ?? []).length, 1);
+  assert.match(set.items[0].description, /^Imagine morar em uma casa/);
+  assert.match(set.items[1].description, /planejar cidades mais seguras\.$/);
 });
 
 test("rótulos sobre o modelo: os que se encostariam sobem uma linha", () => {

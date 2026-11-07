@@ -274,7 +274,8 @@ export class InspectionViewer {
     }
     const animation = item.animation ? animationOf(asset, root, item.animation.sync) : null;
     // Animado: enquadra tudo o que o clipe percorre (os potes sobem e saem do lugar).
-    const full = animation ? animatedFrame(animation, root) : frameOf(meshInstancesOf(root));
+    const framed = framedMeshes(root, item.view.fitIgnore);
+    const full = animation ? animatedFrame(animation, root, framed) : frameOf(framed);
 
     const container = item.container ? containerOf(root, item.container) : null;
     let content: Frame | null = null;
@@ -804,8 +805,7 @@ function setAnimationTime(a: Animation, time: number) {
 }
 
 /** Enquadramento que contém o modelo em todo o clipe (amostras a cada meio segundo). */
-function animatedFrame(a: Animation, root: EntityType): Frame {
-  const meshes = meshInstancesOf(root);
+function animatedFrame(a: Animation, root: EntityType, meshes: MeshInstance[]): Frame {
   const box = new BoundingBox();
   let first = true;
   // Sincroniza os pais antes: `syncHierarchy` só desce. Com os pais ainda pendentes, o modelo guarda
@@ -826,6 +826,16 @@ function animatedFrame(a: Animation, root: EntityType): Frame {
   }
   setAnimationTime(a, 0);
   return { center: box.center.clone(), radius: Math.max(box.halfExtents.length(), 0.01) };
+}
+
+/** Malhas que entram no enquadramento: todas, menos as de nós cujo nome começa por um prefixo de `ignore`. */
+function framedMeshes(root: EntityType, ignore: string[] = []): MeshInstance[] {
+  if (!ignore.length) return meshInstancesOf(root);
+  const skip = new Set<MeshInstance>();
+  root.forEach((node) => {
+    if (ignore.some((p) => node.name.startsWith(p))) for (const mi of meshInstancesOf(node as EntityType)) skip.add(mi);
+  });
+  return meshInstancesOf(root).filter((mi) => !skip.has(mi));
 }
 
 function meshInstancesOf(entity: EntityType): MeshInstance[] {

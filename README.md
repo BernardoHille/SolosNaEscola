@@ -31,7 +31,9 @@ computadores e dispositivos móveis.
 > fechada, ou antes, com um clique na caixa. A **Erosão Hídrica do Solo** (módulo 16, na mesa da parede esquerda)
 > mostra a chuva sobre três galões (plantas, folhas, solo nu) em três etapas que andam junto com a narração. Na
 > mesma parede, os dois aquários da **Erosão Eólica do Solo** (módulo 17) recebem o mesmo vento, um de cada vez:
-> com cobertura, o capim dobra e o solo fica; sem cobertura, abre a cratera e sobe a poeira. As demais estantes serão desenvolvidas nas próximas etapas.
+> com cobertura, o capim dobra e o solo fica; sem cobertura, abre a cratera e sobe a poeira. Ao lado, os dois de
+> **Deslizamento e Inundação** (módulo 18) recebem a mesma chuva: na encosta, o solo cede e arrasta as casas; no
+> terreno plano, a água sobe até as casas ficarem parcialmente submersas. As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -1031,6 +1033,46 @@ o trecho transcrito sozinho não tem. “Observe esta primeira animação!” fi
 - Os traços do vento são finos e somem um pouco de longe; com o zoom, ficam claros.
 - No celular deitado, o aquário fica pequeno, no alto, com a legenda logo abaixo.
 
+### Módulo 18 · Deslizamento e Inundação
+
+Os dois aquários ficam na mesma mesa da parede esquerda, entre o módulo 17 e o 16, com a mangueira entre eles: a
+inundação em z −1,32 a −0,90 e o deslizamento em z −0,73 a −0,33, ambos em x −5,03 a −4,69, do tampo (y ≈ 0,78) ao
+alto dos vidros (≈ 1,14). No splat, a encosta sobe para z maior, ou seja, à esquerda de quem olha para a parede, como
+no modelo: a frente dá para a sala. Um volume só (`deslizamento-e-inundacao`), com `rotationDeg: [0, 90, 0]`.
+
+Como no módulo 17, o conjunto (`deslizamento-e-inundacao`, passo “Aquário”) é uma sequência de dois itens, na ordem
+do roteiro e da narração: primeiro o deslizamento, depois a inundação (“Agora, vamos observar uma situação
+diferente!”).
+
+**Animação sincronizada com a narração.** Os GLBs do acervo vão sem alteração (clipes `deslizamento` e `inundacao`,
+24 s, chuva de 1,5 a 18,8 s; o solo do deslizamento escorrega por esqueleto). O clipe espera parado no primeiro quadro:
+
+- **deslizamento:** a chuva liga na palavra “chuva” de “Observe o que acontece quando a chuva começa a cair.”
+  (14,67 s); a frente de molhamento desce um pouco mais devagar (0,77×) até o solo ceder (7 s do clipe) em “O solo
+  começa a ceder!” (21,83 s). Daí, velocidade normal: as casas tombam durante “Veja como a terra se movimenta,
+  arrastando as casas junto com ela!”, e o clipe acaba aos 38,8 s, antes das consequências;
+- **inundação:** a chuva liga em “Observe a animação!” (17,15 s), em velocidade normal. A água cobre o terreno
+  durante “A água começa a se acumular…” e chega ao nível final junto de “Isso representa uma inundação!”.
+
+**Enquadramento sem a chuva.** As lâminas de chuva caem de bem acima do vidro (não há chuveirinho de onde sair) e, como
+o enquadramento de um modelo animado soma tudo o que aparece ao longo do clipe, o aquário ficava pequeno e baixo na
+tela. Novo `view.fitIgnore` (prefixos de nome de nó fora do enquadramento): aqui `["Chuva"]`. A chuva continua
+aparecendo, cortada no alto da tela.
+
+**Texto e narração.** O texto é o enviado pelo usuário, uma frase por parágrafo (12 cues em cada aquário). A gravação
+(`inundacao.aac`, ~113 s) foi cortada em dois arquivos, sem os títulos lidos, nas pausas, sem recodificar: 50,2 s e
+57,2 s. Duas correções da transcrição, conferidas em trechos transcritos sozinhos: ela inventou uma repetição
+(“Observe a animação. Veja como o nível da água sobe rapidamente. Observe a animação.”) entre 84,26 e 84,96 s, e
+punha o “Agora” do segundo aquário 0,8 s antes da pausa que o separa do título “2. Inundação”. “Observe a
+animação!” ficou, porque está no texto enviado.
+
+**Limites:**
+
+- A água da inundação é sutil, como na prévia do acervo: uma lâmina barrenta translúcida sobre a parte de baixo das
+  casas, sem ondas de verdade.
+- O volume abre sempre no primeiro aquário, mesmo mirando o segundo (como os módulos 01 e 17).
+- A escala do acervo (40 cm de largura) confere com os tanques no splat.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1139,7 +1181,8 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
    `src/data/` e inclua-o em `INSPECTION_SETS` (`inspectionSets.ts`); para um acervo com grupos e
    menu, crie um `InspectionCatalog` e inclua-o em `INSPECTION_CATALOGS`. GLB com animação: dê ao
    item `animation.sync` para o clipe seguir a narração; caixa com tampa que o visitante pode abrir: some
-   `openOnClick: true` (o primeiro par de `sync` marca a abertura).
+   `openOnClick: true` (o primeiro par de `sync` marca a abertura). Partes animadas que saem muito do objeto
+   (a chuva que cai de cima, no módulo 18) ficam fora do enquadramento com `view.fitIgnore` (prefixos de nó).
 3. Gere as miniaturas (acima) em `public/models/inspection/thumbs/`.
 4. Em `interactions.json`, acrescente um volume por objeto com `setId` igual ao id do conjunto e
    `order` na sequência; calibre com `?debugInteractions=1`. Se outro móvel puder ser visto
@@ -1202,6 +1245,7 @@ SolosNaEscola/
 │   ├── models/inspection/urbano-rural/*.glb # módulo 15: caixas rural e urbana, com a tampa animada
 │   ├── models/inspection/erosao/*.glb # módulo 16: galões, regador e copos (clipe espaçado, derivado)
 │   ├── models/inspection/erosao-eolica/*.glb # módulo 17: aquários com e sem cobertura (animados, do acervo)
+│   ├── models/inspection/deslizamento-inundacao/*.glb # módulo 18: encosta e terreno plano sob chuva (do acervo)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1238,7 +1282,7 @@ SolosNaEscola/
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
 │   │   ├── atracaoDoIma.ts        # módulo 04 (gerado a partir do texto, da gravação e do acervo)
 │   │   ├── porosidadeDoSolo.ts    # módulo 06 (gerado a partir da gravação e do acervo)
-│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04, 06, 14, 16 e 17)
+│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04, 06, 14, 16, 17 e 18)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
@@ -1251,6 +1295,7 @@ SolosNaEscola/
 │   │   ├── soloUrbanoESoloRural.ts # módulo 15 (gerado a partir da gravação)
 │   │   ├── erosaoHidricaDoSolo.ts # módulo 16 (gerado a partir da gravação e do acervo)
 │   │   ├── erosaoEolicaDoSolo.ts  # módulo 17 (gerado a partir do texto, da gravação e do acervo)
+│   │   ├── deslizamentoEInundacao.ts # módulo 18 (gerado a partir do texto, da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1330,7 +1375,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **32 de 32 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **33 de 33 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1445,6 +1490,11 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 84 | Vento com cobertura | ✔ narração levada a 13 s: tudo parado; a 20 s, traços do vento e o capim dobrado; a 36,2 s, assentado e sem vento |
 | 85 | Vento sem cobertura | ✔ **→** abre o segundo aquário, que toca sozinho (“Sem a proteção das plantas…” na legenda); a 12 e a 20 s, poeira no ar e a cratera abrindo; a 32 s, cratera, torrões e poeira assentada |
 | 86 | Celular (emulação 375 × 812 e 667 × 375) | ✔ em pé, o aquário na largura da tela, com a gaveta “Aquário 1”; deitado, pequeno, no alto, com a legenda abaixo; sem erros no console (fora o HMR) |
+| 87 | Volume e abertura do Deslizamento e Inundação | ✔ no modo de calibração, a caixa envolve os dois tanques (deslizamento à esquerda, com a encosta subindo para a esquerda, como no modelo); **E** abre “Deslizamento de terra”, 01 / 02, com a narração e a legenda |
+| 88 | Enquadramento sem a chuva | ✔ antes, o aquário ficava pequeno e baixo (a chuva contava no enquadramento); com `fitIgnore: ["Chuva"]`, ocupa o centro da tela |
+| 89 | Chuva e deslizamento | ✔ narração levada a 12,5 s: sem chuva; a 18 s, chuva com as casas firmes; a 26 s, a massa descendo e as casas tombando; a 45 s, cicatriz, casas caídas e a chuva parada |
+| 90 | Inundação | ✔ **→** abre o segundo aquário, que toca sozinho; a 15 s, sem chuva; a 21 e a 30 s, chuva; a 45 s, a lâmina barrenta sobre a base das casas, como na prévia do acervo |
+| 91 | Celular (emulação 375 × 812) | ✔ o aquário na largura da tela, com a gaveta “Aquário 1”; sem erros no console (fora o HMR) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1453,7 +1503,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa), o módulo 17 num celular real (6,4 e 6,7 MB, com esqueletos de 46 e 287 ossos) e o som dos cortes no começo de cada aquário,
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa), o módulo 17 num celular real (6,4 e 6,7 MB, com esqueletos de 46 e 287 ossos) e o som dos cortes no começo de cada aquário, o módulo 18 num celular real (o deslizamento tem 5,5 MB e 710 ossos) e deitado,
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real
