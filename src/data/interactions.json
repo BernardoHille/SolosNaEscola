@@ -682,6 +682,28 @@
         0.38
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "erosao-hidrica",
+      "label": "Erosão hídrica",
+      "setId": "erosao-hidrica-do-solo",
+      "order": 32,
+      "position": [
+        -4.83,
+        1.06,
+        0.55
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.76,
+        0.58,
+        0.48
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

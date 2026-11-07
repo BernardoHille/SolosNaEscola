@@ -28,7 +28,9 @@ computadores e dispositivos móveis.
 > em 3D. A **Maquete do Solo na Paisagem** (módulo 14, na mesa das maquetes) abre como a maquete 01: um modelo só,
 > com o rótulo de cada região aceso enquanto a narração fala dela. As duas caixas do **Solo Urbano e Solo Rural**
 > (módulo 15, na mesma mesa) abrem um menu; cada maquete começa fechada e abre a tampa no fim da narração da caixa
-> fechada, ou antes, com um clique na caixa. As demais estantes serão desenvolvidas nas próximas etapas.
+> fechada, ou antes, com um clique na caixa. A **Erosão Hídrica do Solo** (módulo 16, na mesa da parede esquerda)
+> mostra a chuva sobre três galões (plantas, folhas, solo nu) em três etapas que andam junto com a narração.
+> As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -954,6 +956,43 @@ alagamentos, áreas verdes), o item 4 do roteiro.
 - O enquadramento reserva o espaço da tampa aberta: com a caixa fechada, ela fica na parte de cima da tela. No
   celular deitado, a caixa fica pequena.
 
+### Módulo 16 · Erosão Hídrica do Solo
+
+O experimento fica na mesa encostada na parede esquerda (x ≈ −5,3): suporte e três galões deitados em x −5,05 a
+−4,75, copos até −4,6, z 0,18 a 0,92, do tampo (y ≈ 0,78) ao alto do capim (≈ 1,35). Gargalos e copos apontam para a
+sala, então o volume (`erosao-hidrica`) usa `rotationDeg: [0, 90, 0]` (a frente, +Z do modelo, vira +X). Abre direto,
+como a maquete 01 (`erosao-hidrica-do-solo`, um item): abertura, uma etapa por galão (rótulos **Plantas**, **Folhas**
+e **Solo nu**, cada um aceso enquanto é narrado) e fechamento.
+
+**Animação em três etapas, sincronizada com a narração.** No clipe do acervo (`erosao_hidrica`, 38 s), as etapas se
+sobrepõem: os pingos do galão das plantas ainda caem quando a rega da palha começa, e assim por diante, sem instante
+sem água no ar entre elas. O GLB publicado (`erosao/modulo_16_erosao_hidrica_web.glb`, 9,1 MB, 42,5 s) é derivado:
+`modulo16_glb_web.py` desloca no tempo os canais de cada galão (pelo nome do nó: `_G_`, `_R_`, `_S_`) e do regador,
+que segura a posição durante o espaço. Geometria e materiais são os mesmos, byte a byte. A sincronia (`animation.sync`):
+
+- introdução (0–4,95 s do clipe): as tampas saem e o regador chega ao galão das plantas, durante a abertura;
+- cada etapa roda em velocidade normal a partir da primeira frase dela (“Na primeira etapa…”, 13,65 s; “Na segunda
+  etapa…”, 30,35 s; “Agora, observe a terceira etapa.”, 49,25 s) e para, antes da próxima, num instante sem água no
+  ar (15,87, 26,87 e 35,55 s do clipe);
+- no fechamento (“Compare a água coletada…”, 64,37 s), os copos vêm para a frente, lado a lado, e o sedimento assenta.
+
+**Texto e narração.** Não houve texto enviado: as frases são as da gravação (`erosaosolo.aac`, 102 s), com a
+pontuação revista. O “Observe esta animação.” do começo saiu, como pedido (um corte só, nas pausas, sem recodificar:
+99,5 s). “Agora, observe a terceira etapa.” ficou, porque fala da etapa. São 12 cues: 2 parágrafos da abertura, 3
+etapas e 7 parágrafos do fechamento.
+
+**Rótulos que se encostariam.** No celular em pé, os três galões ficam a ~35 px um do outro, e os rótulos se
+cobriam. Agora o que se encostaria num já posto sobe uma linha (`markerRows`, em `src/lib/inspection/markerRows.ts`):
+“Folhas” fica acima de “Plantas” e “Solo nu”. Sem colisão (desktop, maquetes 01 e 14), nada muda.
+
+**Limites:**
+
+- O texto não foi revisado pela equipe.
+- No museu, o galão do capim fica no z menor (à direita de quem olha para a mesa); no modelo, à esquerda. A narração
+  segue o modelo (plantas, folhas, solo nu, da esquerda para a direita).
+- A escala é estimada no acervo (50 cm) e confere com a mesa no splat.
+- No celular deitado, o experimento fica pequeno e os rótulos sobem em escada.
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1123,6 +1162,7 @@ SolosNaEscola/
 │   ├── models/inspection/perfis/*.glb # módulo 11: placas de solo (juntas por tipo) e mapa
 │   ├── models/inspection/paisagem/*.glb # módulo 14: maquete com pontos de marcação dos rótulos
 │   ├── models/inspection/urbano-rural/*.glb # módulo 15: caixas rural e urbana, com a tampa animada
+│   ├── models/inspection/erosao/*.glb # módulo 16: galões, regador e copos (clipe espaçado, derivado)
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1159,7 +1199,7 @@ SolosNaEscola/
 │   │   ├── inspection.ts          # tipos; módulo 01 (Formação do Solo)
 │   │   ├── atracaoDoIma.ts        # módulo 04 (gerado a partir do texto, da gravação e do acervo)
 │   │   ├── porosidadeDoSolo.ts    # módulo 06 (gerado a partir da gravação e do acervo)
-│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04 e 06)
+│   │   ├── inspectionSets.ts      # conjuntos sem menu (módulos 01, 04, 06, 14 e 16)
 │   │   ├── materialDeOrigem.ts    # módulo 02 (gerado a partir do roteiro e do acervo)
 │   │   ├── horizontesDoSolo.ts    # módulo 03 (gerado a partir da gravação e do acervo)
 │   │   ├── texturaDoSolo.ts       # módulo 05 (gerado a partir do roteiro e do acervo)
@@ -1170,6 +1210,7 @@ SolosNaEscola/
 │   │   ├── colecaoDePerfisDeSolo.ts # módulo 11 (gerado a partir do texto e da gravação)
 │   │   ├── soloNaPaisagem.ts      # módulo 14 (gerado a partir do texto e da gravação)
 │   │   ├── soloUrbanoESoloRural.ts # módulo 15 (gerado a partir da gravação)
+│   │   ├── erosaoHidricaDoSolo.ts # módulo 16 (gerado a partir da gravação e do acervo)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1178,6 +1219,7 @@ SolosNaEscola/
 │   │   ├── inspectionViewer.ts    # visualizador PlayCanvas do objeto
 │   │   ├── microscopeView.ts      # zoom e arraste da telinha do microscópio (testado)
 │   │   ├── animationSync.ts       # narração → instante do clipe (testado)
+│   │   ├── markerRows.ts          # rótulos que se encostariam sobem uma linha (testado)
 │   │   └── stepLabels.ts          # “Próximo item”, “Próxima etapa”: concordância dos rótulos (testado)
 │   └── lib/viewer/
 │       ├── sceneScale.ts          # escala uniforme em runtime
@@ -1248,7 +1290,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **29 de 29 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **31 de 31 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1355,6 +1397,10 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 76 | Abrir sozinha | ✔ na urbana, depois de “Abra a maquete e vamos descobrir!”, a tampa abre sem clique e a narração segue com “Surpresa!…” |
 | 77 | Voltar a uma maquete já ouvida | ✔ a rural reaparece fechada, sem tocar sozinha, com o botão; a tecla **O** abre a tampa e toca a parte da caixa aberta |
 | 78 | Celular (emulação 375 × 812 e 667 × 375) | ✔ toque simulado na caixa urbana abre a tampa; deitado, a caixa fica pequena, no alto, com o botão à vista |
+| 79 | Volume e abertura da Erosão Hídrica | ✔ no modo de calibração, a caixa envolve suporte, galões e copos, junto à parede esquerda; **E** abre o experimento com a narração (“Aqui vemos três situações…”) e a legenda; tampas e regador se movem na abertura |
+| 80 | Sincronia das etapas | ✔ narração levada a 20, 36 e 54 s: a rega e o jato de cada galão (plantas, folhas, solo nu) com o rótulo dele aceso; a 28, 46 e 62 s, o clipe parado sem água no ar e o regador sobre o próximo galão |
+| 81 | Fechamento | ✔ a 80 s, os copos na frente, lado a lado, o das plantas mais limpo e o do solo nu mais barrento, com a legenda “Essa terra transportada…” |
+| 82 | Rótulos (desktop e celular, emulação 375 × 812 e 667 × 375) | ✔ desktop: os três na mesma linha; em pé, “Folhas” sobe acima de “Plantas” e “Solo nu”; deitado, em escada, legíveis; maquetes 01 e 14 sem mudança; sem erros no console (fora o HMR) |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1363,7 +1409,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto,
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

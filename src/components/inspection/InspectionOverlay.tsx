@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import InspectionDescription, {
   type DescriptionLayout,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/icons";
 import { INSPECTION_DIM_OPACITY, type InspectionItem, type InspectionSet } from "@/data/inspection";
 import type { ContainerState, InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
+import { MARKER_ROW, markerRows } from "@/lib/inspection/markerRows";
 import { nextStepLabel, stepPlural } from "@/lib/inspection/stepLabels";
 import { IS_DEV } from "@/lib/viewer/spawnOverride";
 
@@ -143,6 +144,7 @@ export default function InspectionOverlay({
   const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
   const [markers, setMarkers] = useState<MarkerPosition[]>([]);
   const [showMarkers, setShowMarkers] = useState(true);
+  const markerRow = useMemo(() => markerRows(markers), [markers]);
   // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
   const [speakingMarker, setSpeakingMarker] = useState<string | null>(null);
   const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
@@ -462,7 +464,7 @@ export default function InspectionOverlay({
                   ? "z-10 scale-125 bg-[#FFD54A] text-stone-950 ring-[#FFD54A] shadow-[0_0_16px_rgba(255,213,74,0.6)]"
                   : "bg-black/70 text-[#FFD54A] ring-[#FFD54A]/40"
               }`}
-              style={{ left: m.x, top: m.y - 6 }}
+              style={{ left: m.x, top: m.y - 6 - (markerRow.get(m.label) ?? 0) * MARKER_ROW }}
             >
               {m.label}
             </span>

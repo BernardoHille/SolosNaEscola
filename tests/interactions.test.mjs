@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { animationTimeAt } from "../src/lib/inspection/animationSync.ts";
+import { MARKER_ROW, markerRows } from "../src/lib/inspection/markerRows.ts";
 import { MICROSCOPE_HOME, MICROSCOPE_MAX_ZOOM, clampView, panBy, viewTransform, zoomAt } from "../src/lib/inspection/microscopeView.ts";
 import { goToStepLabel, nextStepLabel, stepPlural } from "../src/lib/inspection/stepLabels.ts";
 import {
@@ -121,7 +122,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -143,6 +144,7 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "colecao-de-perfis-de-solo",
         "solo-na-paisagem",
         "solo-urbano-e-solo-rural",
+        "erosao-hidrica-do-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -244,6 +246,12 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   for (const b of boxes) assert.deepEqual(b.rotationDeg, [0, 0, 0]);
   assert.ok(right(boxes[0]) <= left(boxes[1]), "as caixas não se sobrepõem");
   assert.ok(right(boxes[1]) <= left(landscape[0]), "à esquerda da maquete 14");
+  // Erosão Hídrica: a mesa encostada na parede esquerda (x ≈ −5,3), com a frente (+Z do modelo) para +X, a sala.
+  const erosion = volumes.filter((v) => v.setId === "erosao-hidrica-do-solo");
+  assert.deepEqual(erosion.map((v) => v.id), ["erosao-hidrica"]);
+  assert.deepEqual(erosion[0].rotationDeg, [0, 90, 0]);
+  assert.ok(erosion[0].position[0] < -4.5 && erosion[0].position[0] - erosion[0].size[2] / 2 > -5.3, "junto à parede esquerda");
+  assert.ok(erosion[0].position[1] - erosion[0].size[1] / 2 > 0.7, "acima do tampo");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -894,6 +902,84 @@ test("dados: Solo Urbano e Solo Rural (menu, duas caixas que abrem no fim da nar
   assert.ok(!/maquete (fechada|aberta)|^\s*0\d/im.test(all));
   assert.match(items[0].description, /^Vamos começar observando esta paisagem rural\./);
   assert.match(items[1].description, /qualidade ambiental das nossas cidades\.$/);
+});
+
+test("dados: Erosão Hídrica do Solo (animação em três etapas sincronizada com a narração)", async () => {
+  const { EROSAO_HIDRICA_DO_SOLO: set } = await import("../src/data/erosaoHidricaDoSolo.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionSets.ts"), "utf8");
+  assert.match(registry, /\[EROSAO_HIDRICA_DO_SOLO\.id\]: EROSAO_HIDRICA_DO_SOLO/, "conjunto registrado");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(set.items.length, 1);
+  const [item] = set.items;
+  // Uma etapa por galão, na ordem da narração.
+  assert.deepEqual(item.markers.map((m) => m.label), ["Plantas", "Folhas", "Solo nu"]);
+  assert.ok(item.markers.every((m) => m.description));
+  const file = resolve(root, "public", item.model.url.slice(1));
+  assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF");
+  assert.equal(item.model.sizeBytes, statSync(file).size);
+  const gltf = glbJson(file);
+  const names = new Set(gltf.nodes.map((n) => n.name));
+  for (const m of item.markers) assert.ok(names.has(m.node), `nó ausente no GLB: ${m.node}`);
+  // O clipe espaçado (42,5 s): as etapas não se sobrepõem mais.
+  assert.equal(gltf.animations.length, 1);
+  const clip = Math.max(...gltf.animations[0].samplers.map((s) => gltf.accessors[s.input].max[0]));
+  close(clip, 42.5, 1e-4);
+  const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+  assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP");
+  // Narração: um cue por parágrafo da abertura, um por etapa e um por parágrafo do fechamento.
+  const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+  assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp");
+  assert.ok(audio.length < 1_500_000);
+  const { cues } = item.narration;
+  const opening = blocks(item.description);
+  assert.equal(cues.length, opening + 3 + blocks(item.closing));
+  assert.equal(cues.length, 12);
+  assert.equal(cues[0], 0);
+  for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1]);
+  // Sincronia: cada trecho ou para (o clipe fica parado) ou roda em velocidade normal.
+  const { sync } = item.animation;
+  assert.deepEqual(sync[0], [0, 0]);
+  close(sync.at(-1)[1], clip, 1e-6);
+  for (let k = 1; k < sync.length; k++) {
+    const dt = sync[k][0] - sync[k - 1][0];
+    const dc = sync[k][1] - sync[k - 1][1];
+    assert.ok(dt > 0, `sincronia crescente (${k})`);
+    assert.ok(dc === 0 || Math.abs(dc - dt) < 0.011, `parada ou velocidade normal (${k})`);
+  }
+  // Cada etapa e o fechamento começam a animar na primeira frase deles; antes, o clipe espera parado.
+  const starts = sync.filter(([, c], k) => k + 1 < sync.length && sync[k + 1][1] > c && k > 0).map(([t]) => t);
+  assert.deepEqual(starts, [cues[opening], cues[opening + 1], cues[opening + 2], cues[opening + 3]]);
+  for (const [k, t] of starts.entries()) {
+    const held = animationTimeAt(t - 0.5, sync, clip);
+    assert.equal(animationTimeAt(t, sync, clip), held, `parado antes do trecho ${k}`);
+    assert.ok(animationTimeAt(t + 1, sync, clip) > held, `anda no trecho ${k}`);
+  }
+  // As paradas caem nos instantes sem água no ar do clipe espaçado (`modulo16_verifica.py`).
+  const holds = sync.filter(([, c], k) => k > 0 && sync[k - 1][1] === c).map(([, c]) => c);
+  assert.deepEqual(holds, [4.95, 15.87, 26.87, 35.55]);
+  assert.equal(animationTimeAt(Infinity, sync, clip), clip, "narração já ouvida: último quadro");
+  // O usuário pediu para tirar o "Observe esta animação." do começo.
+  const all = [item.description, ...item.markers.map((m) => m.description), item.closing].join("\n");
+  assert.ok(!/observe esta animação/i.test(all));
+  assert.match(item.description, /^Aqui vemos três situações diferentes/);
+  assert.match(item.closing, /manter o solo coberto/);
+});
+
+test("rótulos sobre o modelo: os que se encostariam sobem uma linha", () => {
+  const at = (label, x, y = 100) => ({ label, x, y, visible: true });
+  // Afastados (desktop): todos na linha 0.
+  const far = markerRows([at("Plantas", 100), at("Folhas", 200), at("Solo nu", 300)]);
+  assert.deepEqual([...far.values()], [0, 0, 0]);
+  // Galões a 36 px (celular em pé): o do meio sobe; os das pontas não se tocam e ficam embaixo.
+  const near = markerRows([at("Folhas", 136), at("Plantas", 100), at("Solo nu", 172)]);
+  assert.deepEqual([near.get("Plantas"), near.get("Folhas"), near.get("Solo nu")], [0, 1, 0]);
+  // Empilhados de propósito em alturas diferentes (horizontes A, B, C da maquete 14): não mudam.
+  const stacked = markerRows([at("A", 50, 100), at("B", 50, 130), at("C", 50, 160)]);
+  assert.deepEqual([...stacked.values()], [0, 0, 0]);
+  // Rótulo escondido não ocupa lugar.
+  const hidden = markerRows([at("Plantas", 100), { ...at("Folhas", 110), visible: false }, at("Solo nu", 300)]);
+  assert.deepEqual([hidden.get("Plantas"), hidden.get("Solo nu")], [0, 0]);
+  assert.equal(MARKER_ROW, 22);
 });
 
 test("telinha do microscópio: a imagem sempre cobre a tela e o zoom mantém o ponto sob o cursor", () => {
