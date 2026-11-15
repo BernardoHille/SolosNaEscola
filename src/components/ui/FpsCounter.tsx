@@ -14,6 +14,9 @@ const UPDATE_MS = 500;
  * só quando há render; `frameend` dispara a cada tick do navegador, mesmo sem desenhar). O viewer
  * renderiza sob demanda: com a câmera parada e nada mudando, não desenha quadros novos. Nesse
  * caso o contador mostra "—" em vez de um número baixo que pareceria lentidão.
+ *
+ * Ferramenta técnica (testes de desempenho): oculta por padrão, aparece e some com a tecla P
+ * durante a visita. Não é divulgada na interface.
  */
 export default function FpsCounter({ viewer }: { viewer: ViewerHandle | null }) {
   const [fps, setFps] = useState<number | null>(null);
@@ -46,7 +49,7 @@ export default function FpsCounter({ viewer }: { viewer: ViewerHandle | null }) 
     <p
       aria-hidden="true"
       title={fps === null ? "Cena parada: o viewer só redesenha quando algo muda" : "Quadros por segundo"}
-      className="rounded-md bg-black/35 px-1.5 py-0.5 font-mono text-[10px] leading-tight tabular-nums text-stone-300/75"
+      className="pointer-events-none absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 select-none rounded-md bg-earth/60 px-1.5 py-0.5 font-mono text-[10px] leading-tight tabular-nums text-stone-200/85 sm:left-4 sm:top-4"
     >
       {fps ?? "—"} fps
     </p>

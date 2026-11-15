@@ -7,7 +7,7 @@ import { formatModuleNumber, type ExhibitionModule } from "@/lib/visit/exhibitio
 import type { Point } from "@/lib/visit/mapGeometry";
 import { progressLabel, type VisitMode } from "@/lib/visit/visitProgress";
 
-import MiniMap from "./MiniMap";
+import MiniMap, { MARKER_COLORS } from "./MiniMap";
 import type { VisitorTracker } from "./useVisitorTracker";
 
 type VisitPanelProps = {
@@ -34,7 +34,7 @@ type VisitPanelProps = {
 
 const chip = "rounded-full px-2 py-0.5 text-[10px] font-medium";
 const action =
-  "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200";
+  "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight";
 const primary = `${action} bg-[#FFD54A] text-stone-950 hover:bg-[#ffe07a]`;
 const secondary = `${action} bg-white/10 text-stone-100 hover:bg-white/20`;
 
@@ -91,7 +91,7 @@ export default function VisitPanel({
 
   return (
     <div
-      className="absolute inset-0 z-30 flex items-end bg-black/30 sm:items-stretch sm:justify-end sm:bg-black/15 sm:p-3"
+      className="panel-backdrop absolute inset-0 z-50 flex items-end bg-stone-950/40 sm:items-stretch sm:justify-end sm:bg-stone-950/20 sm:p-3"
       onClick={onClose}
       role="presentation"
     >
@@ -99,12 +99,12 @@ export default function VisitPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="visit-panel-title"
-        className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-stone-950/90 text-sm text-stone-200 shadow-2xl backdrop-blur-md sm:max-h-none sm:w-[23rem] sm:rounded-2xl"
+        className="panel-card flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-stone-900/95 text-sm text-stone-200 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md sm:max-h-none sm:w-[23rem] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-4 px-5 pb-3 pt-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/70">Mapa e visita</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-clay/85">Mapa e visita</p>
             <h2 id="visit-panel-title" className="mt-1 text-lg font-semibold text-stone-50">
               Explorar exposição
             </h2>
@@ -113,7 +113,7 @@ export default function VisitPanel({
             type="button"
             onClick={onClose}
             autoFocus
-            className="-m-1 rounded-full p-1.5 text-stone-400 hover:bg-white/10 hover:text-stone-100 focus-visible:outline-2 focus-visible:outline-amber-200"
+            className="-m-1 rounded-full p-1.5 text-stone-400 hover:bg-white/10 hover:text-stone-100 focus-visible:outline-2 focus-visible:outline-highlight"
             aria-label="Fechar mapa e visita"
           >
             <CloseIcon />
@@ -144,8 +144,8 @@ export default function VisitPanel({
               aria-label="Módulos explorados"
             >
               <div
-                className="h-full rounded-full bg-[#86c9a4] transition-[width] duration-300"
-                style={{ width: `${progress.total ? (progress.count / progress.total) * 100 : 0}%` }}
+                className="h-full rounded-full transition-[width] duration-300"
+                style={{ background: MARKER_COLORS.explored, width: `${progress.total ? (progress.count / progress.total) * 100 : 0}%` }}
               />
             </div>
             {confirmReset && (
@@ -185,8 +185,8 @@ export default function VisitPanel({
                   role="radio"
                   aria-checked={mode === id}
                   onClick={() => (id === "guided" ? chooseGuided() : guided && onEndGuided())}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-amber-200 ${
-                    mode === id ? "bg-white/15 text-stone-50" : "text-stone-400 hover:text-stone-200"
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-highlight ${
+                    mode === id ? "bg-paper text-ink" : "text-stone-400 hover:text-stone-200"
                   }`}
                 >
                   {label}
@@ -225,7 +225,7 @@ export default function VisitPanel({
           </div>
 
           {/* Mapa */}
-          <div ref={mapRef} className="mt-4 scroll-mt-3 rounded-xl bg-black/30 p-2">
+          <div ref={mapRef} className="mt-4 scroll-mt-3 rounded-2xl border border-white/5 bg-stone-950/55 p-2">
             <MiniMap
               modules={available}
               explored={explored}
@@ -237,9 +237,9 @@ export default function VisitPanel({
               onSelect={setSelectedId}
             />
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[10px] text-stone-400">
-              <Legend color="#a8a29e" label="não explorado" />
-              <Legend color="#86c9a4" label="explorado" />
-              <Legend color="#FFD54A" label="destino" />
+              <Legend color={MARKER_COLORS.pending} label="não explorado" />
+              <Legend color={MARKER_COLORS.explored} label="explorado" />
+              <Legend color={MARKER_COLORS.target} label="destino" />
               <span className="ml-auto">entrada embaixo</span>
             </div>
           </div>
@@ -278,7 +278,7 @@ export default function VisitPanel({
           )}
 
           {/* Catálogo */}
-          <h3 className="mt-5 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-400">
+          <h3 className="mt-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-clay/85">
             Módulos da exposição · {available.length} de {modules.length} disponíveis
           </h3>
           <ul className="mt-2 space-y-1.5">
@@ -307,7 +307,7 @@ export default function VisitPanel({
                       <button
                         type="button"
                         onClick={() => locate(m.id)}
-                        className="mt-1.5 text-xs font-medium text-amber-100/90 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-amber-200"
+                        className="mt-1.5 text-xs font-medium text-highlight/90 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-highlight"
                       >
                         Localizar no mapa
                       </button>
@@ -337,7 +337,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 function Status({ explored }: { explored: boolean }) {
   return explored ? (
-    <span className={`${chip} inline-flex shrink-0 items-center gap-0.5 bg-[#86c9a4]/15 text-[#a7dcbd]`}>
+    <span className={`${chip} inline-flex shrink-0 items-center gap-0.5 bg-[#8fcf9f]/15 text-[#ade0b8]`}>
       <CheckIcon className="size-3" />
       Explorado
     </span>

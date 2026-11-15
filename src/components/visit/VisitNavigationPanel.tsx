@@ -30,7 +30,7 @@ type VisitNavigationPanelProps = {
 };
 
 const button =
-  "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-default disabled:opacity-35";
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-highlight disabled:cursor-default disabled:opacity-35";
 
 /**
  * Painel pequeno de orientação: módulo de destino, seta que acompanha o olhar e a posição do
@@ -77,9 +77,10 @@ export default function VisitNavigationPanel({
   return (
     <section
       aria-label={guided ? "Visita guiada" : "Orientação até o módulo"}
-      className={`pointer-events-auto absolute z-10 rounded-2xl bg-black/60 px-3 py-2.5 text-stone-100 shadow-xl backdrop-blur-md ${
+      className={`pointer-events-auto absolute z-10 rounded-2xl border border-white/10 bg-earth/80 px-3 py-2.5 text-stone-100 shadow-xl backdrop-blur-md ${
         touch
-          ? "left-3 right-3 top-[4.25rem] mx-auto max-w-sm sm:right-auto sm:mx-0 sm:w-[22rem]"
+          ? // Ao lado da engrenagem (à direita), no alto; longe do joystick e do minimapa, embaixo.
+            "left-3 right-16 top-[max(0.75rem,env(safe-area-inset-top))] max-w-sm sm:right-auto sm:w-[22rem]"
           : "bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 w-[min(22rem,calc(100%-24rem))] min-w-[17rem] -translate-x-1/2"
       }`}
     >
@@ -95,7 +96,7 @@ export default function VisitNavigationPanel({
           </span>
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-amber-200/75">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-clay/90">
             {guided ? `Visita guiada · Etapa ${formatModuleNumber(guided.step + 1)} de ${formatModuleNumber(guided.total)}` : "Orientação"}
           </p>
           <p className="truncate text-sm font-semibold leading-snug text-stone-50" title={title}>
@@ -119,7 +120,7 @@ export default function VisitNavigationPanel({
         <button
           type="button"
           onClick={guided ? guided.onEnd : onStop}
-          className="-m-1 shrink-0 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-white/10 hover:text-stone-100 focus-visible:outline-2 focus-visible:outline-amber-200"
+          className="-m-1 shrink-0 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-white/10 hover:text-stone-100 focus-visible:outline-2 focus-visible:outline-highlight"
           aria-label={guided ? "Encerrar visita guiada" : "Parar a orientação"}
           title={guided ? "Encerrar visita guiada" : "Parar a orientação"}
         >

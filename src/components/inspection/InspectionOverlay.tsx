@@ -99,7 +99,7 @@ const subscribeResize = (onChange: () => void) => {
 const useViewportWidth = () => useSyncExternalStore(subscribeResize, () => window.innerWidth, () => 0);
 
 const iconButton =
-  "inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-stone-100 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200";
+  "inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-stone-100 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight";
 
 /**
  * Modo de inspeção (estilo "examinar item"): o museu escurece ao fundo, sem ser recarregado,
@@ -503,7 +503,7 @@ export default function InspectionOverlay({
           <button
             type="button"
             onClick={onBack}
-            className={`${iconButton} pointer-events-auto shrink-0 bg-black/45`}
+            className={`${iconButton} pointer-events-auto shrink-0 bg-earth/65`}
             aria-label="Voltar"
             title="Voltar (Esc)"
           >
@@ -511,7 +511,7 @@ export default function InspectionOverlay({
           </button>
         )}
         <div className="min-w-0">
-          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/80 sm:text-[11px]">
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-clay/90 sm:text-[11px]">
             {eyebrow ?? set.title}
           </p>
           <h2 id="inspection-title" className={`mt-1 text-lg font-semibold leading-tight text-stone-50 ${short ? "" : "sm:text-2xl"}`}>
@@ -528,7 +528,7 @@ export default function InspectionOverlay({
       <button
         type="button"
         onClick={requestClose}
-        className={`${iconButton} absolute right-3 top-3 bg-black/45 sm:right-4 sm:top-4`}
+        className={`${iconButton} absolute right-3 top-3 bg-earth/65 sm:right-4 sm:top-4`}
         aria-label="Fechar inspeção"
         title="Fechar (Esc)"
       >
@@ -573,7 +573,7 @@ export default function InspectionOverlay({
         >
           <p
             key={caption}
-            className="inspection-caption max-w-xl rounded-lg bg-black/60 px-3 py-1.5 text-center text-[13px] leading-snug text-stone-100 backdrop-blur-sm sm:text-sm"
+            className="inspection-caption max-w-xl rounded-lg bg-earth/75 px-3 py-1.5 text-center text-[13px] leading-snug text-stone-100 backdrop-blur-sm sm:text-sm"
           >
             {caption}
           </p>
@@ -590,7 +590,7 @@ export default function InspectionOverlay({
             short ? "" : "sm:pb-6"
           } ${hasDescription && docked && !descriptionOpen ? "" : "hidden"}`}
         >
-          <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-earth/70 p-1.5 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setDescriptionOpen(true)}
@@ -622,7 +622,7 @@ export default function InspectionOverlay({
           </button>
         ) : (
         <p
-          className={`pointer-events-none rounded-full bg-black/55 px-3 py-1 text-center text-xs text-[#FFE89A] ring-1 ring-[#FFD54A]/30 backdrop-blur-sm transition-opacity duration-200 sm:text-[13px] ${
+          className={`pointer-events-none rounded-full bg-earth/70 px-3 py-1 text-center text-xs text-[#FFE89A] ring-1 ring-[#FFD54A]/30 backdrop-blur-sm transition-opacity duration-200 sm:text-[13px] ${
             (microscope || (container.available && !container.detached)) && !loading ? "opacity-100" : "opacity-0"
           } ${microscope && short ? "hidden" : ""}`}
           aria-hidden={!microscope && (!container.available || container.detached)}
@@ -634,7 +634,7 @@ export default function InspectionOverlay({
             : `${touch ? "Toque" : "Clique"} ${containerLabels.hint}`}
         </p>
         )}
-        <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-earth/70 p-1.5 backdrop-blur-sm">
           <button
             type="button"
             onClick={onPrevious}
@@ -744,7 +744,7 @@ export default function InspectionOverlay({
                     aria-current={active ? "step" : undefined}
                     aria-label={`${noun} ${i + 1}: ${it.title}`}
                     title={it.title}
-                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${short ? "sm:w-14" : count > 4 ? "sm:w-[4.5rem]" : "sm:w-24"} ${
+                    className={`group flex w-full flex-col items-center gap-1 rounded-xl p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${short ? "sm:w-14" : count > 4 ? "sm:w-[4.5rem]" : "sm:w-24"} ${
                       active ? "bg-[#FFD54A]/15" : "hover:bg-white/10"
                     }`}
                   >

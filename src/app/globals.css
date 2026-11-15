@@ -1,8 +1,41 @@
 @import "tailwindcss";
 
+/*
+ * Identidade visual do Programa Solo na Escola/UFPR.
+ *
+ * Cores tiradas do arquivo da logo (`public/brand/logo-solo-na-escola.png`): grafite das letras,
+ * bege, laranja e vermelho-alaranjado dos círculos. O amarelo `highlight` é o destaque das
+ * interações (contornos, seleção, destino do mapa) e continua sendo o acento principal.
+ *
+ * A escala `stone`, usada por todos os painéis, foi trocada por tons de terra (marrom-grafite a
+ * bege): a interface inteira, inclusive a inspeção, ganha o tom da marca sem mudar cada classe.
+ */
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #323332;
+  --color-paper: #f6efe6;
+  --color-sand: #e0d3c2;
+  --color-clay: #ffba5f;
+  --color-ember: #fd5438;
+  --color-earth: #2a241f;
+  --color-highlight: #ffd54a;
+
+  --color-stone-50: #faf6f0;
+  --color-stone-100: #f3ece2;
+  --color-stone-200: #e6dccf;
+  --color-stone-300: #d2c5b5;
+  --color-stone-400: #ab9d8d;
+  --color-stone-500: #84776a;
+  --color-stone-600: #62574d;
+  --color-stone-700: #483f37;
+  --color-stone-800: #332c26;
+  --color-stone-900: #241f1b;
+  --color-stone-950: #171411;
 }
+
+/* Telas baixas (celular deitado): a tela inicial e os painéis ficam mais compactos. */
+@custom-variant short (@media (max-height: 520px));
 
 @keyframes indeterminate {
   0% {
@@ -11,6 +44,28 @@
   100% {
     transform: translateX(300%);
   }
+}
+
+/* Painéis temporários: entrada curta (fundo esmaece, cartão sobe um pouco). */
+@keyframes panel-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes panel-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+.panel-backdrop {
+  animation: panel-fade-in 180ms ease-out both;
+}
+
+.panel-card {
+  animation: panel-rise-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Painel de descrição da inspeção: cada parágrafo entra em sequência, como numa caixa de diálogo. */
@@ -45,14 +100,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .inspection-line,
-  .inspection-caption {
+  .inspection-caption,
+  .panel-backdrop,
+  .panel-card {
     animation: none;
   }
 }
 
 html,
 body {
-  background: #000;
+  background: var(--color-stone-950);
   /* Evita rolagem elástica e overflow horizontal em dispositivos móveis. */
   overscroll-behavior: none;
   overflow-x: hidden;

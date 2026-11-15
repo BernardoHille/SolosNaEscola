@@ -245,14 +245,14 @@ export default function InteractionLayer({
             type="button"
             tabIndex={active ? 0 : -1}
             onClick={() => target && enabled && onInspect(target)}
-            className={`${active ? "pointer-events-auto" : ""} flex items-center gap-2 rounded-full bg-black/60 py-2 pl-3 pr-4 text-sm font-medium text-stone-50 ring-1 ring-[#FFD54A]/60 backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200`}
+            className={`${active ? "pointer-events-auto" : ""} flex items-center gap-2 rounded-full bg-earth/75 py-2 pl-3 pr-4 text-sm font-medium text-stone-50 ring-1 ring-[#FFD54A]/60 backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight`}
           >
             <span className="size-2 rounded-full bg-[#FFD54A]" aria-hidden="true" />
             Inspecionar
             <span className="sr-only">{label}</span>
           </button>
         ) : (
-          <div className="flex items-center gap-2 whitespace-nowrap rounded-full bg-black/55 py-1.5 pl-2 pr-3 text-[13px] text-stone-100 backdrop-blur-sm">
+          <div className="flex items-center gap-2 whitespace-nowrap rounded-full bg-earth/70 py-1.5 pl-2 pr-3 text-[13px] text-stone-100 backdrop-blur-sm">
             <Key>E</Key>
             <span className="font-medium">Inspecionar</span>
             <span className="text-stone-300/80">· {label}</span>

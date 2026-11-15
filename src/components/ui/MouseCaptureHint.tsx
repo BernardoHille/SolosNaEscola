@@ -20,7 +20,7 @@ export default function MouseCaptureHint() {
   return (
     <div
       role="status"
-      className={`pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1.5 text-xs text-stone-200 backdrop-blur-sm transition-opacity duration-500 sm:top-4 ${
+      className={`pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-earth/65 px-3 py-1.5 text-xs text-stone-200 backdrop-blur-sm transition-opacity duration-500 sm:top-4 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >

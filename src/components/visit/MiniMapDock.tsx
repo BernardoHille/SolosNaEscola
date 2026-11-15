@@ -21,7 +21,7 @@ type MiniMapDockProps = {
 };
 
 const small =
-  "inline-flex size-6 items-center justify-center rounded-full text-stone-300 transition-colors hover:bg-white/10 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-amber-200";
+  "inline-flex size-6 items-center justify-center rounded-full text-stone-300 transition-colors hover:bg-white/10 hover:text-highlight focus-visible:outline-2 focus-visible:outline-highlight";
 
 /**
  * Minimapa compacto, abaixo dos controles. Recolhido, vira um botão pequeno com o ícone do mapa.
@@ -38,10 +38,10 @@ export default function MiniMapDock({
   tracker,
   touch,
 }: MiniMapDockProps) {
-  // Computador: abaixo dos controles. Toque: acima de "Voltar à entrada", longe do painel de
+  // Computador: abaixo da engrenagem. Toque: no canto inferior direito, longe do painel de
   // orientação (que no toque fica no alto) e do joystick (embaixo, à esquerda).
   const position = touch
-    ? "pointer-events-auto absolute bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+3rem)] right-3 z-10"
+    ? "pointer-events-auto absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-10"
     : "pointer-events-auto absolute right-3 top-[3.75rem] z-10 sm:right-4 sm:top-[4.25rem]";
 
   if (!open) {
@@ -49,7 +49,7 @@ export default function MiniMapDock({
       <button
         type="button"
         onClick={() => onOpenChange(true)}
-        className={`${position} inline-flex size-9 items-center justify-center rounded-full bg-black/45 text-stone-100 backdrop-blur-sm transition-colors hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200`}
+        className={`${position} inline-flex size-10 items-center justify-center rounded-full border border-white/10 bg-earth/65 text-stone-100 shadow-lg backdrop-blur-sm transition-colors hover:bg-earth/85 hover:text-highlight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight`}
         aria-label="Mostrar minimapa"
         title="Mostrar minimapa"
       >
@@ -59,9 +59,12 @@ export default function MiniMapDock({
   }
 
   return (
-    <div className={`${position} ${touch ? "w-36" : "w-44"} rounded-xl bg-black/50 p-1.5 shadow-lg backdrop-blur-sm`}>
-      <div className="flex items-center justify-between pb-1 pl-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-stone-300/80">Mapa</span>
+    <div className={`${position} ${touch ? "w-36" : "w-44"} rounded-2xl border border-white/10 bg-earth/70 p-1.5 shadow-lg backdrop-blur-sm`}>
+      <div className="flex items-center justify-between pb-1 pl-1.5">
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-200/85">
+          <span className="size-1.5 rounded-full bg-clay" aria-hidden="true" />
+          Mapa
+        </span>
         <span className="flex">
           <button type="button" onClick={() => onExpand()} className={small} aria-label="Abrir mapa e visita" title="Abrir mapa e visita">
             <ExpandIcon className="size-3.5" />

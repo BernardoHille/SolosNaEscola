@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
-import { ChevronRightIcon, ChevronUpIcon, CloseIcon, PauseIcon, PlayIcon } from "@/components/ui/icons";
+import { ChevronRightIcon, ChevronUpIcon, CloseIcon, PauseIcon, PlayIcon, SpeakerOffIcon } from "@/components/ui/icons";
+import { getNarrationAudio, getNarrationSettings, subscribeNarrationSettings } from "@/lib/audio/narration";
 import type { InspectionItem, InspectionSet } from "@/data/inspection";
 import { goToStepLabel, nextStepLabel } from "@/lib/inspection/stepLabels";
 
@@ -190,14 +191,22 @@ export default function InspectionDescription({
   useEffect(() => {
     onAudioRef.current = onAudio;
   }, [onAudio]);
+  // Som das narrações desligado nas configurações: a narração segue em silêncio (legendas e
+  // animações continuam) e o botão mostra o alto-falante cortado.
+  const soundOn = useSyncExternalStore(
+    subscribeNarrationSettings,
+    () => getNarrationSettings().enabled,
+    () => true,
+  );
   const [playing, setPlaying] = useState(false);
   const [ended, setEnded] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    const audio = new Audio();
-    audio.preload = "metadata";
+    // Elemento compartilhado por todas as inspeções: liberado no "Iniciar visita" e com a
+    // preferência de som do visitante já aplicada (ver `lib/audio/narration`).
+    const audio = getNarrationAudio();
     audioRef.current = audio;
     const onTime = () => setTime(audio.currentTime);
     const onPlay = () => {
@@ -341,7 +350,7 @@ export default function InspectionDescription({
         setTab(value);
         if (!open) onOpenChange(true);
       }}
-      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] xl:px-3 xl:text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-amber-200 ${
+      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] xl:px-3 xl:text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-highlight ${
         tab === value ? "bg-[#FFD54A] text-stone-950" : "text-stone-300 hover:bg-white/10"
       }`}
     >
@@ -373,11 +382,11 @@ export default function InspectionDescription({
             type="button"
             onClick={toggleNarration}
             aria-pressed={playing}
-            className={`relative inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-200 xl:size-9 ${
+            className={`relative inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-highlight xl:size-9 ${
               playing ? "text-[#FFE89A]" : "text-stone-300"
             }`}
-            aria-label={playing ? "Pausar narração" : "Ouvir narração"}
-            title={playing ? "Pausar narração (N)" : "Ouvir narração (N)"}
+            aria-label={`${playing ? "Pausar narração" : "Ouvir narração"}${soundOn ? "" : " (som desativado nas configurações)"}`}
+            title={`${playing ? "Pausar narração (N)" : "Ouvir narração (N)"}${soundOn ? "" : " · som desativado nas configurações"}`}
           >
             {/* Anel de progresso da narração. */}
             <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
@@ -399,13 +408,18 @@ export default function InspectionDescription({
               />
             </svg>
             {playing ? <PauseIcon className="size-3.5 xl:size-4" /> : <PlayIcon className="size-3.5 translate-x-px xl:size-4" />}
+            {!soundOn && (
+              <span className="absolute -bottom-0.5 -right-0.5 inline-flex size-4 items-center justify-center rounded-full bg-stone-900 text-stone-300 ring-1 ring-white/15">
+                <SpeakerOffIcon className="size-2.5" />
+              </span>
+            )}
           </button>
         )}
         {docked ? (
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="inline-flex size-8 items-center justify-center rounded-full text-stone-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-200"
+            className="inline-flex size-8 items-center justify-center rounded-full text-stone-300 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-highlight"
             aria-label="Ocultar descrição"
             title="Ocultar descrição (I)"
           >
@@ -417,7 +431,7 @@ export default function InspectionDescription({
             onClick={() => onOpenChange(!open)}
             aria-expanded={open}
             aria-controls={bodyId}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-stone-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-200"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-stone-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-highlight"
             title={open ? "Recolher descrição (I)" : "Ler descrição (I)"}
           >
             {unread && (
@@ -442,7 +456,7 @@ export default function InspectionDescription({
           docked ? "flex-auto" : "max-h-[min(32vh,18rem)]"
         }`}
       >
-        <h3 id={titleId} className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200/80 xl:text-[11px]">
+        <h3 id={titleId} className="text-[10px] font-semibold uppercase tracking-[0.22em] text-clay/90 xl:text-[11px]">
           {heading}
         </h3>
         {/* A chave reinicia a entrada em sequência a cada texto novo. */}
@@ -456,7 +470,7 @@ export default function InspectionDescription({
             <button
               type="button"
               onClick={() => (tab === "intro" ? setTab("item") : onNext())}
-              className="group inline-flex items-center gap-1 rounded-full bg-[#FFD54A]/15 py-1.5 pl-3.5 pr-2.5 text-xs font-semibold xl:py-2 xl:pl-4 xl:pr-3 xl:text-sm text-[#FFE89A] ring-1 ring-[#FFD54A]/40 transition-colors hover:bg-[#FFD54A]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
+              className="group inline-flex items-center gap-1 rounded-full bg-[#FFD54A]/15 py-1.5 pl-3.5 pr-2.5 text-xs font-semibold xl:py-2 xl:pl-4 xl:pr-3 xl:text-sm text-[#FFE89A] ring-1 ring-[#FFD54A]/40 transition-colors hover:bg-[#FFD54A]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
             >
               {tab === "intro" ? goToStepLabel(noun, stepLabel) : nextStepLabel(noun)}
               <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5 motion-safe:animate-pulse motion-reduce:transition-none" />

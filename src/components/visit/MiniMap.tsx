@@ -19,9 +19,10 @@ const SIZES = {
   large: { marker: 0.15, visitor: 0.15, cone: 0.85, path: 0.06 },
 } as const;
 
+/** Cores dos pontos: bege (não explorado), verde-sálvia (explorado), amarelo (destino). */
 export const MARKER_COLORS = {
-  pending: "#a8a29e",
-  explored: "#86c9a4",
+  pending: "#d2c5b5",
+  explored: "#8fcf9f",
   target: "#FFD54A",
 } as const;
 
@@ -100,14 +101,15 @@ export default function MiniMap({
             <stop offset="1" stopColor="#FFD54A" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <path d={EXHIBITION_MAP.floorPath} fill="rgba(255,255,255,0.17)" stroke="rgba(255,255,255,0.35)" strokeWidth={0.035} fillRule="evenodd" />
-        <path d={EXHIBITION_MAP.furniturePath} fill="rgba(214,196,160,0.30)" fillRule="evenodd" />
+        {/* Piso livre em bege claro; móveis em laranja-terra (tons da logo). */}
+        <path d={EXHIBITION_MAP.floorPath} fill="rgba(224,211,194,0.16)" stroke="rgba(224,211,194,0.42)" strokeWidth={0.035} fillRule="evenodd" />
+        <path d={EXHIBITION_MAP.furniturePath} fill="rgba(255,186,95,0.24)" fillRule="evenodd" />
 
         {/* Entrada */}
         <g transform={`translate(${ENTRANCE[0]} ${ENTRANCE[1] + 0.42})`} opacity={0.75}>
-          <path d="M-0.35 0h0.7" stroke="#e7e5e4" strokeWidth={0.06} strokeLinecap="round" />
+          <path d="M-0.35 0h0.7" stroke="#ffba5f" strokeWidth={0.07} strokeLinecap="round" />
           {variant === "large" && (
-            <text y={0.36} textAnchor="middle" fontSize={0.3} fill="#d6d3d1" style={{ letterSpacing: "0.02em" }}>
+            <text y={0.36} textAnchor="middle" fontSize={0.3} fill="#e0d3c2" style={{ letterSpacing: "0.02em" }}>
               entrada
             </text>
           )}
@@ -158,7 +160,7 @@ export default function MiniMap({
               {(isTarget || isSelected) && (
                 <circle r={s.marker * 2} fill="none" stroke="#FFD54A" strokeOpacity={0.7} strokeWidth={s.marker * 0.45} />
               )}
-              <circle r={s.marker} fill={fill} stroke="rgba(0,0,0,0.55)" strokeWidth={s.marker * 0.3} />
+              <circle r={s.marker} fill={fill} stroke="rgba(23,20,17,0.75)" strokeWidth={s.marker * 0.3} />
             </g>
           );
         })}
@@ -174,7 +176,7 @@ export default function MiniMap({
 
       {tooltip && tooltipAt && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-md bg-black/85 px-2 py-1 text-[11px] font-medium text-stone-100 shadow-lg"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-md border border-white/10 bg-stone-950/90 px-2 py-1 text-[11px] font-medium text-stone-100 shadow-lg"
           style={{ left: `${(tooltipAt[0] / W) * 100}%`, top: `${(tooltipAt[1] / H) * 100}%` }}
         >
           {formatModuleNumber(tooltip.number)} · {tooltip.title}

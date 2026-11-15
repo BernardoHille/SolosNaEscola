@@ -39,7 +39,13 @@ computadores e dispositivos móveis.
 > insetos e os frascos, o cupinzeiro (que sai da bandeja com um clique) e as placas de Petri (que perdem as tampas).
 > As demais estantes serão desenvolvidas nas próximas etapas.
 >
-> O botão do mapa (ou a tecla **M**) abre **Mapa e visita**: a planta da sala com a sua posição, o catálogo dos 27
+> Ao abrir o site, a **tela inicial** mostra a logo do Programa Solo na Escola, a apresentação e o botão **Iniciar
+> visita**, enquanto a exposição é baixada e preparada ao fundo; ao iniciar, a visita entra em tela cheia. Durante a
+> visita, um único botão de **engrenagem** reúne o mapa, a ajuda, a volta à entrada, o menu inicial, a qualidade, a
+> tela cheia e o som das narrações (ver [Tela inicial, configurações e identidade
+> visual](#tela-inicial-configurações-e-identidade-visual-etapa-5)).
+>
+> Na engrenagem, **Mapa e visita** (ou a tecla **M**) abre a planta da sala com a sua posição, o catálogo dos 27
 > módulos do roteiro, os módulos que você já explorou e a **visita guiada**, que indica os módulos um a um, na
 > ordem do roteiro, enquanto você caminha (ver [Mapa e visita](#mapa-e-visita-etapa-4)).
 
@@ -216,7 +222,7 @@ O ponto fica sobre o tapete cinza, no lado interno da porta, entre os armários 
 SOG** (vista superior e vista frontal da porta), não estimados à mão; o ajuste fino deve ser
 feito com a ferramenta de calibração.
 
-O botão **Voltar à entrada** chama `viewer.resetCamera()`: no Walk Mode, isso restaura a pose
+A opção **Voltar à entrada** (na engrenagem) chama `viewer.resetCamera()`: no Walk Mode, isso restaura a pose
 registrada ao entrar no modo — que é sempre a entrada, pois o visitante nunca sai do Walk Mode.
 Não recarrega o SOG nem a colisão.
 
@@ -259,8 +265,10 @@ permanecem no modo de caminhada.
 | Ver detalhes (zoom) | segurar o **botão direito**; ao soltar, volta | — |
 | Liberar o cursor | **Esc** | — |
 | Ir até um ponto | clicar no piso (cursor livre) | — |
-| Voltar ao início | botão **Voltar à entrada** | idem |
-| Qualidade | botão ao lado da tela cheia: Alto, Médio, Baixo, Muito baixo | idem |
+| Configurações | **engrenagem** no canto superior direito (Esc fecha) | idem |
+| Voltar ao início | engrenagem → **Voltar à entrada** | idem |
+| Voltar à tela inicial | engrenagem → **Voltar ao menu inicial** | idem |
+| Qualidade | engrenagem → **Qualidade gráfica**: Alto, Médio, Baixo, Muito baixo | idem |
 | Inspecionar objeto destacado | **E** ou clique no objeto | botão **Inspecionar** |
 
 **Captura do mouse (estilo jogo em primeira pessoa).** No computador, a primeira tecla de
@@ -268,8 +276,8 @@ movimento liga o modo de jogo do próprio viewer (`state.gamingControls = true`)
 Pointer Lock API: o cursor desaparece e o movimento do mouse — sem precisar segurar botão —
 gira a câmera. **Esc** devolve o cursor (o navegador encerra a captura e o viewer desliga o
 modo de jogo); a próxima tecla de movimento captura de novo. Enquanto o mouse está capturado, um
-aviso discreto no topo indica “Esc libera o cursor” por 2 segundos e some (reaparece a cada nova captura). O painel de ajuda libera o cursor ao abrir
-e impede a captura enquanto estiver aberto.
+aviso discreto no topo indica “Esc libera o cursor” por 2 segundos e some (reaparece a cada nova captura). Qualquer painel
+(configurações, ajuda, mapa, “Sobre”) libera o cursor ao abrir e impede a captura enquanto estiver aberto.
 Com o cursor capturado, cliques não levam até um ponto (comportamento do modo de jogo do viewer).
 
 **Zoom de detalhes (estilo “mirar” de jogo em primeira pessoa).** Enquanto o botão direito fica
@@ -278,7 +286,7 @@ pressionado sobre a cena, [`detailZoom.ts`](src/lib/viewer/detailZoom.ts) amplia
 `DETAIL_ZOOM` ([`visit.ts`](src/data/visit.ts)). Dá para andar durante o zoom, e o olhar fica mais
 lento na mesma proporção do FOV, pois o viewer já multiplica a velocidade por `fov / 120`. Com o
 cursor livre, o botão também captura o mouse, para olhar em volta com o zoom ligado, e devolve o
-cursor ao soltar, a menos que o visitante tenha começado a andar. Abrir a ajuda, o menu de qualidade
+cursor ao soltar, a menos que o visitante tenha começado a andar. Abrir um painel
 ou uma inspeção encerra o zoom. Como a API do viewer não expõe o FOV e o WalkController o regrava a
 cada quadro, o zoom é aplicado no evento `update` do PlayCanvas, logo depois do viewer.
 
@@ -294,8 +302,8 @@ a ele. O joystick é um elemento separado e não passa pelo filtro.
 
 Teclado e joystick são combinados em [`moveInput.ts`](src/lib/viewer/moveInput.ts) e enviados
 por `setMoveInput`. O movimento é liberado ao soltar a tecla/dedo, ao perder o foco da janela e
-ao ocultar a aba — nunca fica “preso”. A interface mínima tem identificação do projeto, ajuda
-(aberta automaticamente na primeira visita), qualidade, tela cheia e o botão de retorno.
+ao ocultar a aba — nunca fica “preso”. Durante a visita, a interface fixa é só
+a engrenagem e o minimapa; a ajuda abre sozinha na primeira visita.
 
 **Recálculo das cores ao andar.** Os splats do SOG têm cor dependente do ângulo de visão
 (harmônicos esféricos, 3 bandas). O motor recalcula essas cores quando a câmera se desloca mais
@@ -309,15 +317,17 @@ de testes, andando: quadros com recálculo de 100% → 4%, GPU média de ≈ 8,0
 de só girar a câmera). Esse custo depende do número de splats, não da resolução; os modos de
 qualidade não o reduzem.
 
-**Contador de FPS.** Abaixo da identificação do projeto, um contador discreto mostra os quadros
+**Contador de FPS.** Ferramenta técnica, oculta por padrão: durante a visita, a tecla **P** mostra e esconde,
+no canto superior esquerdo, um contador discreto dos quadros
 por segundo que o viewer realmente renderizou no último segundo (evento `postrender` do motor, que só dispara quando há render,
 [`FpsCounter.tsx`](src/components/ui/FpsCounter.tsx)). O viewer renderiza sob demanda: com a
 câmera parada e nada mudando, não desenha quadros novos, e o contador mostra “—” em vez de um
-número baixo que pareceria lentidão.
+número baixo que pareceria lentidão. O atalho não aparece na interface (tela inicial, ajuda ou
+configurações): fica documentado só aqui.
 
 ### Qualidade
 
-O botão ao lado da tela cheia abre quatro modos, em degraus iguais de **resolução de
+Nas configurações (engrenagem, ou “Configurações” na tela inicial, antes de entrar), quatro modos, em degraus iguais de **resolução de
 renderização** (fração da resolução máxima do viewer, em cada eixo):
 
 | Modo | Escala | Pixels desenhados |
@@ -368,7 +378,7 @@ pré-carregado. As miniaturas da faixa de navegação ficam em `public/models/in
 
 **Durante a inspeção** o museu continua renderizado por trás, escurecido (opacidade 0,70), e o
 objeto aparece num visualizador próprio, enquadrado no espaço acima dos controles. A interface
-da visita (identificação, ajuda, qualidade, tela cheia, “Voltar à entrada”) sai de cena. Comandos:
+da visita (engrenagem, minimapa e painel de orientação) sai de cena. Comandos:
 
 | Ação | Computador | Toque |
 | --- | --- | --- |
@@ -1304,18 +1314,18 @@ espelho: a direita do mapa é a direita de quem entra (−X). Em [`mapGeometry.t
   (somente leitura, como em `cameraPose.ts`) a cada quadro renderizado (`postrender`): o viewer só redesenha
   quando algo muda, então não há laço novo nem redesenho extra do splat, e o marcador é movido direto no DOM,
   sem estado React por quadro ([`useVisitorTracker.ts`](src/components/visit/useVisitorTracker.ts)).
-- **Módulos:** um ponto por módulo disponível, no centro dos seus volumes. Cinza: não explorado; verde:
+- **Módulos:** um ponto por módulo disponível, no centro dos seus volumes. Bege: não explorado; verde:
   explorado; amarelo com anel: destino atual. Módulos no mesmo móvel (01 e 02, na estante da entrada) são
   afastados o mínimo para não se sobreporem. Sem nomes fixos: o nome aparece ao passar o mouse; tocar ou
   clicar num ponto abre o painel com o módulo escolhido.
 - **Percurso:** quando há destino, uma linha tracejada amarela pelo caminho calculado (abaixo).
 
-No computador, o minimapa compacto (176 px) fica abaixo dos controles, aberto; o botão “−” o recolhe num botão
+No computador, o minimapa compacto (176 px) fica abaixo da engrenagem, aberto; o botão “−” o recolhe num botão
 pequeno com o ícone do mapa, e “⤢” abre o painel. A escolha fica salva.
 
 ### Painel “Mapa e visita”
 
-Botão do mapa nos controles (ou tecla **M**, fora da inspeção). Abre à direita no computador e como folha
+Engrenagem → **Mapa e visita** (ou tecla **M**, fora da inspeção; ou “⤢” no minimapa). Abre à direita no computador e como folha
 inferior no celular, com:
 
 1. **Progresso:** “N de 18 módulos explorados”, barra discreta e “Reiniciar progresso”, que pede confirmação.
@@ -1325,7 +1335,7 @@ inferior no celular, com:
 4. **Catálogo:** os 27 módulos do roteiro, na ordem, com número, título, frase do roteiro, situação e
    “Localizar no mapa” (só nos disponíveis).
 
-Um painel por vez: abrir o mapa fecha a ajuda e a qualidade, e vice-versa. Com o painel aberto, o cursor é
+Um painel por vez: abrir o mapa fecha as configurações e a ajuda, e vice-versa. Com o painel aberto, o cursor é
 liberado (como na ajuda), o teclado não move o visitante e a mira não abre inspeções. Na inspeção, minimapa e
 painéis de orientação somem e voltam ao fechar. O splat não é recarregado em nenhuma dessas trocas.
 
@@ -1382,11 +1392,10 @@ Com um destino (etapa da visita guiada ou “Orientar até aqui”):
 
 ### Celular
 
-O minimapa começa recolhido (um botão pequeno acima de “Voltar à entrada”, longe do joystick) e pode ser
-aberto ali mesmo; o painel “Mapa e visita” abre como folha inferior. O painel da visita guiada fica no alto,
-abaixo dos controles (no celular deitado, alinhado à esquerda, para não cobrir o minimapa). Os botões redondos
-dos controles têm 36 px em telas estreitas, para caberem os quatro ao lado do nome do projeto. Joystick, olhar
-por toque e toque para inspecionar continuam iguais.
+O minimapa começa recolhido (um botão pequeno no canto inferior direito, longe do joystick) e pode ser
+aberto ali mesmo; o painel “Mapa e visita” abre como folha inferior. O painel da visita guiada fica no alto, à
+esquerda da engrenagem (no celular deitado, com largura fixa, para não cobrir o minimapa). Joystick, olhar por
+toque e toque para inspecionar continuam iguais.
 
 ### Adicionar um módulo ao mapa e à visita
 
@@ -1408,6 +1417,138 @@ Mapa, catálogo, progresso e visita guiada passam a mostrar o módulo sem mudan�
   afastados alguns centímetros para não se sobreporem.
 - Explorado quer dizer “abriu a inspeção”, não “viu tudo” (ver acima).
 - O progresso é por navegador e por aparelho; limpar os dados do site o apaga.
+
+---
+
+## Tela inicial, configurações e identidade visual (etapa 5)
+
+Reformulação da apresentação, sem mudar o funcionamento da visita: tela inicial com a logo oficial e o
+preparo da exposição ao fundo, entrada em tela cheia, uma engrenagem no lugar dos quatro botões do alto e a
+paleta da marca em todos os painéis. A experiência de entrada segue o modelo do projeto Geologar-2 (tela
+inicial sobre a cena, tela cheia pedida no clique de início, áudio liberado no mesmo gesto), adaptado ao
+Gaussian Splatting.
+
+### Tela inicial
+
+[`StartScreen.tsx`](src/components/start/StartScreen.tsx): cartão claro, centralizado, com a logo, a linha
+“Exposição Didática de Solos · UFPR”, uma frase de apresentação, **Iniciar visita** e três ações secundárias
+(**Configurações**, **Como navegar**, **Sobre a exposição**). No rodapé, discreto, o preparo da exposição com a
+barra de progresso. No celular o cartão ocupa a largura; em telas baixas (celular deitado, altura ≤ 520 px, a
+variante `short:` de [`globals.css`](src/app/globals.css)) a logo e os espaços diminuem para o botão continuar à
+vista. Antes de a cena ficar pronta, o fundo é um degradê de terra com os tons da logo; depois, a exposição real
+aparece por trás de um véu escuro (desfoque leve só em telas a partir de 640 px).
+
+### Preparo da exposição durante a tela inicial
+
+O viewer é criado **uma vez**, ao abrir o site, como antes: o `GaussianViewer` continua montado desde o início
+e a tela inicial é só uma camada por cima. O visitante não precisa clicar para começar o download.
+
+1. **Preparando experiência…** — verificação de WebGL 2/WebGPU e criação do viewer (`initializing`).
+2. **Baixando reconstrução 3D…** — progresso real do download (`progress:changed` do motor), com percentual e
+   megabytes; nada é simulado.
+3. **Processando ambiente…** — download concluído, cena sendo decodificada até o primeiro quadro (`processing`).
+4. **Preparando navegação…** — cena pronta, colisão sendo anexada (`ready` sem Walk Mode).
+5. **Pronto para visitar.** — Walk Mode ativo: só então o botão é liberado.
+
+Os textos estão em [`loadMessages.ts`](src/lib/viewer/loadMessages.ts), testados em
+[`tests/startScreen.test.mjs`](tests/startScreen.test.mjs). **Iniciar visita** e **Voltar ao menu inicial** só
+trocam o estado `started` em [`Exhibition.tsx`](src/components/viewer/Exhibition.tsx): a mesma instância do
+viewer, a colisão, a qualidade, a posição e o progresso continuam, e o SOG não é baixado de novo (só
+**Tentar novamente**, depois de uma falha, recria o viewer, como antes).
+
+**Enquanto a tela inicial aparece**, a visita fica suspensa pelos mesmos mecanismos dos painéis
+(`suspended` e `captureAllowed` em [`useWalkVisit.ts`](src/components/viewer/useWalkVisit.ts)): o teclado não move
+o visitante, o mouse não é capturado, o zoom de detalhes não liga, a camada de interação fica desligada
+(nenhum objeto é mirado ou aberto), e joystick, minimapa, painel de orientação e engrenagem não são montados. A
+tela cobre o canvas, então cliques e toques não chegam ao piso. Como o viewer só redesenha quando algo muda,
+a cena parada ao fundo não gasta quadros (0 quadros em 3 s, medido); por isso não foi preciso uma imagem
+estática no celular.
+
+**Falhas** (rede, servidor, motor, colisão ou navegador sem WebGL 2/WebGPU) aparecem dentro do mesmo cartão,
+com mensagem compreensível, o detalhe técnico em letra pequena e **Tentar novamente** (exceto navegador
+incompatível). Sem os recursos essenciais não há botão de início.
+
+### Iniciar visita em tela cheia
+
+No clique, sem nenhuma espera antes: (1) o áudio das narrações é liberado, (2) a tela cheia é pedida para o
+conjunto viewer + interface ([`fullscreen.ts`](src/lib/viewer/fullscreen.ts), com o prefixo `webkit` do Safari
+mais antigo e do iPad), (3) a tela inicial esmaece em 0,5 s e a visita começa, na entrada configurada e no Walk
+Mode. A ordem segue a do Geologar-2: a tela cheia consome a ativação do gesto, então vem depois do áudio. Recusa
+ou falta de suporte não interrompem nada: a visita começa na janela. Esc sai da tela cheia, como sempre; a opção
+continua nas configurações. **iPhone:** o Safari do iPhone não permite tela cheia para páginas; a alternativa é
+**Adicionar à Tela de Início** — o [manifesto](src/app/manifest.ts) (`display: fullscreen`) e
+`appleWebApp.capable` fazem o site abrir dali sem a barra do navegador. As configurações explicam isso quando a
+tela cheia não está disponível.
+
+### Configurações (engrenagem)
+
+[`SettingsPanel.tsx`](src/components/settings/SettingsPanel.tsx), aberto pela engrenagem
+([`SettingsButton.tsx`](src/components/ui/SettingsButton.tsx)), o único controle fixo da visita:
+
+- **Visita:** Mapa e visita (abre o painel existente, o mesmo da tecla **M** e do “⤢” do minimapa), Como navegar,
+  Voltar à entrada, Voltar ao menu inicial.
+- **Exibição:** qualidade gráfica (os quatro modos de [`quality.ts`](src/data/quality.ts), aplicados ao viewer já
+  criado) e tela cheia.
+- **Áudio:** narrações ativadas/desativadas e volume.
+- **Informações:** Sobre a exposição ([`AboutPanel.tsx`](src/components/settings/AboutPanel.tsx)).
+
+Na tela inicial, o mesmo painel mostra só Exibição, Áudio e Informações. Todos os painéis usam a mesma casca
+([`Dialog.tsx`](src/components/ui/Dialog.tsx)): fundo escurecido (clicar nele fecha), X e Esc; um painel por vez
+(estado único `panel` em `Exhibition`). Com qualquer painel aberto, o cursor é devolvido, o teclado não move o
+visitante e a mira não abre objetos; ao fechar, o visitante está onde estava, sem reiniciar o Walk Mode. O
+título fixo (“Solos na Escola · Exposição em 3D · UFPR”) e o contador de FPS público foram retirados; os quatro
+botões do alto (mapa, ajuda, qualidade, tela cheia) e o botão fixo “Voltar à entrada” passaram para a engrenagem.
+
+### Narrações: som e volume
+
+Antes, cada inspeção criava o seu `Audio`. Agora há **um elemento só**
+([`narration.ts`](src/lib/audio/narration.ts)), usado por
+[`InspectionDescription.tsx`](src/components/inspection/InspectionDescription.tsx) como antes (só o `src` muda):
+
+- **Liberação no início:** **Iniciar visita** toca 0,1 s de silêncio nele, dentro do gesto, como pedem as regras
+  de reprodução automática (em especial no iPhone).
+- **Narrações desativadas** silenciam o elemento (`muted`) sem parar a narração: as **legendas e as animações**,
+  que seguem o tempo do áudio, continuam. O botão de narração mostra um alto-falante cortado.
+- **Volume** (0–100%) aplicado ao elemento. No iPhone e no iPad o volume de um `<audio>` só muda pelos botões do
+  aparelho; o app detecta isso e esconde o controle.
+- A preferência fica salva no navegador (`solos:narracao`, validada ao ler).
+
+### Identidade visual
+
+- **Logo:** o arquivo original (950 × 504, PNG com transparência) em
+  [`public/brand/logo-solo-na-escola.png`](public/brand/logo-solo-na-escola.png) e uma cópia **WebP sem perda**
+  (45 KB, a usada no app), sem recorte, filtro ou mudança de cor ou proporção
+  ([`BrandLogo.tsx`](src/components/brand/BrandLogo.tsx)). Como as letras são grafite, ela aparece sempre sobre
+  fundo claro: no cartão da tela inicial e numa faixa clara no topo das configurações e de “Sobre”. Durante a
+  visita não há logo nem título fixos.
+- **Cores**, tiradas do próprio arquivo da logo: grafite `#323332` (letras), bege `#E0D3C2`, laranja `#FFBA5F` e
+  vermelho-alaranjado `#FD5438` (círculos). Em [`globals.css`](src/app/globals.css) viram as cores `ink`,
+  `sand`, `clay` e `ember`, mais `paper` (`#F6EFE6`, fundo claro), `earth` (`#2A241F`, superfícies escuras) e
+  `highlight` (`#FFD54A`). O **amarelo das interações continua o destaque principal**: contorno dos objetos,
+  seleção, destino no mapa, interruptores e qualidade escolhida. O laranja aparece em detalhes (rótulos das
+  seções, móveis do mapa, marca da entrada).
+- **Tons de terra em toda a interface:** a escala `stone` do Tailwind, usada por todos os painéis (inclusive os
+  da inspeção), foi redefinida com tons de marrom-grafite a bege. Assim a interface inteira ganhou o tom da
+  marca sem mexer no funcionamento dos componentes; os fundos pretos translúcidos dos controles viraram `earth`.
+- **Minimapa:** piso em bege, móveis em laranja-terra, pontos bege (não explorado), verde-sálvia (explorado) e
+  amarelo (destino), moldura `earth`. Geometria e percurso não mudaram.
+- **Favicon e ícones:** o “O” vermelho da palavra SOLO, recortado da logo, sobre um quadrado bege
+  ([`icon.png`](src/app/icon.png), [`apple-icon.png`](src/app/apple-icon.png), `favicon.ico` e os ícones do
+  manifesto em `public/brand/`); legível a 16 e 32 px.
+
+### Responsividade
+
+Computador: cartão de 29 rem, engrenagem no alto à direita e o minimapa logo abaixo. Celular em pé: cartão na
+largura da tela, painéis como folha inferior, engrenagem no alto, minimapa recolhido embaixo à direita,
+joystick embaixo à esquerda, painel da visita guiada no alto, ao lado da engrenagem. Celular deitado: tela
+inicial compacta e painel da visita com largura fixa. Margens respeitam `safe-area-inset`.
+
+### Limitações desta etapa
+
+- Tela cheia no iPhone: indisponível para páginas (ver acima); no painel de testes só foi possível ver o caso
+  de recusa.
+- Volume no iPhone/iPad: controlado pelos botões do aparelho.
+- Esc, com um painel aberto em tela cheia, também sai da tela cheia (comportamento do navegador).
 
 ---
 
@@ -1467,18 +1608,23 @@ SolosNaEscola/
 │   ├── models/inspection/vida-no-solo/*.glb # módulo 20: caixa de insetos com frascos, cupinzeiro, placas de Petri
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
+├── public/brand/                  # logo (PNG original e WebP sem perda) e ícones do manifesto
 ├── scripts/
 │   ├── generate-collision.mjs     # npm run collision
 │   ├── generate-map.mjs           # npm run map: planta, grade caminhável e paradas (da colisão)
 │   └── offset-collision.mjs       # alinha o piso da colisão ao piso visível
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx               # rota "/" → exposição
+│   │   ├── page.tsx               # rota "/" → tela inicial e exposição
+│   │   ├── manifest.ts            # manifesto (Tela de Início, ícones)
+│   │   ├── icon.png, apple-icon.png, favicon.ico # o "O" vermelho da logo
 │   │   └── dev/camera/page.dev.tsx  # calibração (somente dev)
 │   ├── components/
 │   │   ├── viewer/
 │   │   │   ├── GaussianViewer.tsx # integração React do SuperSplat Viewer (+ escala e colisão)
-│   │   │   ├── Exhibition.tsx     # tela principal da visita
+│   │   │   ├── Exhibition.tsx     # tela principal: tela inicial, visita, painéis
+│   │   │   ├── useFullscreen.ts   # tela cheia do conjunto (com prefixo webkit)
+│   │   │   ├── useKeyToggle.ts    # liga/desliga por tecla (contador de FPS, P)
 │   │   │   ├── useWalkVisit.ts    # trava no Walk, teclado, joystick, retorno à entrada
 │   │   │   └── useRenderQuality.ts # modo de qualidade escolhido e aplicado
 │   │   ├── interaction/
@@ -1497,9 +1643,15 @@ SolosNaEscola/
 │   │   │   ├── VisitNavigationPanel.tsx  # etapa da visita guiada, seta, distância e chegada
 │   │   │   ├── useVisitorTracker.ts      # posição e olhar do visitante a cada quadro (sem estado React)
 │   │   │   ├── useGuidance.ts            # percurso até o destino e chegada
+│   │   │   ├── useVisitOrientation.ts    # posição, registro, destino e percurso juntos
 │   │   │   └── useVisitRecord.ts         # progresso, modo, etapa e minimapa no localStorage
 │   │   ├── dev/CameraCalibration.tsx
-│   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
+│   │   ├── start/StartScreen.tsx  # tela inicial: logo, iniciar, preparo e falhas
+│   │   ├── settings/
+│   │   │   ├── SettingsPanel.tsx  # configurações (visita, exibição, áudio, informações)
+│   │   │   └── AboutPanel.tsx     # "Sobre a exposição"
+│   │   ├── brand/BrandLogo.tsx    # logo oficial (WebP sem perda)
+│   │   └── ui/                    # Dialog, engrenagem, ajuda, FPS, joystick, ícones
 │   ├── data/
 │   │   ├── collision.json         # escala e parâmetros de colisão (script + app)
 │   │   ├── exhibition.json        # os 27 tópicos do roteiro, com setId, e a ordem da visita guiada
@@ -1539,7 +1691,10 @@ SolosNaEscola/
 │   │   ├── animationSync.ts       # narração → instante do clipe (testado)
 │   │   ├── markerRows.ts          # rótulos que se encostariam sobem uma linha (testado)
 │   │   └── stepLabels.ts          # “Próximo item”, “Próxima etapa”: concordância dos rótulos (testado)
+│   ├── lib/audio/narration.ts     # elemento único das narrações, som e volume (testado)
 │   └── lib/viewer/
+│       ├── loadMessages.ts        # textos do preparo e das falhas (testado)
+│       ├── fullscreen.ts          # API Fullscreen com prefixo webkit
 │       ├── sceneScale.ts          # escala uniforme em runtime
 │       ├── walkLock.ts            # bloqueio de modos, atalhos e gestos
 │       ├── detailZoom.ts          # zoom de detalhes no botão direito do mouse
@@ -1550,7 +1705,7 @@ SolosNaEscola/
 │       ├── keyboardMovement.ts    # WASD/setas/Shift
 │       ├── cameraPose.ts          # leitura da pose da câmera (calibração)
 │       └── spawnOverride.ts       # entrada de teste (somente dev)
-├── tests/interactions.test.mjs    # npm test
+├── tests/*.test.mjs               # npm test (interação, inspeção, mapa, tela inicial)
 ├── next.config.ts                 # cache dos modelos; rotas .dev.tsx só em dev
 └── package.json
 ```
@@ -1577,11 +1732,11 @@ const viewer = await createViewer({
   libera recursos.
 - **Download direto da URL estática** com progresso real (`progress:changed`).
 - **Erros.** Falhas de rede, HTTP, motor ou **colisão** (arquivo ausente ou Walk Mode não liberado
-  em 45 s) levam a uma tela amigável com **Tentar novamente**. Sem colisão não há visita, então a
+  em 45 s) aparecem na tela inicial, com **Tentar novamente**. Sem colisão não há visita, então a
   falha não é silenciosa.
 - **Ordem de inicialização.** Carregamento do SOG → cena pronta (`loaded`) → colisão anexada
-  (`walkAllowed`) → entrada no Walk Mode. A interface da visita só aparece depois disso
-  (“Preparando a área de visita…”).
+  (`walkAllowed`) → entrada no Walk Mode. Tudo isso acontece por trás da tela inicial; o botão
+  **Iniciar visita** só é liberado depois (“Pronto para visitar.”).
 
 ---
 
@@ -1608,8 +1763,9 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **49 de 49 passaram** em 15/11/2026 (35 da inspeção e 14 do mapa e visita,
-descritos em [Mapa e visita](#mapa-e-visita-etapa-4-1)). Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **53 de 53 passaram** em 15/11/2026 (35 da inspeção, 14 do mapa e visita,
+descritos em [Mapa e visita](#mapa-e-visita-etapa-4-1), e 4 da tela inicial, descritos em
+[Tela inicial e configurações](#tela-inicial-e-configurações-etapa-5)). Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1788,6 +1944,34 @@ ponto de partida de teste (verificada só no servidor de desenvolvimento), o per
 andando de módulo em módulo (as etapas e os percursos entre todas foram conferidos pelo teste automático e por
 amostras no navegador), Safari/iOS e o custo do minimapa num celular de entrada.
 
+### Tela inicial e configurações (etapa 5)
+
+Automatizados — `tests/startScreen.test.mjs` (4 testes): botão de início só com a cena pronta **e** o Walk Mode
+ativo (não basta o download); percentual e megabytes vindos do motor, sem número antes do download; mensagem
+própria para cada falha e nenhuma nova tentativa sem WebGL; leitura validada da preferência das narrações.
+
+Manuais, no painel de navegador embutido (Chrome, WebGPU, servidor de desenvolvimento, 800 × 734 e emulação
+375 × 812 e 812 × 375), em 15/11/2026:
+
+| # | Teste | Resultado |
+| --- | --- | --- |
+| 106 | Tela inicial e preparo | ✔ aparece de imediato com a logo em proporção e cores originais; um único download do SOG, iniciado aos 0,3 s, sem clique; botão em “Preparando…” até “Pronto para visitar.”; a exposição aparece ao fundo quando a cena fica pronta |
+| 107 | Iniciar visita | ✔ entrada em (−0,27; 1,5; −4,1), `cameraMode = walk`; tela cheia pedida no clique e recusada pelo painel de testes: a visita começa na janela, sem erro; ajuda abre na primeira visita |
+| 108 | Interface da visita | ✔ sem título, sem FPS, sem os quatro botões; só a engrenagem e o minimapa (abaixo dela, sem sobreposição) |
+| 109 | Configurações | ✔ engrenagem abre o painel; qualidade muda o backbuffer de 971 para 486 px (Baixo) e volta; W com o painel aberto não move a câmera; Esc fecha; depois, W volta a andar |
+| 110 | Voltar ao menu inicial | ✔ tela inicial de volta, mesma instância do viewer, ainda 1 requisição do SOG; W não move no menu; engrenagem e minimapa somem; iniciar de novo continua de onde estava |
+| 111 | Contador de FPS | ✔ oculto no menu e ao iniciar; P no menu não faz nada; P mostra (“— fps” com a cena parada), P de novo esconde; repetição de tecla e Ctrl+P ignorados |
+| 112 | Inspeção | ✔ contorno amarelo e “Inspecionar · Densidade do solo” como antes; E abre o menu; engrenagem e minimapa somem; módulo registrado como explorado; narração toca pelo elemento único, com legenda e a balança animada |
+| 113 | Narrações desativadas | ✔ interruptor salvo; volume desativado junto; na inspeção a narração segue em silêncio com legenda e animação, e o botão avisa “som desativado nas configurações” |
+| 114 | Mapa e “Sobre” | ✔ M abre o painel “Mapa e visita” com as cores novas; “Sobre a exposição” com a logo na faixa clara e as contagens 18 de 27 vindas dos dados |
+| 115 | Celular (emulação) | ✔ em pé: cartão inteiro na tela, botão visível; qualidade padrão Baixo; configurações como folha inferior; joystick, engrenagem e minimapa recolhido sem sobreposição; visita guiada no alto, ao lado da engrenagem. Deitado: tela inicial compacta com o botão visível (antes ficava abaixo da dobra; corrigido) |
+| 116 | Falha e nova tentativa | ✔ com o modelo apontando para um arquivo inexistente: cartão da tela inicial com “O modelo 3D não está disponível”, detalhe “HTTP 404” e **Tentar novamente**; com o arquivo certo de volta, a nova tentativa carrega até “Pronto para visitar.” |
+| 117 | Desempenho na tela inicial | ✔ 0 quadros renderizados em 3 s com a cena pronta ao fundo |
+
+Não verificado nesta etapa: tela cheia aceita de fato (o painel de testes recusa), tela cheia e “Adicionar à
+Tela de Início” no iPhone, liberação do áudio no Safari/iOS, volume no iPad, aparelho de toque real (só
+emulação) e o desfoque do véu num computador modesto.
+
 ### Visita (etapa 2)
 
 Não verificado: captura real do mouse em um navegador comum, inclusive olhar em volta durante o zoom de detalhes (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
@@ -1813,6 +1997,9 @@ celulares de entrada e o deploy na Vercel.
 - Inspeção: os destaques da narração seguem o início de cada parágrafo (não palavra por palavra);
   a troca de frase na legenda é estimada pelo tamanho das frases e pode adiantar ou atrasar um
   pouco.
+- Tela cheia: o iPhone não permite tela cheia para páginas (alternativa: Adicionar à Tela de Início);
+  com um painel aberto em tela cheia, Esc fecha o painel e também sai da tela cheia.
+- Volume das narrações: no iPhone e no iPad só pelos botões do aparelho.
 - Módulo 02: as 20 rochas somam 68 MB; cada uma só é baixada ao ser aberta (ou ao passar o cursor
   no cartão), mas a primeira abertura de cada rocha depende da conexão.
 
@@ -1832,7 +2019,7 @@ Outros scripts:
 ```bash
 npm run typecheck    # gera os tipos de rotas e roda o TypeScript
 npm run lint         # ESLint
-npm test             # testes da interação e dos dados da inspeção (Node ≥ 22.18)
+npm test             # testes da interação, da inspeção, do mapa e da tela inicial (Node ≥ 22.18)
 npm run build        # build de produção
 npm run start        # serve o build de produção
 npm run collision    # regenera os voxels de colisão a partir do SOG
@@ -1867,7 +2054,6 @@ Observações:
 ## Próximas etapas
 
 - Demais estantes da exposição como novos conjuntos de inspeção.
-- Imagem de pôster durante o carregamento (`posterUrl`).
 - Testes em aparelhos reais e medição de desempenho de referência.
 
 ---

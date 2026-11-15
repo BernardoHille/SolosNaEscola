@@ -76,7 +76,7 @@ export default function TouchJoystick({ onMove, maxSpeed }: TouchJoystickProps) 
       ref={baseRef}
       role="group"
       aria-label="Controle de movimento: arraste para andar"
-      className="pointer-events-auto relative size-28 touch-none select-none rounded-full border border-white/20 bg-black/30 backdrop-blur-sm"
+      className="pointer-events-auto relative size-28 touch-none select-none rounded-full border border-white/20 bg-earth/35 backdrop-blur-sm"
       onPointerDown={(event) => {
         if (pointerRef.current !== null) return;
         pointerRef.current = event.pointerId;

@@ -66,7 +66,7 @@ function DeviceButton({ label, disabled, onClick, children }: { label: string; d
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="group inline-flex h-10 w-14 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-not-allowed"
+      className="group inline-flex h-10 w-14 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-highlight disabled:cursor-not-allowed"
     >
       <span className="flex h-6 w-11 items-center justify-center rounded-full bg-stone-100 text-stone-800 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.25)] transition-[background-color,transform,opacity] group-hover:bg-white group-active:translate-y-px group-disabled:opacity-35 group-disabled:group-hover:bg-stone-100 [&>svg]:size-4">
         {children}
