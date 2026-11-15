@@ -14,7 +14,7 @@ import {
   SpeakerOffIcon,
   TrashIcon,
 } from "@/components/ui/icons";
-import { RENDER_QUALITIES, type RenderQualityId } from "@/data/quality";
+import { QUALITY_OPTIONS, type RenderQualityId } from "@/data/quality";
 import {
   canControlVolume,
   getNarrationSettings,
@@ -141,8 +141,9 @@ export default function SettingsPanel({
           Qualidade gráfica
         </p>
         <div role="radiogroup" aria-labelledby="quality-label" className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-          {RENDER_QUALITIES.map((q) => {
+          {QUALITY_OPTIONS.map((q) => {
             const selected = q.id === quality.level;
+            const auto = q.id === "auto";
             return (
               <button
                 key={q.id}
@@ -151,16 +152,24 @@ export default function SettingsPanel({
                 aria-checked={selected}
                 onClick={() => quality.onChange(q.id)}
                 className={`rounded-xl px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight ${
-                  selected ? "bg-highlight text-stone-950" : "bg-white/8 text-stone-200 hover:bg-white/14"
-                }`}
+                  auto ? "col-span-2 sm:col-span-4" : ""
+                } ${selected ? "bg-highlight text-stone-950" : "bg-white/8 text-stone-200 hover:bg-white/14"}`}
               >
-                {q.label}
+                {auto ? (
+                  <>
+                    {q.label} <span className={selected ? "font-medium" : "font-medium text-stone-400"}>(recomendado)</span>
+                  </>
+                ) : (
+                  q.label
+                )}
               </button>
             );
           })}
         </div>
         <p className="mt-2 text-xs leading-relaxed text-stone-400">
-          Níveis mais baixos reduzem a resolução da imagem e podem deixar a visita mais fluida em aparelhos mais simples.
+          {quality.level === "auto"
+            ? "Ajusta sozinho o detalhe da cena e a resolução ao que este aparelho consegue manter com fluidez, preservando os detalhes perto de você."
+            : "Níveis mais altos mostram mais detalhes da exposição; os mais baixos deixam a visita mais fluida em aparelhos mais simples."}
         </p>
 
         <div className="mt-4 flex items-center gap-3">
