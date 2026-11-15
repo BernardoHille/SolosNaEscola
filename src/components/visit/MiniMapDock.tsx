@@ -38,11 +38,10 @@ export default function MiniMapDock({
   tracker,
   touch,
 }: MiniMapDockProps) {
-  // Computador: abaixo da engrenagem. Toque: no canto inferior direito, longe do painel de
-  // orientação (que no toque fica no alto) e do joystick (embaixo, à esquerda).
-  const position = touch
-    ? "pointer-events-auto absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-10"
-    : "pointer-events-auto absolute right-3 top-[3.75rem] z-10 sm:right-4 sm:top-[4.25rem]";
+  // No canto superior direito (a engrenagem fica no esquerdo), no computador e no toque; longe do
+  // joystick e do painel de orientação, que no toque ficam embaixo.
+  const position =
+    "pointer-events-auto absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4 sm:top-4";
 
   if (!open) {
     return (

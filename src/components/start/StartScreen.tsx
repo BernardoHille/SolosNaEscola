@@ -1,7 +1,8 @@
 "use client";
 
 import BrandLogo from "@/components/brand/BrandLogo";
-import { GearIcon, HelpIcon, InfoIcon, WalkIcon } from "@/components/ui/icons";
+import { GearIcon, HelpIcon, InfoIcon, PlayIcon } from "@/components/ui/icons";
+import type { VisitMode } from "@/lib/visit/visitProgress";
 import type { LoadFailure, LoadingStep } from "@/lib/viewer/loadMessages";
 
 type StartScreenProps = {
@@ -13,6 +14,13 @@ type StartScreenProps = {
   failureDetail?: string;
   /** A cena já está pronta atrás da tela: o véu fica translúcido e a exposição aparece ao fundo. */
   sceneVisible: boolean;
+  /** Modo da visita escolhido antes de entrar. */
+  mode: VisitMode;
+  onModeChange: (mode: VisitMode) => void;
+  /** Etapa de onde a visita guiada começa (1-based) e total de etapas. */
+  guidedStep: { step: number; total: number };
+  /** Reabre a lista de locais da visita guiada. */
+  onOpenRoute: () => void;
   onStart: () => void;
   onRetry: () => void;
   onOpenSettings: () => void;
@@ -38,6 +46,10 @@ export default function StartScreen({
   failure,
   failureDetail,
   sceneVisible,
+  mode,
+  onModeChange,
+  guidedStep,
+  onOpenRoute,
   onStart,
   onRetry,
   onOpenSettings,
@@ -86,6 +98,52 @@ export default function StartScreen({
               examine de perto os objetos expostos.
             </p>
 
+            {!failure && (
+              <div className="mt-5 short:mt-3">
+                <div
+                  role="radiogroup"
+                  aria-label="Modo de visita"
+                  className="mx-auto grid max-w-[20rem] grid-cols-2 gap-1 rounded-full bg-ink/[0.07] p-1"
+                >
+                  {(
+                    [
+                      ["free", "Visita livre"],
+                      ["guided", "Visita guiada"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={mode === id}
+                      onClick={() => onModeChange(id)}
+                      className={`rounded-full px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink short:py-1.5 ${
+                        mode === id ? "bg-ink text-paper shadow-sm" : "text-ink/60 hover:text-ink"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 min-h-[1.25rem] text-xs text-ink/60">
+                  {mode === "guided" ? (
+                    <>
+                      Começa na etapa {guidedStep.step} de {guidedStep.total} ·{" "}
+                      <button
+                        type="button"
+                        onClick={onOpenRoute}
+                        className="font-semibold text-ink underline underline-offset-2 hover:text-black focus-visible:outline-2 focus-visible:outline-ink"
+                      >
+                        ver locais
+                      </button>
+                    </>
+                  ) : (
+                    "Caminhe livremente e escolha o que visitar."
+                  )}
+                </p>
+              </div>
+            )}
+
             {failure ? (
               <div role="alert" className="mt-6 rounded-2xl bg-ember/10 px-4 py-4 text-left">
                 <p className="text-sm font-semibold text-ink">{failure.title}</p>
@@ -107,14 +165,14 @@ export default function StartScreen({
                 onClick={onStart}
                 disabled={!step.ready}
                 autoFocus
-                className="group mt-6 short:mt-3 short:py-2.5 inline-flex w-full items-center justify-center gap-3 rounded-full bg-ink py-3.5 pl-5 pr-6 text-[15px] font-semibold uppercase tracking-[0.14em] text-paper shadow-[0_10px_24px_rgba(50,51,50,0.28)] transition-[background-color,transform,opacity] hover:bg-black active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink disabled:cursor-progress disabled:opacity-45 disabled:shadow-none disabled:active:scale-100 sm:w-auto sm:min-w-[16rem]"
+                className="group mt-4 short:mt-2 short:py-2.5 inline-flex w-full items-center justify-center gap-3 rounded-full bg-ink py-3.5 pl-5 pr-6 text-[15px] font-semibold uppercase tracking-[0.14em] text-paper shadow-[0_10px_24px_rgba(50,51,50,0.28)] transition-[background-color,transform,opacity] hover:bg-black active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink disabled:cursor-progress disabled:opacity-45 disabled:shadow-none disabled:active:scale-100 sm:w-auto sm:min-w-[16rem]"
               >
                 <span
                   className={`inline-flex size-7 items-center justify-center rounded-full transition-colors ${
                     step.ready ? "bg-highlight text-ink" : "bg-paper/15 text-paper"
                   }`}
                 >
-                  <WalkIcon className="size-4" />
+                  <PlayIcon className="size-3.5 translate-x-px" />
                 </span>
                 {step.ready ? "Iniciar visita" : "Preparando…"}
               </button>

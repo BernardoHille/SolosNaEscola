@@ -79,8 +79,9 @@ export default function VisitNavigationPanel({
       aria-label={guided ? "Visita guiada" : "Orientação até o módulo"}
       className={`pointer-events-auto absolute z-10 rounded-2xl border border-white/10 bg-earth/80 px-3 py-2.5 text-stone-100 shadow-xl backdrop-blur-md ${
         touch
-          ? // Ao lado da engrenagem (à direita), no alto; longe do joystick e do minimapa, embaixo.
-            "left-3 right-16 top-[max(0.75rem,env(safe-area-inset-top))] max-w-sm sm:right-auto sm:w-[22rem]"
+          ? // Em pé: embaixo, logo acima do joystick (o alto fica com a engrenagem e o minimapa).
+            // Deitado (tela baixa): embaixo, no centro, ao lado do joystick.
+            "bottom-[calc(max(1rem,env(safe-area-inset-bottom))+8rem)] left-3 right-3 mx-auto max-w-sm sm:right-auto sm:mx-0 sm:w-[22rem] short:bottom-[max(0.75rem,env(safe-area-inset-bottom))] short:left-1/2 short:-translate-x-1/2"
           : "bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 w-[min(22rem,calc(100%-24rem))] min-w-[17rem] -translate-x-1/2"
       }`}
     >

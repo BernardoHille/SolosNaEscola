@@ -3,12 +3,13 @@ import { GearIcon } from "./icons";
 type SettingsButtonProps = { open: boolean; onClick: () => void };
 
 /**
- * Único controle fixo da visita: a engrenagem, no canto superior direito, abre as configurações
+ * Único controle fixo da visita: a engrenagem, no canto superior esquerdo (o minimapa fica no
+ * direito), abre as configurações
  * (mapa e visita, ajuda, entrada, menu inicial, qualidade, tela cheia, áudio e "Sobre").
  */
 export default function SettingsButton({ open, onClick }: SettingsButtonProps) {
   return (
-    <div className="pointer-events-none absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 sm:right-4 sm:top-4">
+    <div className="pointer-events-none absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 sm:left-4 sm:top-4">
       <button
         type="button"
         onClick={onClick}

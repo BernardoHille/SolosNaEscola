@@ -7,11 +7,11 @@ import { defaultRenderQuality, findRenderQuality, type RenderQualityId } from "@
 import { pinColorRefresh } from "@/lib/viewer/colorRefresh";
 import { applyRenderScale, pinViewerQuality } from "@/lib/viewer/renderScale";
 
-const STORAGE_KEY = "solos:render-quality";
+export const QUALITY_STORAGE_KEY = "solos:render-quality";
 
 function readStored(): RenderQualityId | null {
   try {
-    return findRenderQuality(window.localStorage.getItem(STORAGE_KEY))?.id ?? null;
+    return findRenderQuality(window.localStorage.getItem(QUALITY_STORAGE_KEY))?.id ?? null;
   } catch {
     return null;
   }
@@ -46,11 +46,21 @@ export function useRenderQuality(viewer: ViewerHandle | null, inputMode: "deskto
   const setLevel = useCallback((id: RenderQualityId) => {
     setChosen(id);
     try {
-      window.localStorage.setItem(STORAGE_KEY, id);
+      window.localStorage.setItem(QUALITY_STORAGE_KEY, id);
     } catch {
       // Sem armazenamento: a escolha vale só nesta visita.
     }
   }, []);
 
-  return { level, setLevel };
+  /** Esquece a escolha: volta ao padrão do aparelho. */
+  const resetLevel = useCallback(() => {
+    setChosen(null);
+    try {
+      window.localStorage.removeItem(QUALITY_STORAGE_KEY);
+    } catch {
+      // Sem armazenamento: nada a apagar.
+    }
+  }, []);
+
+  return { level, setLevel, resetLevel };
 }

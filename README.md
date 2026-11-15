@@ -1431,12 +1431,21 @@ Gaussian Splatting.
 ### Tela inicial
 
 [`StartScreen.tsx`](src/components/start/StartScreen.tsx): cartão claro, centralizado, com a logo, a linha
-“Exposição Didática de Solos · UFPR”, uma frase de apresentação, **Iniciar visita** e três ações secundárias
-(**Configurações**, **Como navegar**, **Sobre a exposição**). No rodapé, discreto, o preparo da exposição com a
+“Exposição Didática de Solos · UFPR”, uma frase de apresentação, a escolha entre **Visita livre** e **Visita guiada**, **Iniciar visita** (com um
+ícone de “play”) e três ações secundárias (**Configurações**, **Como navegar**, **Sobre a exposição**). No rodapé, discreto, o preparo da exposição com a
 barra de progresso. No celular o cartão ocupa a largura; em telas baixas (celular deitado, altura ≤ 520 px, a
 variante `short:` de [`globals.css`](src/app/globals.css)) a logo e os espaços diminuem para o botão continuar à
 vista. Antes de a cena ficar pronta, o fundo é um degradê de terra com os tons da logo; depois, a exposição real
 aparece por trás de um véu escuro (desfoque leve só em telas a partir de 640 px).
+
+### Visita livre ou guiada
+
+O seletor da tela inicial grava o modo no mesmo registro da visita do mapa (`solos:visita`). Escolher **Visita
+guiada** abre na hora a lista dos locais ([`GuidedRoutePanel.tsx`](src/components/visit/GuidedRoutePanel.tsx)):
+as 18 etapas na ordem do roteiro, as já exploradas marcadas e a etapa de partida em destaque. Tocar numa etapa
+a escolhe como início; a lista fecha com **Pronto**, X, Esc ou clique fora, quando o visitante quiser. Abaixo do
+seletor fica “Começa na etapa X de 18 · ver locais”, que reabre a lista. **Visita livre** encerra a guiada. Ao
+iniciar, a visita guiada já mostra o painel da etapa escolhida.
 
 ### Preparo da exposição durante a tela inicial
 
@@ -1490,9 +1499,13 @@ tela cheia não está disponível.
 - **Exibição:** qualidade gráfica (os quatro modos de [`quality.ts`](src/data/quality.ts), aplicados ao viewer já
   criado) e tela cheia.
 - **Áudio:** narrações ativadas/desativadas e volume.
-- **Informações:** Sobre a exposição ([`AboutPanel.tsx`](src/components/settings/AboutPanel.tsx)).
+- **Informações:** Sobre a exposição ([`AboutPanel.tsx`](src/components/settings/AboutPanel.tsx)) e **Apagar
+  memória**: depois de uma confirmação no próprio painel, esquece o que a visita guardou neste navegador —
+  módulos explorados, modo e etapa da visita guiada, minimapa, qualidade gráfica, som e volume das narrações,
+  narrações já ouvidas e as instruções da primeira visita (que voltam a aparecer). Mostra “Memória apagada”. A
+  entrada de teste do desenvolvimento não é apagada.
 
-Na tela inicial, o mesmo painel mostra só Exibição, Áudio e Informações. Todos os painéis usam a mesma casca
+Na tela inicial, o mesmo painel mostra só Exibição, Áudio e Informações (com “Apagar memória”). Todos os painéis usam a mesma casca
 ([`Dialog.tsx`](src/components/ui/Dialog.tsx)): fundo escurecido (clicar nele fecha), X e Esc; um painel por vez
 (estado único `panel` em `Exhibition`). Com qualquer painel aberto, o cursor é devolvido, o teclado não move o
 visitante e a mira não abre objetos; ao fechar, o visitante está onde estava, sem reiniciar o Walk Mode. O
@@ -1538,10 +1551,11 @@ Antes, cada inspeção criava o seu `Audio`. Agora há **um elemento só**
 
 ### Responsividade
 
-Computador: cartão de 29 rem, engrenagem no alto à direita e o minimapa logo abaixo. Celular em pé: cartão na
-largura da tela, painéis como folha inferior, engrenagem no alto, minimapa recolhido embaixo à direita,
-joystick embaixo à esquerda, painel da visita guiada no alto, ao lado da engrenagem. Celular deitado: tela
-inicial compacta e painel da visita com largura fixa. Margens respeitam `safe-area-inset`.
+Engrenagem no canto superior esquerdo e minimapa no superior direito, no computador e no celular (o contador
+de FPS, quando ligado pela tecla P, fica ao lado da engrenagem). Computador: cartão de 29 rem, painel da visita
+embaixo, no centro. Celular em pé: cartão na largura da tela, painéis como folha inferior, minimapa recolhido,
+joystick embaixo à esquerda e o painel da visita guiada logo acima dele. Celular deitado: tela inicial compacta
+e painel da visita embaixo, no centro, ao lado do joystick. Margens respeitam `safe-area-inset`.
 
 ### Limitações desta etapa
 
@@ -1638,6 +1652,7 @@ SolosNaEscola/
 │   │   │   └── useInspection.ts          # estado: sequência ou menus do acervo
 │   │   ├── visit/                 # mapa e visita (etapa 4)
 │   │   │   ├── MiniMap.tsx               # planta SVG, módulos, visitante e percurso
+│   │   │   ├── GuidedRoutePanel.tsx      # lista dos locais da visita guiada (tela inicial)
 │   │   │   ├── MiniMapDock.tsx           # minimapa compacto / recolhido
 │   │   │   ├── VisitPanel.tsx            # painel "Mapa e visita": progresso, modo, mapa e catálogo
 │   │   │   ├── VisitNavigationPanel.tsx  # etapa da visita guiada, seta, distância e chegada
@@ -1951,13 +1966,14 @@ ativo (não basta o download); percentual e megabytes vindos do motor, sem núme
 própria para cada falha e nenhuma nova tentativa sem WebGL; leitura validada da preferência das narrações.
 
 Manuais, no painel de navegador embutido (Chrome, WebGPU, servidor de desenvolvimento, 800 × 734 e emulação
-375 × 812 e 812 × 375), em 15/11/2026:
+375 × 812 e 812 × 375), em 15/11/2026 (118 a 121 depois do ajuste de posições, do seletor de modo e de “Apagar
+memória”):
 
 | # | Teste | Resultado |
 | --- | --- | --- |
 | 106 | Tela inicial e preparo | ✔ aparece de imediato com a logo em proporção e cores originais; um único download do SOG, iniciado aos 0,3 s, sem clique; botão em “Preparando…” até “Pronto para visitar.”; a exposição aparece ao fundo quando a cena fica pronta |
 | 107 | Iniciar visita | ✔ entrada em (−0,27; 1,5; −4,1), `cameraMode = walk`; tela cheia pedida no clique e recusada pelo painel de testes: a visita começa na janela, sem erro; ajuda abre na primeira visita |
-| 108 | Interface da visita | ✔ sem título, sem FPS, sem os quatro botões; só a engrenagem e o minimapa (abaixo dela, sem sobreposição) |
+| 108 | Interface da visita | ✔ sem título, sem FPS, sem os quatro botões; só a engrenagem e o minimapa (posições revistas no teste 118) |
 | 109 | Configurações | ✔ engrenagem abre o painel; qualidade muda o backbuffer de 971 para 486 px (Baixo) e volta; W com o painel aberto não move a câmera; Esc fecha; depois, W volta a andar |
 | 110 | Voltar ao menu inicial | ✔ tela inicial de volta, mesma instância do viewer, ainda 1 requisição do SOG; W não move no menu; engrenagem e minimapa somem; iniciar de novo continua de onde estava |
 | 111 | Contador de FPS | ✔ oculto no menu e ao iniciar; P no menu não faz nada; P mostra (“— fps” com a cena parada), P de novo esconde; repetição de tecla e Ctrl+P ignorados |
@@ -1967,6 +1983,10 @@ Manuais, no painel de navegador embutido (Chrome, WebGPU, servidor de desenvolvi
 | 115 | Celular (emulação) | ✔ em pé: cartão inteiro na tela, botão visível; qualidade padrão Baixo; configurações como folha inferior; joystick, engrenagem e minimapa recolhido sem sobreposição; visita guiada no alto, ao lado da engrenagem. Deitado: tela inicial compacta com o botão visível (antes ficava abaixo da dobra; corrigido) |
 | 116 | Falha e nova tentativa | ✔ com o modelo apontando para um arquivo inexistente: cartão da tela inicial com “O modelo 3D não está disponível”, detalhe “HTTP 404” e **Tentar novamente**; com o arquivo certo de volta, a nova tentativa carrega até “Pronto para visitar.” |
 | 117 | Desempenho na tela inicial | ✔ 0 quadros renderizados em 3 s com a cena pronta ao fundo |
+| 118 | Engrenagem e minimapa | ✔ engrenagem no canto superior esquerdo, minimapa no superior direito; P mostra o FPS ao lado da engrenagem, sem sobreposição; painel da visita guiada embaixo, no centro |
+| 119 | Visita livre ou guiada | ✔ tela inicial começa em “Visita livre”; “Visita guiada” abre a lista dos 18 locais; tocar na etapa 4 a marca “Começa aqui”; **Pronto** fecha e a tela mostra “Começa na etapa 4 de 18 · ver locais”; ao iniciar, painel “Visita guiada · etapa 04 de 18 · Atração do Solo pelo Ímã”; “Visita livre” grava `free` sem abrir a lista; “Visita guiada” de novo reabre; Esc fecha |
+| 120 | Apagar memória | ✔ com qualidade Baixo, narrações desligadas, visita guiada na etapa 4 e instruções vistas: o pedido de confirmação aparece rolado para a vista; **Apagar** volta a qualidade a Alto (padrão do computador), liga as narrações (100%), põe a visita em livre na etapa 1, remove `solos:help-seen`, `solos:narracao` e `solos:render-quality`, e mostra “Memória apagada”; `solos:dev-spawn-override` intacto |
+| 121 | Celular (emulação) | ✔ 375 × 812: engrenagem e minimapa (recolhido e aberto) no alto, painel da visita guiada acima do joystick, sem sobreposição. 812 × 375: painel embaixo, no centro, ao lado do joystick (antes ficava colado à engrenagem; corrigido); tela inicial com o seletor e o botão visíveis |
 
 Não verificado nesta etapa: tela cheia aceita de fato (o painel de testes recusa), tela cheia e “Adicionar à
 Tela de Início” no iPhone, liberação do áudio no Safari/iOS, volume no iPad, aparelho de toque real (só

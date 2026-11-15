@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import Dialog from "@/components/ui/Dialog";
 import {
@@ -12,6 +12,7 @@ import {
   MapIcon,
   SpeakerIcon,
   SpeakerOffIcon,
+  TrashIcon,
 } from "@/components/ui/icons";
 import { RENDER_QUALITIES, type RenderQualityId } from "@/data/quality";
 import {
@@ -29,6 +30,8 @@ type SettingsPanelProps = {
   fullscreen: { supported: boolean; active: boolean; toggle: () => void };
   onClose: () => void;
   onOpenAbout: () => void;
+  /** "Apagar memória": esquece tudo o que a visita guardou neste navegador. */
+  onForgetMemory: () => void;
   /** Só durante a visita. */
   onOpenMap?: () => void;
   onOpenHelp?: () => void;
@@ -89,6 +92,7 @@ export default function SettingsPanel({
   fullscreen,
   onClose,
   onOpenAbout,
+  onForgetMemory,
   onOpenMap,
   onOpenHelp,
   onReturnToEntrance,
@@ -98,6 +102,13 @@ export default function SettingsPanel({
   const narration = useSyncExternalStore(subscribeNarrationSettings, getNarrationSettings, getNarrationSettings);
   // O painel só existe no cliente (abre por um clique), então a detecção pode rodar aqui.
   const [volumeAdjustable] = useState(() => canControlVolume());
+  // "Apagar memória": pede confirmação no próprio painel e avisa quando terminou.
+  const [forget, setForget] = useState<"idle" | "confirm" | "done">("idle");
+  useEffect(() => {
+    if (forget !== "done") return;
+    const id = window.setTimeout(() => setForget("idle"), 4000);
+    return () => window.clearTimeout(id);
+  }, [forget]);
 
   return (
     <Dialog titleId="settings-title" title="Configurações" onClose={onClose} closeLabel="Fechar configurações" brand>
@@ -203,9 +214,53 @@ export default function SettingsPanel({
       </Section>
 
       <Section title="Informações">
-        <div className="-mx-2">
+        <div className="-mx-2 space-y-0.5">
           <ActionRow icon={<InfoIcon className="size-4" />} label="Sobre a exposição" onClick={onOpenAbout} />
+          <ActionRow
+            icon={<TrashIcon className="size-4" />}
+            label="Apagar memória"
+            hint={
+              forget === "done" ? (
+                <span role="status" className="text-xs font-medium text-[#ade0b8]">
+                  Memória apagada
+                </span>
+              ) : undefined
+            }
+            onClick={() => setForget("confirm")}
+          />
         </div>
+        {forget === "confirm" && (
+          <div
+            ref={(el) => el?.scrollIntoView({ block: "nearest", behavior: "smooth" })}
+            className="mt-2 rounded-2xl bg-white/5 p-3 text-xs leading-snug text-stone-300"
+            role="alertdialog"
+            aria-label="Apagar memória"
+          >
+            <p>
+              Esquecer o que a visita guardou neste navegador? Os módulos explorados, a visita guiada, a qualidade, o som
+              das narrações e as instruções da primeira visita voltam ao início.
+            </p>
+            <div className="mt-2.5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setForget("idle")}
+                className="rounded-full bg-white/10 px-3 py-1.5 font-semibold text-stone-100 transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onForgetMemory();
+                  setForget("done");
+                }}
+                className="rounded-full bg-ember px-3 py-1.5 font-semibold text-white transition-colors hover:bg-[#ff6a50] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlight"
+              >
+                Apagar
+              </button>
+            </div>
+          </div>
+        )}
       </Section>
     </Dialog>
   );

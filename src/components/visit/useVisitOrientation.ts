@@ -18,7 +18,7 @@ import { useVisitRecord } from "./useVisitRecord";
 export function useVisitOrientation(viewer: ViewerHandle | null) {
   const tracker = useVisitorTracker(viewer);
   const visit = useVisitRecord();
-  const { markExplored, setMode, setGuideStep, setMinimapOpen, resetProgress } = visit;
+  const { markExplored, setMode, setGuideStep, setMinimapOpen, resetProgress, resetAll } = visit;
   const { explored: exploredIds, mode, guideStep, minimapOpen } = visit.record;
   const [orientTargetId, setOrientTargetId] = useState<string | null>(null);
   const guided = mode === "guided";
@@ -37,6 +37,11 @@ export function useVisitOrientation(viewer: ViewerHandle | null) {
   );
   const endGuided = useCallback(() => setMode("free"), [setMode]);
   const stopOrientation = useCallback(() => setOrientTargetId(null), []);
+  /** Esquece o registro inteiro (explorados, modo, etapa, minimapa) e o destino atual. */
+  const forget = useCallback(() => {
+    resetAll();
+    setOrientTargetId(null);
+  }, [resetAll]);
 
   return {
     tracker,
@@ -52,6 +57,8 @@ export function useVisitOrientation(viewer: ViewerHandle | null) {
     setGuideStep,
     setMinimapOpen,
     resetProgress,
+    forget,
+    setMode,
     startGuided,
     endGuided,
     orientTo: setOrientTargetId,

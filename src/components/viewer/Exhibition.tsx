@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ViewerFlags, ViewerHandle } from "@playcanvas/supersplat-viewer/viewer";
 
 import InspectionOverlay from "@/components/inspection/InspectionOverlay";
+import { forgetHeardNarrations } from "@/components/inspection/InspectionDescription";
 import { useInspection } from "@/components/inspection/useInspection";
 import InteractionCalibrator from "@/components/interaction/InteractionCalibrator";
 import InteractionLayer from "@/components/interaction/InteractionLayer";
@@ -16,6 +17,7 @@ import MouseCaptureHint from "@/components/ui/MouseCaptureHint";
 import SettingsButton from "@/components/ui/SettingsButton";
 import TouchJoystick from "@/components/ui/TouchJoystick";
 import GaussianViewer from "@/components/viewer/GaussianViewer";
+import GuidedRoutePanel from "@/components/visit/GuidedRoutePanel";
 import MiniMapDock from "@/components/visit/MiniMapDock";
 import { useVisitOrientation } from "@/components/visit/useVisitOrientation";
 import VisitNavigationPanel from "@/components/visit/VisitNavigationPanel";
@@ -28,10 +30,11 @@ import { AVAILABLE_MODULES, EXHIBITION_MODULES, GUIDED_ROUTE } from "@/data/exhi
 import { buildExperienceSettings, EXPERIENCE_SETTINGS, MODEL } from "@/data/experience";
 import { INTERACTION_VOLUMES, type InteractionVolume } from "@/data/interactions";
 import { MOVEMENT } from "@/data/visit";
-import { unlockNarrationAudio } from "@/lib/audio/narration";
+import { resetNarrationSettings, unlockNarrationAudio } from "@/lib/audio/narration";
 import type { InteractionManager } from "@/lib/interaction/interactionManager";
 import { describeFailure, loadingStep } from "@/lib/viewer/loadMessages";
 import { INITIAL_STATUS, type LoadStatus } from "@/lib/viewer/loadStatus";
+import type { VisitMode } from "@/lib/visit/visitProgress";
 import { IS_DEV, readSpawnOverride } from "@/lib/viewer/spawnOverride";
 
 /**
@@ -44,7 +47,7 @@ const VIEWER_OPTIONS: ViewerFlags = { ui: false, noanim: true };
 const HELP_SEEN_KEY = "solos:help-seen";
 
 /** Painéis temporários: um de cada vez. */
-type Panel = "settings" | "help" | "about" | "map";
+type Panel = "settings" | "help" | "about" | "map" | "route";
 
 /** Calibração dos volumes de interação: `?debugInteractions=1` na URL. */
 const readDebugInteractions = () => {
@@ -120,7 +123,7 @@ export default function Exhibition() {
   const step = loadingStep(status, walk.walkActive, MODEL.sizeBytes);
 
   const orientation = useVisitOrientation(viewer);
-  const { markExplored, startGuided: beginGuided, orientTo: setOrientTarget } = orientation;
+  const { markExplored, startGuided: beginGuided, endGuided, forget, orientTo: setOrientTarget } = orientation;
 
   // Contador de FPS: oculto; a tecla P mostra e esconde durante a visita (não divulgada).
   const fpsVisible = useKeyToggle("KeyP", visiting);
@@ -147,6 +150,21 @@ export default function Exhibition() {
       setPanel(null);
     },
     [beginGuided],
+  );
+  /**
+   * Tela inicial: escolher "Visita guiada" abre a lista dos locais (o visitante pode fechá-la quando
+   * quiser); "Visita livre" encerra a guiada.
+   */
+  const chooseMode = useCallback(
+    (mode: VisitMode) => {
+      if (mode === "guided") {
+        beginGuided(orientation.guideStep);
+        setPanel("route");
+      } else {
+        endGuided();
+      }
+    },
+    [beginGuided, endGuided, orientation.guideStep],
   );
   const orientTo = useCallback(
     (id: string) => {
@@ -208,6 +226,25 @@ export default function Exhibition() {
       // Sem armazenamento: as instruções podem reaparecer na próxima visita.
     }
   }, []);
+
+  /**
+   * "Apagar memória": esquece o que a visita guardou neste navegador (registro da visita, qualidade,
+   * som das narrações, narrações já ouvidas e instruções vistas). A entrada de teste do
+   * desenvolvimento não é tocada.
+   */
+  const { resetLevel } = quality;
+  const forgetMemory = useCallback(() => {
+    forget();
+    resetLevel();
+    resetNarrationSettings();
+    forgetHeardNarrations();
+    setMapSelection(null);
+    try {
+      window.localStorage.removeItem(HELP_SEEN_KEY);
+    } catch {
+      // Sem armazenamento: nada a apagar.
+    }
+  }, [forget, resetLevel]);
 
   // Tecla M: abre e fecha o painel "Mapa e visita" (fora da inspeção e dos outros painéis).
   useEffect(() => {
@@ -342,6 +379,10 @@ export default function Exhibition() {
         failure={failed ? describeFailure(status) : null}
         failureDetail={status.errorDetail}
         sceneVisible={ready}
+        mode={orientation.mode}
+        onModeChange={chooseMode}
+        guidedStep={{ step: guideStep + 1, total: GUIDED_ROUTE.length }}
+        onOpenRoute={() => setPanel("route")}
         onStart={start}
         onRetry={retry}
         onOpenSettings={() => setPanel("settings")}
@@ -357,6 +398,7 @@ export default function Exhibition() {
           fullscreen={fullscreen}
           onClose={closePanel}
           onOpenAbout={() => setPanel("about")}
+          onForgetMemory={forgetMemory}
           onOpenMap={() => openMap()}
           onOpenHelp={() => setPanel("help")}
           onReturnToEntrance={() => {
@@ -368,6 +410,15 @@ export default function Exhibition() {
       )}
       {panel === "help" && <HelpPanel inputMode={walk.inputMode} onClose={closeHelp} />}
       {panel === "about" && <AboutPanel onClose={closePanel} />}
+      {panel === "route" && (
+        <GuidedRoutePanel
+          route={GUIDED_ROUTE}
+          explored={explored}
+          step={guideStep}
+          onChooseStep={orientation.setGuideStep}
+          onClose={closePanel}
+        />
+      )}
       {panel === "map" && visiting && (
         <VisitPanel
           modules={EXHIBITION_MODULES}

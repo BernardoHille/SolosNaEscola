@@ -57,6 +57,8 @@ export function useVisitRecord() {
     [],
   );
   const resetProgress = useCallback(() => setRecord((r) => ({ ...r, explored: [] })), []);
+  /** Volta ao registro vazio: nada explorado, visita livre, etapa 1, minimapa no padrão. */
+  const resetAll = useCallback(() => setRecord({ ...EMPTY_VISIT }), []);
   const setMode = useCallback((mode: VisitMode) => setRecord((r) => (r.mode === mode ? r : { ...r, mode })), []);
   const setGuideStep = useCallback(
     (step: number) =>
@@ -71,7 +73,7 @@ export function useVisitRecord() {
     [],
   );
 
-  return { record, markExplored, resetProgress, setMode, setGuideStep, setMinimapOpen };
+  return { record, markExplored, resetProgress, resetAll, setMode, setGuideStep, setMinimapOpen };
 }
 
 export type VisitRecord = ReturnType<typeof useVisitRecord>;

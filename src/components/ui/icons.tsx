@@ -256,13 +256,13 @@ export function SpeakerOffIcon({ className }: IconProps) {
   );
 }
 
-export function WalkIcon({ className }: IconProps) {
+export function TrashIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
-      <circle cx="13" cy="4.5" r="1.8" />
-      <path d="m9 21 2.2-6.2L14 17v4" />
-      <path d="M7 11.5 10 8.2l3.4.6 2.1 3.2 2.5 1" />
-      <path d="m11.2 14.8.9-6.1" />
+      <path d="M4.5 7h15" />
+      <path d="M9.5 7V4.8h5V7" />
+      <path d="M6.5 7l.9 12.2h9.2L17.5 7" />
+      <path d="M10.2 10.8v5M13.8 10.8v5" />
     </svg>
   );
 }

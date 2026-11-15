@@ -49,7 +49,7 @@ export default function FpsCounter({ viewer }: { viewer: ViewerHandle | null }) 
     <p
       aria-hidden="true"
       title={fps === null ? "Cena parada: o viewer só redesenha quando algo muda" : "Quadros por segundo"}
-      className="pointer-events-none absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 select-none rounded-md bg-earth/60 px-1.5 py-0.5 font-mono text-[10px] leading-tight tabular-nums text-stone-200/85 sm:left-4 sm:top-4"
+      className="pointer-events-none absolute left-16 top-[max(1.4rem,calc(env(safe-area-inset-top)+0.65rem))] z-20 select-none rounded-md bg-earth/60 px-1.5 py-0.5 font-mono text-[10px] leading-tight tabular-nums text-stone-200/85 sm:left-[4.25rem] sm:top-[1.6rem]"
     >
       {fps ?? "—"} fps
     </p>

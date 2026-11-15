@@ -68,6 +68,18 @@ export function setNarrationSettings(patch: Partial<NarrationSettings>) {
   listeners.forEach((fn) => fn());
 }
 
+/** Volta ao padrão (som ligado, volume máximo) e apaga a preferência salva. */
+export function resetNarrationSettings() {
+  settings = DEFAULT_NARRATION;
+  try {
+    window.localStorage.removeItem(NARRATION_STORAGE_KEY);
+  } catch {
+    // Sem armazenamento: nada a apagar.
+  }
+  apply();
+  listeners.forEach((fn) => fn());
+}
+
 export function subscribeNarrationSettings(fn: () => void) {
   listeners.add(fn);
   return () => {

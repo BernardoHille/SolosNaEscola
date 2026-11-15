@@ -73,6 +73,9 @@ export const narrationHeard = (url: string) => HEARD.has(url);
 /** Conta como ouvida a narração que começou a tocar fora do painel (ex.: ao abrir a tampa da caixa). */
 export const markNarrationHeard = (url: string) => void HEARD.add(url);
 
+/** Esquece as narrações ouvidas ("Apagar memória"): elas voltam a começar sozinhas. */
+export const forgetHeardNarrations = () => HEARD.clear();
+
 /** Atraso da entrada de cada linha (ms): efeito de caixa de diálogo de jogo. */
 const STAGGER_MS = 70;
 
