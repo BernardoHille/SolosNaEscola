@@ -38,6 +38,10 @@ computadores e dispositivos móveis.
 > narração. A mesa da **Vida no Solo** (módulo 20, na parede esquerda, na frente da sala) abre um menu com a caixa de
 > insetos e os frascos, o cupinzeiro (que sai da bandeja com um clique) e as placas de Petri (que perdem as tampas).
 > As demais estantes serão desenvolvidas nas próximas etapas.
+>
+> O botão do mapa (ou a tecla **M**) abre **Mapa e visita**: a planta da sala com a sua posição, o catálogo dos 27
+> módulos do roteiro, os módulos que você já explorou e a **visita guiada**, que indica os módulos um a um, na
+> ordem do roteiro, enquanto você caminha (ver [Mapa e visita](#mapa-e-visita-etapa-4)).
 
 ---
 
@@ -1244,6 +1248,169 @@ Os testes de dados conferem o conjunto `formacao-do-solo` (ordens 1–4) e o ace
 
 ---
 
+## Mapa e visita (etapa 4)
+
+Um sistema só de orientação, com uma fonte de dados só: minimapa, catálogo dos módulos, registro do
+que foi explorado, visita guiada e indicação do caminho até um módulo. Nada disso move a câmera, teletransporta
+o visitante ou abre uma inspeção à distância: ele continua andando com os controles de sempre.
+
+### Fonte única dos módulos
+
+[`src/data/exhibitionModules.ts`](src/data/exhibitionModules.ts) monta a lista que o mapa, o catálogo, o
+progresso e a visita guiada usam, a partir de:
+
+| Dado | Arquivo | O que traz |
+| --- | --- | --- |
+| Tópicos do roteiro | [`exhibition.json`](src/data/exhibition.json) | número, título do sumário, primeira frase do texto do módulo no roteiro (`summary`), `setId` e a ordem da visita guiada (`guidedRoute`) |
+| Conjuntos de inspeção | `inspectionSets.ts`, `inspectionCatalogs.ts` | quais `setId` existem no app |
+| Volumes | `interactions.json` | onde o módulo está, agrupado por `setId` |
+| Planta e paradas | [`exhibitionMap.json`](src/data/exhibitionMap.json) (gerado) | piso, móveis, grade caminhável e um ponto de parada por `setId` |
+
+Um módulo está **disponível** quando o tópico tem `setId`, o conjunto existe, há volume com esse `setId` e o
+mapa tem parada para ele. Os volumes de um mesmo conjunto formam um módulo só: as quatro caixas do módulo 01,
+as três prateleiras do 02, as treze placas do 11. A contagem não depende de números fixos nos componentes:
+hoje são 18 disponíveis (01 a 11 e 14 a 20) de 27. Os módulos 12, 13 e 21 a 27 aparecem no catálogo como
+“Ainda não disponível”, sem ação nenhuma, e não entram no progresso.
+
+### De onde vem a planta (`npm run map`)
+
+[`scripts/generate-map.mjs`](scripts/generate-map.mjs) lê a mesma colisão por voxels do Walk Mode
+(`museu_web.voxel.json/.bin`, octree v1.1 do splat-transform, decodificada como no viewer) e classifica cada
+coluna de 5 cm do plano X/Z:
+
+- **piso livre:** há voxel sólido no piso (−0,3 a 0,1 m) e nenhum entre 0,15 e 1,7 m;
+- **móvel:** sólido em parte dessa faixa (mesas, estantes, bancadas);
+- **parede ou exterior:** sólido em quase toda a faixa (≥ 85 %).
+
+Saem, em [`exhibitionMap.json`](src/data/exhibitionMap.json): os contornos do piso e dos móveis (SVG em metros,
+grade de 10 cm), a **grade caminhável** de 10 cm (piso livre com a folga de 0,2 m da cápsula do Walk Mode,
+só a parte ligada à entrada; 4 537 células) e um **ponto de parada** por conjunto. A parada é procurada em
+frente ao volume mais perto do centro do grupo (de 0,45 a 1,6 m da frente, e um pouco para os lados se ali
+houver obstáculo), na primeira célula caminhável. O mapa não é desenhado à mão nem tem posição inventada:
+conferido sobre a vista de cima dos voxels, com os 36 volumes e a entrada, as paredes, as duas fileiras de
+mesas, as bancadas das paredes e a divisória no meio da sala aparecem onde estão no splat.
+
+Rode `npm run map` depois de `npm run collision` ou ao mexer em `interactions.json`; o teste confere que o
+mapa foi gerado da colisão atual.
+
+### Minimapa
+
+[`MiniMap.tsx`](src/components/visit/MiniMap.tsx): SVG leve, com a **entrada embaixo** e o fundo da sala em
+cima, como o visitante vê ao entrar (olhando para +Z). É uma rotação de 180° da vista de cima, não um
+espelho: a direita do mapa é a direita de quem entra (−X). Em [`mapGeometry.ts`](src/lib/visit/mapGeometry.ts):
+`u = maxX − x`, `v = maxZ − z`, e o indicador do visitante gira `180° − yaw`.
+
+- **Visitante:** ponto amarelo com um cone que mostra para onde ele olha. A posição vem da câmera do viewer
+  (somente leitura, como em `cameraPose.ts`) a cada quadro renderizado (`postrender`): o viewer só redesenha
+  quando algo muda, então não há laço novo nem redesenho extra do splat, e o marcador é movido direto no DOM,
+  sem estado React por quadro ([`useVisitorTracker.ts`](src/components/visit/useVisitorTracker.ts)).
+- **Módulos:** um ponto por módulo disponível, no centro dos seus volumes. Cinza: não explorado; verde:
+  explorado; amarelo com anel: destino atual. Módulos no mesmo móvel (01 e 02, na estante da entrada) são
+  afastados o mínimo para não se sobreporem. Sem nomes fixos: o nome aparece ao passar o mouse; tocar ou
+  clicar num ponto abre o painel com o módulo escolhido.
+- **Percurso:** quando há destino, uma linha tracejada amarela pelo caminho calculado (abaixo).
+
+No computador, o minimapa compacto (176 px) fica abaixo dos controles, aberto; o botão “−” o recolhe num botão
+pequeno com o ícone do mapa, e “⤢” abre o painel. A escolha fica salva.
+
+### Painel “Mapa e visita”
+
+Botão do mapa nos controles (ou tecla **M**, fora da inspeção). Abre à direita no computador e como folha
+inferior no celular, com:
+
+1. **Progresso:** “N de 18 módulos explorados”, barra discreta e “Reiniciar progresso”, que pede confirmação.
+2. **Modo de visita:** Visita livre ou Visita guiada.
+3. **Mapa ampliado** com legenda; escolher um ponto mostra o módulo (número, título, situação e a frase do
+   roteiro) e “Orientar até aqui” (na visita guiada, “Ir para esta etapa”).
+4. **Catálogo:** os 27 módulos do roteiro, na ordem, com número, título, frase do roteiro, situação e
+   “Localizar no mapa” (só nos disponíveis).
+
+Um painel por vez: abrir o mapa fecha a ajuda e a qualidade, e vice-versa. Com o painel aberto, o cursor é
+liberado (como na ajuda), o teclado não move o visitante e a mira não abre inspeções. Na inspeção, minimapa e
+painéis de orientação somem e voltam ao fechar. O splat não é recarregado em nenhuma dessas trocas.
+
+### Progresso (explorado × concluído)
+
+Um módulo conta como **explorado** quando a inspeção dele é aberta. O registro fica no único callback que
+abre a inspeção em `Exhibition.tsx`, por onde passam a tecla E, o clique e o toque. Passar perto, ver o
+destaque, chegar ao ponto de parada ou escolher o módulo no mapa não contam; reabrir não conta de novo.
+
+Não há estado de **exploração completa**: o app não tem como afirmar que todas as etapas, peças e narrações de
+um módulo foram vistas (o visitante pode fechar no meio, pular etapas ou abrir só um grupo do acervo). Por
+isso, “explorado” quer dizer “abriu”, não “viu tudo”.
+
+O registro fica só no navegador (`localStorage`, chave `solos:visita`): módulos explorados, modo de visita,
+etapa da visita guiada e preferência do minimapa. Ao carregar, ids que não correspondem a um módulo disponível
+são descartados e a etapa é limitada ao tamanho do percurso; um módulo novo entra no total sozinho. Sem
+armazenamento (navegação privada, bloqueio), tudo funciona durante a visita e só não é lembrado. Não há
+serviço externo, conta nem rastreamento ([`visitProgress.ts`](src/lib/visit/visitProgress.ts)).
+
+### Visita guiada
+
+O visitante continua caminhando; o sistema só indica o próximo módulo. O painel pequeno
+([`VisitNavigationPanel.tsx`](src/components/visit/VisitNavigationPanel.tsx)) mostra “Etapa 04 de 18”, o
+módulo, uma seta que acompanha a posição e o olhar, a distância pelo percurso e os botões **Anterior** e
+**Próximo** (e o × que encerra). Ao abrir a inspeção do módulo da etapa, ele fica explorado e o botão vira
+“Continuar para o próximo módulo”; nada avança sozinho, nem durante a narração. Encerrar mantém o progresso e
+a etapa: ao voltar, o painel pergunta se o visitante quer continuar de onde parou ou recomeçar. Recomeçar o
+percurso não apaga os módulos explorados (são registros diferentes).
+
+**Ordem.** A do roteiro (01 a 11, 14 a 20), em `guidedRoute` de [`exhibition.json`](src/data/exhibition.json).
+Ela foi conferida contra a distribuição física: pelo percurso calculado, da entrada até o módulo 20 dá
+33,3 m, contra 30,6 m da melhor ordem encontrada, que troca a sequência da parede esquerda (20, 16, 18, 17,
+19). A diferença é pequena e as idas e vindas ficam na mesma parede, então a ordem educativa ficou. O único
+trecho longo (7,8 m, do 09 ao 10) atravessa a sala por fora da fileira do meio e é inevitável em qualquer
+ordem que siga o roteiro.
+
+**Mudar a sequência:** edite `guidedRoute` (ids de conjunto). Ids sem módulo disponível são ignorados;
+módulos disponíveis fora da lista entram no fim, pela numeração. O teste confere que há percurso entre
+cada etapa e a seguinte.
+
+### Orientação até o módulo
+
+Com um destino (etapa da visita guiada ou “Orientar até aqui”):
+
+- **Percurso:** A* em 8 direções sobre a grade caminhável, sem cortar quinas, simplificado por linha de
+  visada na mesma grade ([`pathfinding.ts`](src/lib/visit/pathfinding.ts)); ≈ 1 ms por cálculo. É recalculado
+  quando o visitante anda 0,35 m (no máximo a cada 0,3 s), não a cada quadro. A linha no mapa só passa por
+  células livres com a folga da cápsula: não atravessa mesas.
+- **Seta:** aponta para o próximo canto do percurso, relativa ao olhar; a distância é a do percurso. Sem
+  percurso possível, a seta aponta em linha reta para a parada e o texto diz “em linha reta”.
+- **Chegada:** a menos de 1 m da parada, ou a menos de 1,3 m de um volume do módulo pelo lado da frente
+  (atrás da estante não conta). O painel diz “Você chegou ao módulo” e a seta passa a apontar para o objeto.
+  Chegar não marca o módulo como explorado.
+
+### Celular
+
+O minimapa começa recolhido (um botão pequeno acima de “Voltar à entrada”, longe do joystick) e pode ser
+aberto ali mesmo; o painel “Mapa e visita” abre como folha inferior. O painel da visita guiada fica no alto,
+abaixo dos controles (no celular deitado, alinhado à esquerda, para não cobrir o minimapa). Os botões redondos
+dos controles têm 36 px em telas estreitas, para caberem os quatro ao lado do nome do projeto. Joystick, olhar
+por toque e toque para inspecionar continuam iguais.
+
+### Adicionar um módulo ao mapa e à visita
+
+1. Crie o conjunto e os volumes como em [Adicionar uma nova estante](#adicionar-uma-nova-estante).
+2. Em [`exhibition.json`](src/data/exhibition.json), ponha o `setId` no tópico do roteiro (se faltar o
+   tópico, acrescente-o com número, título e a primeira frase do roteiro) e, se quiser outra posição na
+   visita guiada, o id em `guidedRoute`.
+3. Rode `npm run map` (gera a parada do novo `setId`) e `npm test`.
+
+Mapa, catálogo, progresso e visita guiada passam a mostrar o módulo sem mudança nos componentes.
+
+### Limitações da orientação
+
+- A planta tem a resolução da colisão (5 cm, desenhada em 10 cm): móveis baixos, finos ou pouco opacos no
+  splat podem faltar ou sobrar, como na própria colisão. O mapa é esquemático, não uma planta arquitetônica.
+- O percurso é calculado na grade caminhável; ele pode passar mais perto de um móvel do que uma pessoa
+  passaria, e não considera o clique no piso do Walk Mode (que leva a qualquer ponto livre).
+- A posição do módulo no mapa é o centro dos volumes, não a silhueta do objeto; módulos no mesmo móvel são
+  afastados alguns centímetros para não se sobreporem.
+- Explorado quer dizer “abriu a inspeção”, não “viu tudo” (ver acima).
+- O progresso é por navegador e por aparelho; limpar os dados do site o apaga.
+
+---
+
 ## Calibração da entrada (somente desenvolvimento)
 
 Rota: **`/dev/camera`** (apenas com `npm run dev`).
@@ -1302,6 +1469,7 @@ SolosNaEscola/
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
 │   ├── generate-collision.mjs     # npm run collision
+│   ├── generate-map.mjs           # npm run map: planta, grade caminhável e paradas (da colisão)
 │   └── offset-collision.mjs       # alinha o piso da colisão ao piso visível
 ├── src/
 │   ├── app/
@@ -1322,10 +1490,21 @@ SolosNaEscola/
 │   │   │   ├── InspectionMenuGrid.tsx    # cartões dos grupos e das peças (módulo 02)
 │   │   │   ├── MicroscopeScreen.tsx      # telinha 2D do microscópio digital (módulo 10)
 │   │   │   └── useInspection.ts          # estado: sequência ou menus do acervo
+│   │   ├── visit/                 # mapa e visita (etapa 4)
+│   │   │   ├── MiniMap.tsx               # planta SVG, módulos, visitante e percurso
+│   │   │   ├── MiniMapDock.tsx           # minimapa compacto / recolhido
+│   │   │   ├── VisitPanel.tsx            # painel "Mapa e visita": progresso, modo, mapa e catálogo
+│   │   │   ├── VisitNavigationPanel.tsx  # etapa da visita guiada, seta, distância e chegada
+│   │   │   ├── useVisitorTracker.ts      # posição e olhar do visitante a cada quadro (sem estado React)
+│   │   │   ├── useGuidance.ts            # percurso até o destino e chegada
+│   │   │   └── useVisitRecord.ts         # progresso, modo, etapa e minimapa no localStorage
 │   │   ├── dev/CameraCalibration.tsx
 │   │   └── ui/                    # carregamento, erro, ajuda, joystick, controles
 │   ├── data/
 │   │   ├── collision.json         # escala e parâmetros de colisão (script + app)
+│   │   ├── exhibition.json        # os 27 tópicos do roteiro, com setId, e a ordem da visita guiada
+│   │   ├── exhibitionMap.json     # planta, grade caminhável e paradas (gerado por npm run map)
+│   │   ├── exhibitionModules.ts   # fonte única dos módulos (mapa, catálogo, progresso, visita guiada)
 │   │   ├── visit.ts               # entrada, velocidades, convenções
 │   │   ├── quality.ts             # modos de qualidade (escala de resolução)
 │   │   ├── experience.ts          # modelo e Experience Settings v2
@@ -1429,7 +1608,8 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **35 de 35 passaram** em 15/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **49 de 49 passaram** em 15/11/2026 (35 da inspeção e 14 do mapa e visita,
+descritos em [Mapa e visita](#mapa-e-visita-etapa-4-1)). Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1576,6 +1756,38 @@ pointer lock; a mira central foi validada com o cursor livre e no toque), toque 
 (apenas emulação, sem gestos multitoque), preferência de movimento reduzido, Safari/iOS e
 desempenho em aparelhos de entrada.
 
+### Mapa e visita (etapa 4)
+
+Automatizados — `tests/visit.test.mjs` (14 testes): passagem mundo ↔ mapa sem espelhamento (entrada embaixo,
+−X à direita, yaw 180 para cima, 90 para a direita); direção relativa (frente, direita, esquerda, atrás); mapa
+gerado da colisão atual, entrada caminhável e nenhum centro de volume caminhável; uma parada por conjunto,
+caminhável, ligada à entrada, em frente ao volume e dentro do alcance; percurso só por células livres e
+contornando a fileira do meio; 27 tópicos, disponíveis exatamente os conjuntos com volume, volumes agrupados
+(módulos 01 e 11) e indisponíveis sem ação; conjunto sem volume ou sem registro não fica disponível; ordem da
+visita guiada, ids desconhecidos, módulos fora da lista e percurso entre todas as etapas; chegada (perto,
+longe, só pela frente) e seta para o objeto; pontos afastados no mapa; progresso (uma vez por módulo, só
+disponíveis, total 18, rótulo); leitura do registro salvo (vazio, JSON quebrado, ids antigos, etapa fora do
+percurso); registro feito no callback único da inspeção.
+
+Manuais, no painel de navegador embutido (Chrome, WebGPU, servidor de desenvolvimento, 800 × 734 e emulação
+375 × 812 e 667 × 375), em 15/11/2026:
+
+| # | Teste | Resultado |
+| --- | --- | --- |
+| 98 | Minimapa na entrada | ✔ ponto amarelo na entrada (x −0,27, z −4,1), cone para cima (para dentro da sala); fileiras de mesas e paredes nas posições do splat; módulo 05 à esquerda, parede das erosões à direita, como vistos da entrada |
+| 99 | Andar e girar | ✔ W leva o marcador para a fileira do meio (z −1,24, parado pela colisão); D (para −X) o leva para a direita do mapa; o cone gira com o olhar; “Voltar à entrada” devolve o marcador à entrada |
+| 100 | Painel e catálogo | ✔ M e o botão do mapa abrem o painel; 27 módulos, 18 disponíveis; “Localizar no mapa” destaca o ponto e mostra o cartão; 01 e 02 separados no mapa (antes, sobrepostos) |
+| 101 | Orientação | ✔ “Orientar até aqui” fecha o painel e mostra o destino; seta a −150° com o módulo 01 atrás, à esquerda; percurso tracejado no minimapa; na entrada, “Você chegou ao módulo” com a seta para a estante |
+| 102 | Progresso | ✔ abrir o Material de Origem pelo clique grava `material-de-origem`; “1 de 18”, ponto verde e “Explorado”; sem abrir, nada é gravado; “Reiniciar progresso” pede confirmação e zera só os explorados |
+| 103 | Visita guiada | ✔ começa na etapa 01; Próximo/Anterior; × encerra mantendo a etapa; ao voltar, “Você parou na etapa 02…” com Continuar/Recomeçar; modo e etapa restaurados após recarregar; com a etapa explorada, “Continuar para o próximo módulo” |
+| 104 | Inspeção | ✔ minimapa e painel da visita somem na inspeção e voltam ao fechar; narração e menu do Material de Origem como antes; sem erros no console (fora o pointer lock recusado pelo painel de testes e o HMR) |
+| 105 | Celular (emulação) | ✔ em pé: minimapa recolhido acima de “Voltar à entrada”, painel da visita no alto, painel “Mapa e visita” como folha inferior, controles sem cobrir o nome do projeto; deitado: painel da visita à esquerda, sem cobrir o minimapa nem o joystick |
+
+Não verificado no mapa e visita: aparelho de toque real (só emulação), a entrada real em produção sem o
+ponto de partida de teste (verificada só no servidor de desenvolvimento), o percurso inteiro da visita guiada
+andando de módulo em módulo (as etapas e os percursos entre todas foram conferidos pelo teste automático e por
+amostras no navegador), Safari/iOS e o custo do minimapa num celular de entrada.
+
 ### Visita (etapa 2)
 
 Não verificado: captura real do mouse em um navegador comum, inclusive olhar em volta durante o zoom de detalhes (o painel de testes não permite pointer lock; o fluxo foi validado com a API simulada), aparelho físico com toque real (apenas emulação), Safari/iOS, desempenho em
@@ -1624,6 +1836,7 @@ npm test             # testes da interação e dos dados da inspeção (Node ≥
 npm run build        # build de produção
 npm run start        # serve o build de produção
 npm run collision    # regenera os voxels de colisão a partir do SOG
+npm run map          # regenera a planta do minimapa e as paradas a partir da colisão
 ```
 
 > WebGPU só está disponível em contexto seguro (HTTPS ou `localhost`). Acessando o servidor de
@@ -1654,7 +1867,6 @@ Observações:
 ## Próximas etapas
 
 - Demais estantes da exposição como novos conjuntos de inspeção.
-- Percursos guiados.
 - Imagem de pôster durante o carregamento (`posterUrl`).
 - Testes em aparelhos reais e medição de desempenho de referência.
 

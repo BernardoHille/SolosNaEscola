@@ -1,0 +1,94 @@
+{
+  "$comment": "Gerado por scripts/generate-map.mjs (npm run map) a partir da colisão por voxels e de interactions.json. Não edite à mão.",
+  "collision": {
+    "nodeCount": 17775,
+    "leafDataCount": 15686
+  },
+  "bounds": {
+    "minX": -5.2,
+    "minZ": -5.3,
+    "maxX": 4.9,
+    "maxZ": 4.2
+  },
+  "cell": 0.1,
+  "cols": 101,
+  "rows": 95,
+  "clearance": 0.2,
+  "floorPath": "M5.1 9.3L4.4 9.3L4.4 8.9L4.3 8.9L4.3 8.8L4.2 8.8L4.2 8.4L3.7 8.4L3.7 8.5L3.2 8.5L3.2 8.4L3.1 8.4L3.1 8.5L1.6 8.5L1.6 8.6L1.1 8.6L1.1 8.5L1 8.5L1 8.4L0.9 8.4L0.9 8.3L0.8 8.3L0.8 8.2L0.7 8.2L0.7 8.1L0.6 8.1L0.6 8L0.5 8L0.5 7.9L0.4 7.9L0.4 7.8L0.3 7.8L0.3 6.9L1.2 6.9L1.2 5.9L1.1 5.9L1.1 5.8L0.5 5.8L0.5 4.7L0.6 4.7L0.6 4L0.5 4L0.5 3.2L0.2 3.2L0.2 2.7L0.3 2.7L0.3 2.6L1.5 2.6L1.5 0.3L6.2 0.3L6.2 0.2L9.2 0.2L9.2 3L9.3 3L9.3 3.1L9.4 3.1L9.4 4.1L9.5 4.1L9.5 6.8L9.7 6.8L9.7 6.9L9.9 6.9L9.9 7.4L9.8 7.4L9.8 7.6L9.4 7.6L9.4 7.5L9.3 7.5L9.3 7.4L9.2 7.4L9.2 7.1L8.9 7.1L8.9 7.2L8.7 7.2L8.7 7.3L8.5 7.3L8.5 7.4L8.4 7.4L8.4 7.5L8.2 7.5L8.2 7.6L8.1 7.6L8.1 7.7L7.9 7.7L7.9 7.8L7.7 7.8L7.7 8.6L7.3 8.6L7.3 8.5L7.2 8.5L7.2 8.4L6.4 8.4L6.4 8.3L6.3 8.3L6.3 8.4L6 8.4L6 8.8L5.3 8.8L5.3 8.9L5.1 8.9ZM3 8L3 7.9L3.2 7.9L3.2 7.4L1.6 7.4L1.6 7.9L1.8 7.9L1.8 8ZM7.7 5.3L7.7 5.2L8 5.2L8 4.2L8.2 4.2L8.2 4.1L6.6 4.1L6.6 4L4.9 4L4.9 4.1L3 4.1L3 4L2.8 4L2.8 4.1L2.4 4.1L2.4 4.2L2.9 4.2L2.9 4.7L2.6 4.7L2.6 5L2.5 5L2.5 5.3L4.4 5.3L4.4 5.2L5.2 5.2L5.2 5.1L5.6 5.1L5.6 5.2L6.9 5.2L6.9 5.3ZM8 3.4L8 2.7L6.7 2.7L6.7 2.8L2.6 2.8L2.6 3.4Z",
+  "furniturePath": "M5.1 9.5L4.4 9.5L4.4 9.3L4.5 9.3L4.5 9.2L5 9.2L5 9.3L5.1 9.3ZM7.9 8.8L7.3 8.8L7.3 8.7L7.2 8.7L7.2 8.6L7.3 8.6L7.3 8.5L7.7 8.5L7.7 8L7.6 8L7.6 7.9L7.7 7.9L7.7 7.8L7.8 7.8L7.8 7.7L8 7.7L8 7.6L8.2 7.6L8.2 7.5L8.4 7.5L8.4 7.4L8.5 7.4L8.5 7.3L8.7 7.3L8.7 7.2L8.8 7.2L8.8 7.1L9 7.1L9 7L9.2 7L9.2 7.3L9.3 7.3L9.3 7.5L9.6 7.5L9.6 7.6L9.7 7.6L9.7 7.8L9.6 7.8L9.6 8L9.5 8L9.5 8.1L9.4 8.1L9.4 8.3L9.3 8.3L9.3 8.6L9.2 8.6L9.2 8.7L7.9 8.7ZM5.9 8.8L5.7 8.8L5.7 8.7L5.9 8.7ZM3.2 8L1.6 8L1.6 7.3L3.2 7.3L3.2 7.4L3.3 7.4L3.3 7.9L3.2 7.9ZM0.4 7.8L0.2 7.8L0.2 7.7L0.1 7.7L0.1 5L0.5 5L0.5 4.7L0.6 4.7L0.6 5L0.5 5L0.5 5.7L1.1 5.7L1.1 5.8L1.2 5.8L1.2 6.6L0.8 6.6L0.8 6L0.7 6L0.7 6.6L0.6 6.6L0.6 6.7L0.7 6.7L0.7 6.9L0.3 6.9L0.3 7.5L0.4 7.5ZM9.9 7.6L9.8 7.6L9.8 7.4L9.9 7.4L9.9 6.9L9.5 6.9L9.5 6.6L10 6.6L10 7.5L9.9 7.5ZM1.2 6.9L0.8 6.9L0.8 6.8L1.2 6.8ZM10 6.5L9.5 6.5L9.5 5L9.6 5L9.6 5.2L9.7 5.2L9.7 5.6L10 5.6ZM7.9 5.3L5.7 5.3L5.7 5.2L4.5 5.2L4.5 5.3L2.5 5.3L2.5 4.7L2.9 4.7L2.9 4.4L4.5 4.4L4.5 4.3L5.3 4.3L5.3 4.4L6.6 4.4L6.6 4.3L8 4.3L8 4.9L8.1 4.9L8.1 5.2L7.9 5.2ZM9.6 4.9L9.4 4.9L9.4 4.4L9.6 4.4ZM9.6 4.1L9.4 4.1L9.4 4L9.3 4L9.3 3.1L9.2 3.1L9.2 3L9.1 3L9.1 2L9.2 2L9.2 1.9L9.1 1.9L9.1 1.6L9.2 1.6L9.2 0.9L9.1 0.9L9.1 0.2L7.6 0.2L7.6 0.3L1.5 0.3L1.5 1.2L1.6 1.2L1.6 2L1.1 2L1.1 1.1L1.2 1.1L1.2 0.8L1.1 0.8L1.1 0.1L1.2 0.1L1.2 0L9.6 0L9.6 0.3L9.5 0.3L9.5 0.4L9.2 0.4L9.2 0.7L9.3 0.7L9.3 0.8L9.8 0.8L9.8 2.1L9.9 2.1L9.9 3.2L9.8 3.2L9.8 3.3L9.7 3.3L9.7 3.6L9.6 3.6ZM8.2 4.1L8.1 4.1L8.1 4L8.2 4ZM6.4 4.1L5.5 4.1L5.5 4L6.4 4ZM5.2 4.1L4.9 4.1L4.9 4L5.2 4ZM5.2 3.5L2.6 3.5L2.6 3.4L2.5 3.4L2.5 2.8L3.5 2.8L3.5 2.7L8 2.7L8 3.4L5.2 3.4ZM1.6 2.6L1.1 2.6L1.1 2.2L1.6 2.2Z",
+  "grid": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAMAHAAAAAAAAAAAAAAD/AQAAAAAAAAAAAAD/PwAAAAAAAAAAAADg/wcAAAAAAAAAAAIA/v8BAADwAQAAAMAAwP9/+P//fwAAAAD4//////8A+A8AAAAA//////8DAPAHAAAA4P////8/AAD+AQAAAPz/////BwCAfwAAAMD//////wAA8B8AAAD8/////x8AAP4DAADg//////8DAMB/AAAA//////9/AAD4D+AA+P//////DwCA/wEcgP///////wMA8D+AA/z///////////8H8MD///////////8BABD+//////////8fAAD+////////////AQCA////////////PwAA8P///////////wcAAP7///////////8AAMD///////////8fAAD4////////////AwAA////////////fwAA4P///////////w8AAPz///////////8BAID///////////8/AADw////////////DwAA/v///////////wEAwP///////////38AAPj/////////////AQD//4H///8BAPD/PwDg/wMAADwAAAD8/wcA/B8AAAAAAAAA//8AgP8DAAAAAAAA4P8fAPB/AAAAAAAAAPz/AwD+DwAAAAAAAMD/fwDA/wEAAAAAAAD4/w8A+D8AAAAAAAAA//8BAP8HAAAAAAAA4P8/AOD/AAAAAAAAAP//AwD8HwAAAAAAAPD/fwCA/wMAAAAAAADw/w8A8D8AAAAAAAAA/P8BAP4DAAAAAAAAAP8/AIB/AAAAAAAAAPD/DwDwHwAAAAAAAAD//wEA/v//BwDw/////z8AwP////////////8HAPj/////////////AAD/DwAAAAAAAPj/HwDg/wAAAAAAAAD+/wMA/A8AAAAAAADA/38AgP8BAAAAAAAA+P8PAOA/AAAAAAAAAP//AwD4BwAAAAAAAOD//wAA/wAAAAAAAAD8/z8A4B8AAAAAAACA//8HAPwDAAAAAAAA8B8AAID/AAAAAAAAgP8AAADwPwD8//////8fAAAA/v//////////AwAAwP//////////fwAAAPj//////////w8AAAD///////////8BAADg//////////8/AAAA/P//////////BwAAgP///////////wAAAPD//////////x8AAAD+//////////8DAADA//////////9/AAAA+P//////////DwAAAP///////////wEAAOD//////////z8AAAD8//////////8HAACA////////////AAAA8P//////////HwAAAP7//////////wMAAMD//////////38AAAD4//////////8PAAAA////////////AQAA4P///wMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "stops": {
+    "formacao-do-solo": [
+      1.25,
+      -3.85
+    ],
+    "material-de-origem": [
+      1.25,
+      -3.85
+    ],
+    "horizontes-do-solo": [
+      2.25,
+      -2.95
+    ],
+    "atracao-do-solo-pelo-ima": [
+      2.95,
+      -2.85
+    ],
+    "textura-do-solo": [
+      3.25,
+      -2.15
+    ],
+    "porosidade-do-solo": [
+      2.05,
+      -1.55
+    ],
+    "ar-no-solo": [
+      0.85,
+      -1.55
+    ],
+    "densidade-do-solo": [
+      -0.25,
+      -1.35
+    ],
+    "compactacao-do-solo": [
+      -1.35,
+      -1.45
+    ],
+    "solo-ampliado": [
+      2.95,
+      2.55
+    ],
+    "colecao-de-perfis-de-solo": [
+      0.35,
+      3.65
+    ],
+    "solo-na-paisagem": [
+      -1.15,
+      1.65
+    ],
+    "solo-urbano-e-solo-rural": [
+      -2.75,
+      1.75
+    ],
+    "erosao-hidrica-do-solo": [
+      -4.15,
+      0.55
+    ],
+    "erosao-eolica-do-solo": [
+      -4.25,
+      -2.05
+    ],
+    "deslizamento-e-inundacao": [
+      -4.25,
+      -0.85
+    ],
+    "maquete-da-vocoroca": [
+      -3.35,
+      -0.75
+    ],
+    "vida-no-solo": [
+      -3.95,
+      1.65
+    ]
+  }
+}

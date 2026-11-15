@@ -171,3 +171,38 @@ export function PauseIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Mapa dobrado (minimapa e “Mapa e visita”). */
+export function MapIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2-6-2Z" />
+      <path d="M9 4.5v13M15 6.5v13" />
+    </svg>
+  );
+}
+
+/** Seta de navegação (direção até o módulo). Preenchida, para ler bem em tamanho pequeno. */
+export function NavigationArrowIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 3.5 18.5 19.5 12 16 5.5 19.5 12 3.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function ExpandIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+    </svg>
+  );
+}
+
+export function MinimizeIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M5 12h14" />
+    </svg>
+  );
+}

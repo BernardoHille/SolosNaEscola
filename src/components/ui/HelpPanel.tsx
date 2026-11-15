@@ -60,6 +60,10 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
               <strong className="text-stone-50">Objetos:</strong> mire nos objetos destacados em amarelo e toque
               em “Inspecionar”.
             </li>
+            <li>
+              <strong className="text-stone-50">Mapa e visita:</strong> o botão do mapa, no alto, mostra onde você
+              está, a lista dos módulos, o que você já explorou e a visita guiada.
+            </li>
           </ul>
         ) : (
           <ul className="mt-4 space-y-2.5 leading-snug">
@@ -90,6 +94,10 @@ export default function HelpPanel({ inputMode, onClose }: HelpPanelProps) {
             <li className="flex flex-wrap items-center gap-1.5">
               <strong className="text-stone-50">Objetos:</strong> quando um objeto ficar destacado em amarelo,
               tecle <Key>E</Key> ou clique nele para inspecionar.
+            </li>
+            <li className="flex flex-wrap items-center gap-1.5">
+              <strong className="text-stone-50">Mapa e visita:</strong> tecle <Key>M</Key> ou use o botão do mapa
+              para ver onde você está, os módulos, o que já explorou e a visita guiada.
             </li>
           </ul>
         )}

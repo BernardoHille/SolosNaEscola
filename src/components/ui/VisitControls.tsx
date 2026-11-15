@@ -1,10 +1,13 @@
 import type { RenderQualityId } from "@/data/quality";
 
-import { EntranceIcon, FullscreenIcon, HelpIcon } from "./icons";
+import { EntranceIcon, FullscreenIcon, HelpIcon, MapIcon } from "./icons";
 import QualityMenu from "./QualityMenu";
 
 type VisitControlsProps = {
   onReturnToEntrance: () => void;
+  /** Abre e fecha o painel "Mapa e visita" (minimapa ampliado, catálogo, progresso e modo). */
+  onMap: () => void;
+  mapOpen: boolean;
   onHelp: () => void;
   fullscreen: { supported: boolean; active: boolean; toggle: () => void };
   quality: {
@@ -16,13 +19,23 @@ type VisitControlsProps = {
 };
 
 const roundButton =
-  "pointer-events-auto inline-flex size-10 items-center justify-center rounded-full bg-black/45 text-stone-100 backdrop-blur-sm transition-colors hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200";
+  "pointer-events-auto inline-flex size-9 items-center justify-center rounded-full bg-black/45 text-stone-100 backdrop-blur-sm transition-colors hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 sm:size-10";
 
-/** Controles mínimos da visita: voltar à entrada, ajuda, qualidade e tela cheia. */
-export default function VisitControls({ onReturnToEntrance, onHelp, fullscreen, quality }: VisitControlsProps) {
+/** Controles mínimos da visita: mapa e visita, ajuda, qualidade, tela cheia e voltar à entrada. */
+export default function VisitControls({ onReturnToEntrance, onMap, mapOpen, onHelp, fullscreen, quality }: VisitControlsProps) {
   return (
     <>
-      <div className="pointer-events-none absolute right-3 top-3 z-20 flex gap-2 sm:right-4 sm:top-4">
+      <div className="pointer-events-none absolute right-3 top-3 z-20 flex gap-1.5 sm:right-4 sm:top-4 sm:gap-2">
+        <button
+          type="button"
+          onClick={onMap}
+          className={`${roundButton} ${mapOpen ? "bg-black/70 text-[#FFD54A]" : ""}`}
+          aria-label="Mapa e visita"
+          title="Mapa e visita (M)"
+          aria-expanded={mapOpen}
+        >
+          <MapIcon />
+        </button>
         <button type="button" onClick={onHelp} className={roundButton} aria-label="Como navegar" title="Como navegar">
           <HelpIcon />
         </button>

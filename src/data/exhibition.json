@@ -1,0 +1,178 @@
+{
+  "$comment": "Fonte única dos módulos da exposição (catálogo, minimapa, progresso e visita guiada). `topics`: os 27 tópicos do Roteiro da Visita Autoguiada (2ª ed., 2026), com o título do sumário e, em `summary`, a primeira frase do texto do módulo no roteiro. `setId` liga o tópico ao conjunto de inspeção (`inspectionSets.ts` ou `inspectionCatalogs.ts`) e aos volumes de `interactions.json` com o mesmo `setId`; sem `setId`, o módulo aparece como ainda não disponível. `guidedRoute`: a ordem da visita guiada (ids de conjunto); a posição de cada parada vem de `exhibitionMap.json` (npm run map).",
+  "topics": [
+    {
+      "number": 1,
+      "title": "Formação do Solo",
+      "setId": "formacao-do-solo",
+      "summary": "O solo é formado a partir da transformação das rochas ao longo do tempo."
+    },
+    {
+      "number": 2,
+      "title": "Material de Origem",
+      "setId": "material-de-origem",
+      "summary": "Os solos se formam a partir de um material de origem, que geralmente é uma rocha."
+    },
+    {
+      "number": 3,
+      "title": "Horizontes do Solo",
+      "setId": "horizontes-do-solo",
+      "summary": "O solo é formado por diferentes seções chamadas de horizontes, que se diferenciam pela cor, textura e composição."
+    },
+    {
+      "number": 4,
+      "title": "Atração do Solo pelo Ímã",
+      "setId": "atracao-do-solo-pelo-ima",
+      "summary": "Alguns solos podem ser atraídos por ímãs."
+    },
+    {
+      "number": 5,
+      "title": "Textura do Solo",
+      "setId": "textura-do-solo",
+      "summary": "O solo é composto por partículas (grãos) de diferentes tamanhos, as quais são separadas pelo diâmetro em classes (frações granulométricas)."
+    },
+    {
+      "number": 6,
+      "title": "Porosidade do Solo",
+      "setId": "porosidade-do-solo",
+      "summary": "O solo possui espaços vazios entre suas partículas, chamados de poros."
+    },
+    {
+      "number": 7,
+      "title": "Ar no Solo",
+      "setId": "ar-no-solo",
+      "summary": "O solo não é um material compacto."
+    },
+    {
+      "number": 8,
+      "title": "Densidade do Solo",
+      "setId": "densidade-do-solo",
+      "summary": "A densidade do solo está relacionada à quantidade de massa presente em um determinado volume."
+    },
+    {
+      "number": 9,
+      "title": "Compactação do Solo",
+      "setId": "compactacao-do-solo",
+      "summary": "A compactação do solo ocorre quando há uma redução dos espaços vazios (poros) entre as partículas do solo."
+    },
+    {
+      "number": 10,
+      "title": "Solo Ampliado",
+      "setId": "solo-ampliado",
+      "summary": "Ao observar o solo aumentado, é possível identificar diferenças na forma, tamanho e na organização das partículas."
+    },
+    {
+      "number": 11,
+      "title": "Coleção de Perfis do Solo",
+      "setId": "colecao-de-perfis-de-solo",
+      "summary": "Os solos apresentam grande diversidade, variando em cor, profundidade e grau de desenvolvimento."
+    },
+    {
+      "number": 12,
+      "title": "Ciclo do Nitrogênio",
+      "summary": "O nitrogênio é um elemento essencial para a vida, pois faz parte das proteínas, fundamentais para o crescimento dos seres vivos."
+    },
+    {
+      "number": 13,
+      "title": "Ciclo do Cálcio",
+      "summary": "O cálcio presente no solo pode vir do calcário, uma rocha rica nesse elemento."
+    },
+    {
+      "number": 14,
+      "title": "Maquete do Solo na Paisagem",
+      "setId": "solo-na-paisagem",
+      "summary": "Os solos não são iguais em toda a paisagem."
+    },
+    {
+      "number": 15,
+      "title": "Solo Urbano e Solo Rural",
+      "setId": "solo-urbano-e-solo-rural",
+      "summary": "O solo está presente tanto em áreas rurais quanto urbanas, porém suas características e funções podem ser bastante diferentes conforme o uso da paisagem."
+    },
+    {
+      "number": 16,
+      "title": "Erosão Hídrica do Solo",
+      "setId": "erosao-hidrica-do-solo",
+      "summary": "A erosão hídrica ocorre quando a água da chuva remove partículas do solo e as transporta para outros locais."
+    },
+    {
+      "number": 17,
+      "title": "Erosão Eólica do Solo",
+      "setId": "erosao-eolica-do-solo",
+      "summary": "A erosão eólica ocorre quando o vento remove e transporta partículas do solo, principalmente em áreas sem cobertura vegetal."
+    },
+    {
+      "number": 18,
+      "title": "Deslizamento e Inundação",
+      "setId": "deslizamento-e-inundacao",
+      "summary": "A forma como o solo é ocupado influencia diretamente a ocorrência de desastres ambientais, como deslizamentos e inundação."
+    },
+    {
+      "number": 19,
+      "title": "Maquete da Voçoroca",
+      "setId": "maquete-da-vocoroca",
+      "summary": "A erosão é uma das principais causas da degradação dos solos brasileiros."
+    },
+    {
+      "number": 20,
+      "title": "Vida no Solo",
+      "setId": "vida-no-solo",
+      "summary": "O solo é um ambiente vivo, onde diversos organismos desempenham funções importantes para a manutenção da fertilidade e do equilíbrio ambiental."
+    },
+    {
+      "number": 21,
+      "title": "Vermicompostagem",
+      "summary": "A vermicompostagem é um processo de transformação de resíduos orgânicos realizado principalmente por minhocas e outros organismos do solo."
+    },
+    {
+      "number": 22,
+      "title": "Cores do Solo",
+      "summary": "Os solos apresentam diferentes cores, que estão relacionadas à composição mineral e à presença de matéria orgânica."
+    },
+    {
+      "number": 23,
+      "title": "Objetos e Artes Feitos com Solo",
+      "summary": "Além de sua importância para a agricultura e para os ecossistemas, o solo também é utilizado como matéria-prima para a produção de diversos objetos presentes no cotidiano."
+    },
+    {
+      "number": 24,
+      "title": "Temperatura do Solo",
+      "summary": "A temperatura do solo não é igual à temperatura da atmosfera, podendo ser afetada por fatores como umidade, composição mineralógica e orgânica, insolação e cobertura da superfície."
+    },
+    {
+      "number": 25,
+      "title": "Solo como Filtro",
+      "summary": "Uma das funções menos lembradas do solo é o seu papel como filtro natural de poluentes."
+    },
+    {
+      "number": 26,
+      "title": "Impacto da Gota da Chuva no Solo",
+      "summary": "O processo erosivo começa muito antes da formação de sulcos ou mesmo de uma voçoroca."
+    },
+    {
+      "number": 27,
+      "title": "Compactação do Solo e Infiltração da Água",
+      "summary": "Essencialmente há dois caminhos para a água da chuva ou de irrigação: escorrer pela superfície do terreno ou se infiltrar no solo."
+    }
+  ],
+  "guidedRoute": [
+    "formacao-do-solo",
+    "material-de-origem",
+    "horizontes-do-solo",
+    "atracao-do-solo-pelo-ima",
+    "textura-do-solo",
+    "porosidade-do-solo",
+    "ar-no-solo",
+    "densidade-do-solo",
+    "compactacao-do-solo",
+    "solo-ampliado",
+    "colecao-de-perfis-de-solo",
+    "solo-na-paisagem",
+    "solo-urbano-e-solo-rural",
+    "erosao-hidrica-do-solo",
+    "erosao-eolica-do-solo",
+    "deslizamento-e-inundacao",
+    "maquete-da-vocoroca",
+    "vida-no-solo"
+  ]
+}
