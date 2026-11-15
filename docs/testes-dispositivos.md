@@ -84,6 +84,27 @@ Memória (heap JS no painel; no Android, chrome://inspect → Memory, se dispon�
 Problemas e capturas:
 ```
 
+## Primeira medição em produção (2026-11-15)
+
+Ambiente: <https://solosnaescola.vercel.app>, deploy do merge `18b83b9`, Windows 11 com RTX 3060,
+Chromium do app Claude (WebGPU), tela de 60 Hz, conexão de banda larga fixa sem velocidade
+medida. A primeira visita teve cache vazio para os blocos; o SOG original pode ter vindo do cache
+da CDN da Vercel. É **uma** medição, sem repetição.
+
+| Fonte | Pronta para visitar | Primeiro conteúdo do Gaussian | MB baixados (10 s após entrar) | Gaussianas desenhadas na entrada |
+|---|---:|---:|---:|---:|
+| `streamed` (Automático, 2,2 M) | 2,8 s | LOD 3 completo em 2,7 s | 127,6 (20 de 21 arquivos) | 2,18 M |
+| `legacy` | — | SOG completo (45,7 MB) em 2,4 s | 45,7 | 2,99 M |
+
+Nesta conexão rápida, **o streamed não entrou mais rápido que o original** e baixou 2,8 vezes mais
+dados. A vantagem de entrada do streamed (6,7 MB antes da primeira imagem contra 45,7 MB) só deve
+aparecer em redes lentas. Ela precisa ser medida no celular em 4G/5G e com a limitação de rede do
+DevTools ("Fast 4G" / "Slow 4G").
+
+Verificação dos arquivos na produção: os 169 arquivos do Streamed SOG responderam 200, com tamanho
+idêntico ao do repositório e `Cache-Control: public, max-age=31536000, immutable`. `museu_web.sog`,
+`museu_web.voxel.json` e `museu_web.voxel.bin` também responderam 200.
+
 ## Já verificado antes da publicação
 
 Ambiente: build de produção local, Chromium do app Claude, Windows 11, RTX 3060, tela de 60 Hz.
