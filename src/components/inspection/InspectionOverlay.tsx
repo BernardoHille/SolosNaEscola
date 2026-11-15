@@ -21,7 +21,7 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from "@/components/ui/icons";
-import { INSPECTION_DIM_OPACITY, type InspectionItem, type InspectionSet } from "@/data/inspection";
+import { CONTAINER_LABELS, INSPECTION_DIM_OPACITY, type InspectionItem, type InspectionSet } from "@/data/inspection";
 import type { ContainerState, InspectionViewer, MarkerPosition } from "@/lib/inspection/inspectionViewer";
 import { MARKER_ROW, markerRows } from "@/lib/inspection/markerRows";
 import { nextStepLabel, stepPlural } from "@/lib/inspection/stepLabels";
@@ -148,6 +148,7 @@ export default function InspectionOverlay({
   // Estágio sendo narrado (o rótulo dele cresce e acende sobre o modelo).
   const [speakingMarker, setSpeakingMarker] = useState<string | null>(null);
   const [container, setContainer] = useState<ContainerState>({ available: false, detached: false });
+  const containerLabels = item?.container?.labels ?? CONTAINER_LABELS;
   // Caixa com tampa ainda fechada (`animation.openOnClick`): a dica vira o botão "Abrir a tampa".
   const [openable, setOpenable] = useState(false);
   // Áudio da narração do painel: relógio da animação do modelo (itens com `animation`).
@@ -630,9 +631,7 @@ export default function InspectionOverlay({
             ? touch
               ? "Aproxime com dois dedos e arraste a imagem"
               : "Aproxime com a roda do mouse e arraste a imagem"
-            : touch
-              ? "Toque na caixa ou na rocha para tirar a rocha da caixa"
-              : "Clique na caixa ou na rocha para tirar a rocha da caixa"}
+            : `${touch ? "Toque" : "Clique"} ${containerLabels.hint}`}
         </p>
         )}
         <div className="flex items-center gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm">
@@ -685,8 +684,8 @@ export default function InspectionOverlay({
               onClick={() => viewerRef.current?.setDetached()}
               aria-pressed={container.detached}
               className={`${iconButton} ${container.detached ? "bg-[#FFD54A]/25 text-[#FFE89A]" : ""}`}
-              aria-label={container.detached ? "Pôr de volta na caixa" : "Tirar da caixa"}
-              title={container.detached ? "Pôr de volta na caixa (C)" : "Tirar da caixa (C)"}
+              aria-label={container.detached ? containerLabels.attach : containerLabels.detach}
+              title={`${container.detached ? containerLabels.attach : containerLabels.detach} (C)`}
             >
               <BoxIcon />
             </button>

@@ -53,6 +53,16 @@ type InspectionItemBase = {
   narration?: InspectionNarration;
 };
 
+/** Textos do recurso de recipiente (ver `InspectionModelItem.container`). */
+export type ContainerLabels = { hint: string; detach: string; attach: string };
+
+/** Textos padrão do recipiente: a caixa (ou bandeja) da rocha, a forma mais comum no acervo. */
+export const CONTAINER_LABELS: ContainerLabels = {
+  hint: "na caixa ou na rocha para tirar a rocha da caixa",
+  detach: "Tirar da caixa",
+  attach: "Pôr de volta na caixa",
+};
+
 /** Item com modelo 3D, a forma usual. */
 export type InspectionModelItem = InspectionItemBase & {
   model: {
@@ -83,8 +93,11 @@ export type InspectionModelItem = InspectionItemBase & {
    * Regra: usar sempre que o conteúdo é uma peça sólida que pode ser tirada da caixa (rochas,
    * fragmentos). Não usar com material solto (terra, solo, areia): sem a caixa ele não se
    * sustenta, então o item fica sem esse recurso.
+   *
+   * `labels`: textos do recurso quando o recipiente não é a caixa da rocha (ex.: a bandeja do cupinzeiro, as tampas
+   * das placas de Petri). `hint` vem depois de "Clique"/"Toque"; `detach` e `attach` são o botão (tirar e devolver).
    */
-  container?: { node: string } | { nodes: string[] };
+  container?: ({ node: string } | { nodes: string[] }) & { labels?: ContainerLabels };
   /**
    * Animação do GLB (primeiro clipe) conduzida pela narração do item: pares
    * [segundos da narração, segundos do clipe], interpolados. Antes do primeiro par fica no quadro

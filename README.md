@@ -33,7 +33,11 @@ computadores e dispositivos móveis.
 > mesma parede, os dois aquários da **Erosão Eólica do Solo** (módulo 17) recebem o mesmo vento, um de cada vez:
 > com cobertura, o capim dobra e o solo fica; sem cobertura, abre a cratera e sobe a poeira. Ao lado, os dois de
 > **Deslizamento e Inundação** (módulo 18) recebem a mesma chuva: na encosta, o solo cede e arrasta as casas; no
-> terreno plano, a água sobe até as casas ficarem parcialmente submersas. As demais estantes serão desenvolvidas nas próximas etapas.
+> terreno plano, a água sobe até as casas ficarem parcialmente submersas. A **Maquete da Voçoroca** (módulo 19, no
+> fim da fileira do meio) abre como a maquete 14, com os rótulos da pastagem, da área urbana e do rio acesos pela
+> narração. A mesa da **Vida no Solo** (módulo 20, na parede esquerda, na frente da sala) abre um menu com a caixa de
+> insetos e os frascos, o cupinzeiro (que sai da bandeja com um clique) e as placas de Petri (que perdem as tampas).
+> As demais estantes serão desenvolvidas nas próximas etapas.
 
 ---
 
@@ -1073,6 +1077,51 @@ animação!” ficou, porque está no texto enviado.
 - O volume abre sempre no primeiro aquário, mesmo mirando o segundo (como os módulos 01 e 17).
 - A escala do acervo (40 cm de largura) confere com os tanques no splat.
 
+### Módulos 19 e 20 · Narrações tiradas do vídeo
+
+Os dois módulos vieram da gravação enviada em 15/11/2026 (vídeo com as narrações dos módulos que faltavam). Não houve
+texto escrito: as frases são as da transcrição (Whisper `large`, na GPU), **conferidas trecho a trecho**, cada trecho
+transcrito sozinho, porque a transcrição do vídeo inteiro inventava títulos repetidos. A gravação lê também o título
+de cada parte (“19.1…”, “20.2 Caixa de insetos…”), a introdução e a fonte (“Baseado na página 60 do manual”); nada
+disso entra no app. Os cortes são cópias do AAC (sem recodificar), nas pausas; o Whisper põe a primeira palavra depois
+de um título lido até 0,7 s cedo demais, então o começo de cada parte foi medido na energia do áudio (janelas de
+40 ms), não na transcrição. **O texto deve ser revisado pela equipe**, porque vem do que foi falado.
+
+### Módulo 19 · Maquete da Voçoroca
+
+A maquete fica no fim da fileira do meio, à esquerda da compactação (x ≈ −2,51, z ≈ −0,72), com a frente (o rio) para
+−X: volume `maquete-19`, `rotationDeg: [0, -90, 0]`. Como a maquete 14, é um modelo só (7,1 MB), com nós de marcação
+acrescentados ao GLB do acervo (`modulo19_glb_web.py`): **Pastagem**, **Área urbana** e **Rio** acendem enquanto a
+narração fala de cada região, e **Voçoroca** marca a vala (só rótulo, sem estágio próprio).
+
+**Narração.** Um arquivo de 118,4 s, emendado sem recodificar de cinco partes da gravação (abertura, pastagem, área
+urbana, rio e fechamento), sem os títulos lidos (“19.1.2. Área de pastagem.”, “19.4. Impacto sobre o rio.”…); 11
+cues: sete parágrafos da abertura, os três estágios e o fechamento. Correções conferidas nos trechos isolados: a
+transcrição do vídeo inteiro perdia o “na paisagem” de “…uma voçoroca pode causar na paisagem”, punha um “19.1.2.”
+no meio da parte da pastagem e partia em duas a frase “Isso pode diminuir a profundidade do rio…”.
+
+### Módulo 20 · Vida no Solo
+
+A mesa encostada na parede esquerda, na frente da sala (x ≈ −4,7, z ≈ 1,3 a 1,9), de frente para a sala:
+volume `vida-no-solo`, `rotationDeg: [0, 90, 0]`. No museu, as placas de Petri ficam na borda da mesa, não como na foto
+do acervo; o volume foi alongado até elas. Acervo de grupo único (`InspectionCatalog`, passo “Item”): o menu abre com
+a explicação geral narrada (27,7 s) e três itens, cada um com a sua narração (28,7 s, 29,4 s e 35,6 s):
+
+- **Caixa de insetos e fauna do solo:** a narração apresenta a caixa entomológica e os frascos juntos, então os dois
+  GLBs do acervo viraram um só (`modulo20_glb_web.py`, frascos à esquerda da caixa), com as texturas em JPEG 2048 px
+  (7,4 MB). O conteúdo dos frascos é interpretação do acervo;
+- **Cupinzeiro:** a bandeja é o recipiente; o clique tira os fragmentos (“Tirar da bandeja”). 2,3 MB;
+- **Fungos e bactérias:** as três tampas são o recipiente; sem elas, as colônias aparecem (“Tirar as tampas”). GLB
+  do acervo sem alteração (2,0 MB).
+
+**Texto do recipiente por item.** Antes, a dica e o botão sempre falavam de “tirar a rocha da caixa”. Agora
+`container.labels` (`hint`, `detach`, `attach`) troca esse texto; sem `labels`, vale o das rochas (`CONTAINER_LABELS`).
+
+**Recipiente com nós aninhados.** As tampas das placas são filhas de nós com transformação própria; ao juntá-las no
+grupo do recipiente, `containerOf` só copiava a posição local, e as três tampas iam parar na placa do meio. Agora a
+pose de cada nó é recalculada em relação à raiz do modelo (`Mat4`), e cada tampa fica na sua placa. As caixas das
+rochas (módulo 02) continuam no lugar (conferido no navegador).
+
 **Limite do módulo 04:** o modelo não traz a amostra de magnetita da caixinha (“Primeiro, observe a
 magnetita…”); nesse trecho o experimento fica parado no primeiro quadro. Escala das bandejas: o
 acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no splat cada bandeja mede
@@ -1165,7 +1214,8 @@ grava nada). Os bloqueadores aparecem em vermelho e são editados direto no JSON
   `description` = frase do estágio no painel).
 - **Caixa que some ao clicar:** `container: { node }` (nome do nó do recipiente no GLB). Use em
   todo item cujo conteúdo é uma peça sólida (rochas, fragmentos); não use com material solto
-  (terra, solo, areia) nem em peças sem caixa (ex.: a maquete).
+  (terra, solo, areia) nem em peças sem caixa (ex.: a maquete). Recipiente que não é caixa (bandeja,
+  tampas): `labels: { hint, detach, attach }` troca a dica (“Clique …”) e o botão (módulo 20).
 - **Miniatura:** `thumbnail`. Para gerar de novo, abra a inspeção em desenvolvimento, vá à etapa e
   rode no console `__SOLOS_INSPECTION__.snapshot()` (PNG do quadro atual, fundo transparente);
   recorte, deixe quadrada, reduza para 192 px e salve em WebP.
@@ -1246,6 +1296,8 @@ SolosNaEscola/
 │   ├── models/inspection/erosao/*.glb # módulo 16: galões, regador e copos (clipe espaçado, derivado)
 │   ├── models/inspection/erosao-eolica/*.glb # módulo 17: aquários com e sem cobertura (animados, do acervo)
 │   ├── models/inspection/deslizamento-inundacao/*.glb # módulo 18: encosta e terreno plano sob chuva (do acervo)
+│   ├── models/inspection/vocoroca/*.glb # módulo 19: maquete com pontos de marcação dos rótulos
+│   ├── models/inspection/vida-no-solo/*.glb # módulo 20: caixa de insetos com frascos, cupinzeiro, placas de Petri
 │   └── inspection/thumbs/*.webp   # miniaturas
 ├── public/audio/inspection/       # narrações (M4A) por módulo
 ├── scripts/
@@ -1296,6 +1348,8 @@ SolosNaEscola/
 │   │   ├── erosaoHidricaDoSolo.ts # módulo 16 (gerado a partir da gravação e do acervo)
 │   │   ├── erosaoEolicaDoSolo.ts  # módulo 17 (gerado a partir do texto, da gravação e do acervo)
 │   │   ├── deslizamentoEInundacao.ts # módulo 18 (gerado a partir do texto, da gravação e do acervo)
+│   │   ├── maqueteDaVocoroca.ts   # módulo 19 (gerado a partir do vídeo das narrações e do acervo)
+│   │   ├── vidaNoSolo.ts          # módulo 20 (idem; acervo com menu)
 │   │   └── inspectionCatalogs.ts  # acervos com menu
 │   ├── lib/interaction/
 │   │   ├── geometry.ts            # raio × caixa, frente, projeção e contorno (testado)
@@ -1375,7 +1429,7 @@ Executados localmente (Chrome/WebGPU, servidor de desenvolvimento e build de pro
 ### Inspeção de objetos (etapa 3)
 
 Automatizados — `npm test` (executor `node:test`; o Node ≥ 22.18 executa o TypeScript de
-`geometry.ts` diretamente): **33 de 33 passaram** em 7/11/2026. Cobrem raio × volume (acerto, erro,
+`geometry.ts` diretamente): **35 de 35 passaram** em 15/11/2026. Cobrem raio × volume (acerto, erro,
 mais próximo, de dentro), bloqueador na frente e atrás do volume, rotação dos eixos, frente e cone
 de 70°, distância, contorno projetado (e volume atrás da câmera), casco convexo, consistência entre
 `interactions.json` e `inspection.ts`, existência, tamanho e cabeçalho glTF dos quatro GLBs, nós
@@ -1392,7 +1446,10 @@ narração com um `cue` por parágrafo, sincronia começando em “Na primeira�
 (7 s) e terminando no último quadro do clipe, o volume à direita da mesa dos horizontes e a função
 de sincronia (parada antes, interpolada, parada no último quadro, narração já ouvida); no
 módulo 05, grupo único, os cinco itens em ordem, sem recipiente, GLBs, miniaturas, seis narrações,
-o banner com uma imagem e `KHR_materials_unlit` e o volume da mesa da janela voltado para −X. `tsc`,
+o banner com uma imagem e `KHR_materials_unlit` e o volume da mesa da janela voltado para −X; no módulo 19,
+os nós de marcação no GLB, um `cue` por bloco e o volume na fileira do meio; no módulo 20, os três itens com
+títulos, nós dos recipientes e `labels`, as narrações sem títulos lidos nem a fonte, o texto igual ao conferido
+e a pose dos nós aninhados preservada no `containerOf`. `tsc`,
 `lint` e `build` sem erros.
 
 Manuais, no painel de navegador embutido (Chrome, servidor de desenvolvimento, 1280×760 e
@@ -1495,6 +1552,12 @@ Módulo 02 e narração automática, no mesmo painel (800×727 e emulação 375�
 | 89 | Chuva e deslizamento | ✔ narração levada a 12,5 s: sem chuva; a 18 s, chuva com as casas firmes; a 26 s, a massa descendo e as casas tombando; a 45 s, cicatriz, casas caídas e a chuva parada |
 | 90 | Inundação | ✔ **→** abre o segundo aquário, que toca sozinho; a 15 s, sem chuva; a 21 e a 30 s, chuva; a 45 s, a lâmina barrenta sobre a base das casas, como na prévia do acervo |
 | 91 | Celular (emulação 375 × 812) | ✔ o aquário na largura da tela, com a gaveta “Aquário 1”; sem erros no console (fora o HMR) |
+| 92 | Volume e abertura da Maquete da Voçoroca | ✔ no modo de calibração, a caixa envolve a maquete; **E** abre o modelo com a narração (“Observe esta grande abertura no terreno.”) e a legenda |
+| 93 | Rótulos da voçoroca | ✔ Pastagem no campo ao lado da vala, Voçoroca na vala, Área urbana nas casas, Rio na água |
+| 94 | Menu da Vida no Solo | ✔ no modo de calibração, a caixa cobre a bandeja, os frascos, a caixa de insetos e as placas; **E** abre o menu com os três itens e a explicação geral narrada |
+| 95 | Caixa de insetos e cupinzeiro | ✔ a caixa e os frascos juntos, enquadrados; o cupinzeiro com a dica “Clique na bandeja ou nos fragmentos…”; “Tirar da bandeja” some com a bandeja e volta |
+| 96 | Placas de Petri | ✔ cada tampa sobre a sua placa (antes, as três empilhadas na do meio); “Tirar as tampas” mostra as colônias, “Pôr as tampas de volta” as recoloca; sem erros no console |
+| 97 | Módulo 02 depois da mudança do recipiente | ✔ Granito na caixa com a etiqueta no lugar, dica “Clique na caixa ou na rocha para tirar a rocha da caixa”; **C** tira e repõe a caixa |
 | 30 | Módulo 01 depois da mudança | ✔ abre na Introdução com a narração tocando sozinha; sem a linha “Arraste para girar…”; sem erros no console |
 
 Não verificado na inspeção: o som da narração (não foi ouvido durante os testes; a reprodução
@@ -1503,7 +1566,7 @@ início automático num celular real (iOS pode exigir o toque no ▶), todas as 
 no navegador (foram abertas Granito e Gnaisse; as demais, conferidas pelo teste automático),
 os módulos 03, 04 e 05 no celular (os componentes são os mesmos do módulo 02, testado em emulação;
 o clipe do módulo 04 desenha 1 800 grãos durante o despejo, sem medida de desempenho em aparelho
-fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa), o módulo 17 num celular real (6,4 e 6,7 MB, com esqueletos de 46 e 287 ossos) e o som dos cortes no começo de cada aquário, o módulo 18 num celular real (o deslizamento tem 5,5 MB e 710 ossos) e deitado,
+fraco), os módulos 06, 07, 08 e 09 num celular real (GLBs de 12,7 MB, 9,2 MB, 5,5 MB e 6,5 MB, sem medida de tempo de carga nem de memória), o módulo 10 num aparelho de toque real, o módulo 11 num aparelho de toque real (toque simulado por eventos, e o de maior peso é o Latossolo, com 4,8 MB), o módulo 14 num celular real (5,8 MB), o módulo 15 num celular real (a rural tem 9,3 MB) e o som da emenda entre os trechos fechado e aberto, o módulo 16 num celular real (9,1 MB) e a sincronia ouvida do começo ao fim sem saltos (conferida pulando a narração para cada etapa), o módulo 17 num celular real (6,4 e 6,7 MB, com esqueletos de 46 e 287 ossos) e o som dos cortes no começo de cada aquário, o módulo 18 num celular real (o deslizamento tem 5,5 MB e 710 ossos) e deitado, os módulos 19 e 20 no celular (nem em emulação; 7,1 MB e 7,4 MB), o som dos cortes e das emendas das cinco partes do módulo 19 e a Camada R do módulo 03 depois da mudança do recipiente no navegador (coberta pelo teste automático),
 fechar a inspeção enquanto o GLB ainda carrega (a visita continua normal, mas o motor registra um
 erro por imagem no console, porque o app foi destruído; não corrigido),
 aparência num celular real

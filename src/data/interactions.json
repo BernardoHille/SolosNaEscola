@@ -748,6 +748,50 @@
         0.34
       ],
       "maxDistance": 2.5
+    },
+    {
+      "id": "maquete-19",
+      "label": "Maquete da voçoroca",
+      "setId": "maquete-da-vocoroca",
+      "order": 35,
+      "position": [
+        -2.51,
+        0.9,
+        -0.72
+      ],
+      "rotationDeg": [
+        0,
+        -90,
+        0
+      ],
+      "size": [
+        0.62,
+        0.26,
+        0.84
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "vida-no-solo",
+      "label": "Vida no solo",
+      "setId": "vida-no-solo",
+      "order": 36,
+      "position": [
+        -4.7,
+        0.84,
+        1.625
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.72,
+        0.24,
+        0.6
+      ],
+      "maxDistance": 2.5
     }
   ],
   "occluders": [

@@ -122,7 +122,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts", "deslizamentoEInundacao.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts", "deslizamentoEInundacao.ts", "maqueteDaVocoroca.ts", "vidaNoSolo.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -147,6 +147,8 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "erosao-hidrica-do-solo",
         "erosao-eolica-do-solo",
         "deslizamento-e-inundacao",
+        "maquete-da-vocoroca",
+        "vida-no-solo",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );
@@ -267,6 +269,19 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
   assert.ok(rain[0].position[2] - rain[0].size[0] / 2 >= wind[0].position[2] + wind[0].size[0] / 2, "depois do módulo 17");
   assert.ok(rain[0].position[2] + rain[0].size[0] / 2 <= erosion[0].position[2] - erosion[0].size[0] / 2, "antes do módulo 16");
   assert.ok(erosion[0].position[1] - erosion[0].size[1] / 2 > 0.7, "acima do tampo");
+  // Maquete da Voçoroca: no fim da fileira do meio, com o rio (+Z do modelo) para a parede esquerda (−X).
+  const gully = volumes.filter((v) => v.setId === "maquete-da-vocoroca");
+  assert.deepEqual(gully.map((v) => v.id), ["maquete-19"]);
+  assert.deepEqual(gully[0].rotationDeg, [0, -90, 0]);
+  assert.ok(gully[0].position[0] + gully[0].size[2] / 2 < compaction[0].position[0] - compaction[0].size[0] / 2, "à esquerda da compactação");
+  assert.ok(Math.abs(gully[0].position[2] - compaction[0].position[2]) < 0.1, "na mesma fileira");
+  // Vida no Solo: a mesa da parede esquerda mais perto da frente (z maior que o módulo 16), frente para +X.
+  const life = volumes.filter((v) => v.setId === "vida-no-solo");
+  assert.deepEqual(life.map((v) => v.id), ["vida-no-solo"]);
+  assert.deepEqual(life[0].rotationDeg, [0, 90, 0]);
+  assert.ok(life[0].position[0] < -4.5 && life[0].position[0] - life[0].size[2] / 2 > -5.3, "junto à parede esquerda");
+  assert.ok(life[0].position[2] - life[0].size[0] / 2 >= erosion[0].position[2] + erosion[0].size[0] / 2, "depois do módulo 16");
+  assert.ok(life[0].position[1] - life[0].size[1] / 2 > 0.7, "acima do tampo");
 });
 
 test("rótulos de navegação concordam com o nome do passo", () => {
@@ -1091,6 +1106,98 @@ test("dados: Deslizamento e Inundação (dois aquários em sequência, a chuva e
   assert.equal((all.match(/Veja como o nível da água sobe rapidamente/g) ?? []).length, 1);
   assert.match(set.items[0].description, /^Imagine morar em uma casa/);
   assert.match(set.items[1].description, /planejar cidades mais seguras\.$/);
+});
+
+test("dados: Maquete da Voçoroca (um modelo, rótulos das regiões acesos pela narração, sem os títulos nem a fonte)", async () => {
+  const { MAQUETE_DA_VOCOROCA: set } = await import("../src/data/maqueteDaVocoroca.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionSets.ts"), "utf8");
+  assert.match(registry, /\[MAQUETE_DA_VOCOROCA\.id\]: MAQUETE_DA_VOCOROCA/, "conjunto registrado");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  assert.equal(set.items.length, 1);
+  const [item] = set.items;
+  // As regiões na ordem da narração; a vala só como rótulo.
+  assert.deepEqual(item.markers.map((m) => m.label), ["Pastagem", "Área urbana", "Rio", "Voçoroca"]);
+  assert.equal(item.markers.filter((m) => m.description).length, 3);
+  const file = resolve(root, "public", item.model.url.slice(1));
+  assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF");
+  assert.equal(item.model.sizeBytes, statSync(file).size);
+  const gltf = glbJson(file);
+  assert.equal(gltf.extensionsUsed, undefined);
+  const names = new Set(gltf.nodes.map((n) => n.name));
+  for (const m of item.markers) assert.ok(names.has(m.node), `nó ausente no GLB: ${m.node}`);
+  const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+  assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP");
+  // Narração: um cue por parágrafo da abertura, um por região e um por parágrafo do fechamento.
+  const audio = readFileSync(resolve(root, "public", item.narration.audioUrl.slice(1)));
+  assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp");
+  assert.ok(audio.length < 3_000_000);
+  const { cues } = item.narration;
+  assert.equal(cues.length, blocks(item.description) + 3 + blocks(item.closing));
+  assert.equal(cues.length, 11);
+  assert.equal(cues[0], 0);
+  for (let c = 1; c < cues.length; c++) assert.ok(cues[c] > cues[c - 1]);
+  // Sem os títulos lidos ("19.1. Explicação geral", "19.1.2. Área de pastagem"...) nem a fonte ("baseado na página 60").
+  const all = [item.description, ...item.markers.map((m) => m.description ?? ""), item.closing].join("\n");
+  assert.ok(!/\b19\.\d|Explicação geral|Área de pastagem\.|baseado na página|manual/i.test(all));
+  assert.match(item.description, /pode causar na paisagem\.$/);
+  assert.match(item.closing, /afetar toda a paisagem ao redor\.$/);
+});
+
+test("dados: Vida no Solo (menu com texto geral, caixa com os frascos, cupinzeiro e placas, sem os títulos nem a fonte)", async () => {
+  const { VIDA_NO_SOLO: catalog } = await import("../src/data/vidaNoSolo.ts");
+  const registry = readFileSync(resolve(root, "src/data/inspectionCatalogs.ts"), "utf8");
+  assert.match(registry, /\[VIDA_NO_SOLO\.id\]: VIDA_NO_SOLO/, "acervo registrado");
+  const blocks = (text) => (text ?? "").split(/\n\s*\n/).filter((p) => p.trim()).length;
+  const checkAudio = (narration, text) => {
+    const audio = readFileSync(resolve(root, "public", narration.audioUrl.slice(1)));
+    assert.equal(audio.subarray(4, 8).toString("latin1"), "ftyp", narration.audioUrl);
+    assert.ok(audio.length < 1_000_000, narration.audioUrl);
+    assert.equal(narration.cues.length, blocks(text), narration.audioUrl);
+    assert.equal(narration.cues[0], 0);
+    for (let c = 1; c < narration.cues.length; c++) assert.ok(narration.cues[c] > narration.cues[c - 1], narration.audioUrl);
+  };
+  assert.equal(catalog.groups.length, 1, "grupo único: abre direto no menu");
+  checkAudio(catalog.overviewNarration, catalog.overview);
+  const items = catalog.groups[0].items;
+  assert.deepEqual(items.map((it) => it.title), ["Caixa de insetos e fauna do solo", "Cupinzeiro", "Fungos e bactérias"]);
+  // Nós que cada modelo precisa ter: a caixa com os frascos ao lado; a bandeja; as três placas com tampa.
+  const nodes = [
+    ["Caixa_Entomologica_20_01", "Frascos_20_02_Fauna_do_Solo", "Inseto_01_Cerambycidae", "Conteudo_3_Minhocas"],
+    ["Bandeja_Plastica_M20", "Cupinzeiro_Fragmento_A"],
+    ["Tampa_1", "Tampa_2", "Tampa_3", "Agar_3_Bacterias"],
+  ];
+  for (const [i, item] of items.entries()) {
+    assert.equal(item.order, i + 1, item.id);
+    const file = resolve(root, "public", item.model.url.slice(1));
+    assert.equal(readFileSync(file).subarray(0, 4).toString("latin1"), "glTF", item.model.url);
+    assert.equal(item.model.sizeBytes, statSync(file).size, item.id);
+    assert.ok(item.model.sizeBytes < 8_000_000, `${item.id}: modelo leve para a web`);
+    const gltf = glbJson(file);
+    assert.equal(gltf.extensionsUsed, undefined, item.id);
+    const names = new Set(gltf.nodes.map((n) => n.name));
+    for (const n of nodes[i]) assert.ok(names.has(n), `${item.id}: nó ${n}`);
+    const container = item.container ? ("node" in item.container ? [item.container.node] : item.container.nodes) : [];
+    for (const n of container) assert.ok(names.has(n), `${item.id}: recipiente ${n}`);
+    const thumb = readFileSync(resolve(root, "public", item.thumbnail.slice(1)));
+    assert.equal(thumb.subarray(8, 12).toString("latin1"), "WEBP", item.thumbnail);
+    checkAudio(item.narration, item.description);
+  }
+  // A caixa não tem recipiente (os insetos estão alfinetados); a bandeja e as tampas, sim.
+  assert.equal(items[0].container, undefined);
+  assert.equal(items[1].container.node, "Bandeja_Plastica_M20");
+  assert.deepEqual(items[2].container.nodes, ["Tampa_1", "Tampa_2", "Tampa_3"]);
+  // Textos próprios: a dica padrão fala em "tirar a rocha da caixa".
+  assert.match(items[1].container.labels.hint, /fragmentos da bandeja/);
+  assert.match(items[2].container.labels.hint, /tirar as tampas/);
+  // As tampas estão aninhadas em cada placa (o nó pai tem o deslocamento): o visualizador as agrupa sem movê-las.
+  const viewer = readFileSync(resolve(root, "src/lib/inspection/inspectionViewer.ts"), "utf8");
+  assert.match(viewer, /mul2\(toRoot, part\.getWorldTransform\(\)\)/);
+  // Sem os títulos lidos ("20.2. Caixa de insetos...") nem a fonte ("Baseado nas páginas 61 a 63 do manual").
+  const all = [catalog.overview, ...items.map((it) => it.description)].join("\n");
+  assert.ok(!/\b20\.\d|Explicação geral|Baseado nas páginas|manual/i.test(all));
+  assert.match(catalog.overview, /^Debaixo dos nossos pés/);
+  assert.match(items[1].description, /^Esta estrutura é um fragmento de cupinzeiro\./);
+  assert.match(items[2].description, /contribuem para a vida no solo\./);
 });
 
 test("rótulos sobre o modelo: os que se encostariam sobem uma linha", () => {

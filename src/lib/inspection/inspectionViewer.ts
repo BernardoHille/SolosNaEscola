@@ -43,6 +43,7 @@ import {
   GAMMA_SRGB,
   type GraphicsDevice,
   LAYERID_WORLD,
+  Mat4,
   type MeshInstance,
   PIXELFORMAT_RGBA8,
   Quat,
@@ -774,14 +775,15 @@ function containerOf(root: EntityType, spec: NonNullable<InspectionModelItem["co
   if (!parts.length) return null;
   const group = new Entity("Recipiente");
   root.addChild(group);
+  // O grupo fica na origem da raiz: cada parte guarda a pose relativa à raiz, e não só a local. Uma parte aninhada
+  // (ex.: a tampa dentro de cada placa de Petri, cujo nó pai tem o deslocamento) iria toda para a origem.
+  const toRoot = new Mat4().copy(root.getWorldTransform()).invert();
   for (const part of parts) {
-    const parent = part.parent;
-    if (parent === root) {
-      root.removeChild(part);
-      group.addChild(part);
-    } else {
-      part.reparent(group);
-    }
+    const pose = new Mat4().mul2(toRoot, part.getWorldTransform());
+    part.reparent(group);
+    part.setLocalPosition(pose.getTranslation());
+    part.setLocalRotation(new Quat().setFromMat4(pose));
+    part.setLocalScale(pose.getScale());
   }
   return group;
 }

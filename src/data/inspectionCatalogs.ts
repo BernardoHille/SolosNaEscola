@@ -9,6 +9,7 @@ import { MATERIAL_DE_ORIGEM } from "./materialDeOrigem";
 import { SOLO_AMPLIADO } from "./soloAmpliado";
 import { SOLO_URBANO_E_SOLO_RURAL } from "./soloUrbanoESoloRural";
 import { TEXTURA_DO_SOLO } from "./texturaDoSolo";
+import { VIDA_NO_SOLO } from "./vidaNoSolo";
 
 export const INSPECTION_CATALOGS: Record<string, InspectionCatalog> = {
   [MATERIAL_DE_ORIGEM.id]: MATERIAL_DE_ORIGEM,
@@ -20,4 +21,5 @@ export const INSPECTION_CATALOGS: Record<string, InspectionCatalog> = {
   [SOLO_AMPLIADO.id]: SOLO_AMPLIADO,
   [COLECAO_DE_PERFIS_DE_SOLO.id]: COLECAO_DE_PERFIS_DE_SOLO,
   [SOLO_URBANO_E_SOLO_RURAL.id]: SOLO_URBANO_E_SOLO_RURAL,
+  [VIDA_NO_SOLO.id]: VIDA_NO_SOLO,
 };
