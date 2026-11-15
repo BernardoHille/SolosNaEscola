@@ -40,13 +40,13 @@ import { IS_DEV, readSpawnOverride } from "@/lib/viewer/spawnOverride";
 import SplatDiagnostics, { type LoadTimings } from "@/components/dev/SplatDiagnostics";
 
 /**
- * Painel técnico de desempenho: `?diag=1`, só fora da produção (desenvolvimento, `next start` local
- * e previews da Vercel). Na produção a URL é ignorada.
+ * Painel técnico de desempenho: só com `?diag=1` na URL, em qualquer ambiente (inclusive a
+ * produção, para os testes em aparelhos reais). Nenhum controle da interface leva a ele, e ele não
+ * altera a visita: só lê o estado do motor.
  */
-const DIAGNOSTICS_ALLOWED = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 const readDiagnostics = () => {
   try {
-    return DIAGNOSTICS_ALLOWED && new URLSearchParams(window.location.search).get("diag") === "1";
+    return new URLSearchParams(window.location.search).get("diag") === "1";
   } catch {
     return false;
   }

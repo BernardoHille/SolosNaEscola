@@ -144,8 +144,17 @@ export function useRenderQuality(
     const onVisibility = () => controller.setActive(evaluatingRef.current && visible(), performance.now());
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Painel do estado (diagnóstico): duas vezes por segundo basta.
-    const id = window.setInterval(() => setAuto(controller.snapshot(performance.now())), 500);
+    // Estado exposto (orçamento/escala aplicados e painel de diagnóstico): consultado duas vezes por
+    // segundo, mas só vira estado do React quando algo exibido muda, para não re-renderizar a
+    // exposição inteira à toa.
+    let shownKey = "";
+    const id = window.setInterval(() => {
+      const snap = controller.snapshot(performance.now());
+      const key = [snap.state, snap.budget, snap.scale, snap.targetFps, snap.refreshHz, snap.bottleneck, snap.changes].join("|");
+      if (key === shownKey) return;
+      shownKey = key;
+      setAuto(snap);
+    }, 500);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);

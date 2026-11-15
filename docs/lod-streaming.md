@@ -273,7 +273,8 @@ Limitação: são simulações. O comportamento em aparelhos reais precisa do ro
 
 - `?splat=legacy` ou `?splat=streamed` escolhem a fonte. A opção é segura em produção, porque só
   alterna entre arquivos publicados.
-- `?diag=1`, só fora da produção (`NEXT_PUBLIC_VERCEL_ENV !== "production"`), mostra o painel
+- `?diag=1`, em qualquer ambiente (inclusive a produção, para os testes em aparelhos; nenhum
+  controle da interface leva a ele), mostra o painel
   `SplatDiagnostics`. A tecla P continua mostrando e escondendo o contador.
 - O painel mostra:
   - FPS instantâneo e de 5 s, e média, p50, p95 e p99 do quadro;
@@ -360,6 +361,9 @@ aparecer em aparelhos que não alcançam 60 FPS com 3 M de gaussianas, o que ain
   durante a chegada.
 
 ### Roteiro para os demais dispositivos
+
+O protocolo completo, com URLs de produção e tabelas a preencher, está em
+[`testes-dispositivos.md`](testes-dispositivos.md).
 
 Em cada aparelho, abra `?splat=legacy&diag=1` e depois `?splat=streamed&diag=1`, numa aba anônima
 para ter o cache vazio. Anote o JSON de "Copiar medição":

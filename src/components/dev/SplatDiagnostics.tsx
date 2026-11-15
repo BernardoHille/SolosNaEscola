@@ -2,7 +2,7 @@
 
 /**
  * Painel técnico de desempenho do Gaussian (comparação A/B e benchmark). Não faz parte da interface
- * pública: só aparece com `?diag=1` fora da produção (desenvolvimento e previews), e a tecla P o
+ * pública: só aparece com `?diag=1` na URL (em qualquer ambiente; nenhum controle leva a ele), e a tecla P o
  * mostra e esconde. Os números e suas origens estão em `src/lib/viewer/splatStats.ts`; o roteiro
  * de medição está em `docs/lod-streaming.md`.
  */

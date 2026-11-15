@@ -367,7 +367,7 @@ no mínimo ou se cortar gaussianas não ajudar — e sobe um degrau após 15 s e
 como teste: se o aumento derrubar o FPS, volta e aquele nível fica bloqueado por um tempo que dobra
 a cada falha. O último nível estável fica salvo (`solos:auto-quality`) como ponto de partida.
 
-**Diagnóstico técnico.** Com `?diag=1` na URL (desenvolvimento e previews; ignorado em produção),
+**Diagnóstico técnico.** Com `?diag=1` na URL (em qualquer ambiente, inclusive a produção, para os testes em aparelhos; nenhum controle da interface leva a ele),
 a visita mostra um painel com FPS, percentis do tempo de quadro, gaussianas desenhadas, blocos por
 nível de detalhe, rede, tempos de carregamento e o estado do automático; a tecla **P** o esconde.
 Comparação A/B: `?splat=legacy` (SOG único) ou `?splat=streamed`.

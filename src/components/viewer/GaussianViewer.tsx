@@ -123,9 +123,12 @@ export default function GaussianViewer({
       // versão do motor não lê) vira uma promessa rejeitada sem dono, sem evento de erro do asset:
       // a tela ficaria parada em 0 % e o recuo para o SOG único nunca aconteceria. Até a cena ficar
       // pronta, qualquer rejeição desse tipo conta como falha do carregamento. Um falso positivo só
-      // troca para o SOG único, que mostra a mesma cena.
+      // troca para o SOG único, que mostra a mesma cena. Recusas do navegador (DOMException) não contam.
       function onEngineRejection(event: PromiseRejectionEvent) {
         if (!streamed || disposed || current.phase === "ready" || current.phase === "error") return;
+        // Recusas de APIs do navegador (pointer lock, tela cheia, `play()` de áudio) chegam como
+        // DOMException e não dizem nada sobre o Gaussian.
+        if (typeof DOMException !== "undefined" && event.reason instanceof DOMException) return;
         report({ phase: "error", errorKind: "engine", errorDetail: `motor: ${String(event.reason)}` });
       }
       window.addEventListener("unhandledrejection", onEngineRejection);
