@@ -26,6 +26,20 @@ const baseConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Streamed SOG: cada versão fica numa pasta com o hash do conteúdo
+        // (`museu_streamed/<hash>/`, ver scripts/lod/finalize-streamed-sog.mjs). Um caminho nunca
+        // recebe conteúdo novo, então os blocos podem ficar em cache por 1 ano sem revalidar, e
+        // um navegador nunca mistura blocos de duas versões. Declarado depois da regra geral:
+        // para a mesma chave, a última regra que casa prevalece.
+        source: "/models/museu_streamed/:version/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
 };

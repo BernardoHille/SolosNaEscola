@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "collision": "node scripts/generate-collision.mjs",
     "map": "node scripts/generate-map.mjs",
-    "test": "node --test \"tests/**/*.test.mjs\""
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "lod:build": "bash scripts/lod/build-streamed-sog.sh",
+    "lod:validate": "node scripts/lod/validate-streamed-sog.mjs"
   },
   "dependencies": {
     "@playcanvas/supersplat-viewer": "1.42.0",

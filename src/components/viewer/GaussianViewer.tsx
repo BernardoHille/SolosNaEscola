@@ -10,6 +10,10 @@
  *   instância aguarda a destruição completa da anterior.
  * - Ao desmontar, cancela o download (AbortController) e chama
  *   `viewer.destroy()`, que libera aplicação, contexto gráfico e listeners.
+ * - Streamed SOG (`lod-meta.json`): o parser de octree do motor baixa o índice sozinho e ignora um
+ *   `Response` pré-carregado (verificado no viewer 1.42, `isPrefetchable`); por isso nada é
+ *   pré-baixado nesse caso. Os blocos são baixados pelo motor conforme a câmera; uma falha de bloco
+ *   é repetida pelo motor (2 novas tentativas) e só conta como erro quando é definitiva.
  * - O redimensionamento (inclusive mudança de orientação) é tratado pelo
  *   ResizeObserver interno do viewer; este componente só precisa preencher um
  *   contêiner com dimensões explícitas.
@@ -23,7 +27,7 @@ import type { ViewerFlags, ViewerHandle } from "@playcanvas/supersplat-viewer/vi
 import type { ExperienceSettings } from "@playcanvas/supersplat-viewer/settings";
 
 import { detectGraphicsSupport, isGraphicsSupported } from "@/lib/viewer/capabilities";
-import { type LoadStatus, ModelHttpError } from "@/lib/viewer/loadStatus";
+import { CHUNK_ATTEMPTS, isStreamedContent, type LoadStatus, ModelHttpError } from "@/lib/viewer/loadStatus";
 import { applySceneScale } from "@/lib/viewer/sceneScale";
 
 export type GaussianViewerProps = {
@@ -83,6 +87,7 @@ export default function GaussianViewer({
     let disposed = false;
     let handle: ViewerHandle | null = null;
     let disposeScale: (() => void) | null = null;
+    let removeRejectionListener: (() => void) | null = null;
     let current: LoadStatus = { phase: "idle", progress: 0 };
     const download = new AbortController();
 
@@ -111,19 +116,39 @@ export default function GaussianViewer({
         return;
       }
 
-      report({ phase: "initializing", progress: 0 });
+      const streamed = isStreamedContent(contentFilename);
+      report({ phase: "initializing", progress: 0, streamed });
+
+      // No Streamed SOG, uma exceção dentro do parser do motor (ex.: um bloco num formato que esta
+      // versão do motor não lê) vira uma promessa rejeitada sem dono, sem evento de erro do asset:
+      // a tela ficaria parada em 0 % e o recuo para o SOG único nunca aconteceria. Até a cena ficar
+      // pronta, qualquer rejeição desse tipo conta como falha do carregamento. Um falso positivo só
+      // troca para o SOG único, que mostra a mesma cena. Recusas do navegador (DOMException) não contam.
+      function onEngineRejection(event: PromiseRejectionEvent) {
+        if (!streamed || disposed || current.phase === "ready" || current.phase === "error") return;
+        // Recusas de APIs do navegador (pointer lock, tela cheia, `play()` de áudio) chegam como
+        // DOMException e não dizem nada sobre o Gaussian.
+        if (typeof DOMException !== "undefined" && event.reason instanceof DOMException) return;
+        report({ phase: "error", errorKind: "engine", errorDetail: `motor: ${String(event.reason)}` });
+      }
+      window.addEventListener("unhandledrejection", onEngineRejection);
+      removeRejectionListener = () => window.removeEventListener("unhandledrejection", onEngineRejection);
 
       const { createViewer } = await import("@playcanvas/supersplat-viewer/viewer");
       if (disposed) return;
 
-      // O download é iniciado aqui (e não pelo motor) para poder ser cancelado
-      // ao desmontar e para distinguir falhas de rede/HTTP de falhas do motor.
-      // O motor consome este Response em streaming e emite o progresso real.
-      const contents = fetch(contentUrl, { signal: download.signal }).then((response) => {
-        if (!response.ok) throw new ModelHttpError(response.status, response.statusText);
-        return response;
-      });
-      contents.catch(fail);
+      // SOG único: o download é iniciado aqui (e não pelo motor) para poder ser cancelado ao
+      // desmontar e para distinguir falhas de rede/HTTP de falhas do motor. O motor consome este
+      // Response em streaming e emite o progresso real. No Streamed SOG o motor baixa o índice e os
+      // blocos; a destruição do viewer cancela o que estiver pendente.
+      let contents: Promise<Response> | undefined;
+      if (!streamed) {
+        contents = fetch(contentUrl, { signal: download.signal }).then((response) => {
+          if (!response.ok) throw new ModelHttpError(response.status, response.statusText);
+          return response;
+        });
+        contents.catch(fail);
+      }
 
       const viewer = await createViewer({
         ...options,
@@ -150,13 +175,39 @@ export default function GaussianViewer({
         report({ phase: progress >= 100 ? "processing" : "downloading", progress });
       };
       const onLoaded = (loaded: boolean) => {
-        if (loaded) report({ phase: "ready", progress: 100 });
+        if (!loaded) return;
+        removeRejectionListener?.();
+        report({ phase: "ready", progress: 100 });
       };
 
       viewer.events.on("progress:changed", onProgress);
       viewer.events.on("loaded:changed", onLoaded);
-      // Falhas de decodificação/carregamento do asset no motor.
-      viewer.app.assets.on("error", (error: unknown) => fail(error));
+      // Falhas de decodificação/carregamento no motor. No Streamed SOG, cada bloco é um asset
+      // próprio: uma tentativa falha não é erro (o motor repete); depois de todas as tentativas, o
+      // bloco está perdido. Antes de a cena ficar pronta isso é erro (a visita não teria a região
+      // inicial completa); depois, a cena segue com o nível mais grosso daquela região e a falha
+      // fica registrada no estado.
+      const chunkErrors = new Map<string, number>();
+      const lost = new Set<string>();
+      viewer.app.assets.on("error", (error: unknown, asset?: { file?: { url?: string } | null; name?: string }) => {
+        const url = asset?.file?.url ?? "";
+        const isIndex = !streamed || !url || asset?.name === contentFilename || url.endsWith(contentFilename);
+        if (isIndex) {
+          // O índice do Streamed SOG é baixado pelo motor: o código HTTP só aparece na mensagem.
+          const http = streamed ? /\[(\d{3})\]/.exec(String(error)) : null;
+          fail(http && Number(http[1]) >= 400 ? new ModelHttpError(Number(http[1]), "") : error);
+          return;
+        }
+        const attempts = (chunkErrors.get(url) ?? 0) + 1;
+        chunkErrors.set(url, attempts);
+        if (attempts < CHUNK_ATTEMPTS || lost.has(url)) return;
+        lost.add(url);
+        if (current.phase === "ready") report({ chunkFailures: lost.size });
+        else {
+          if (disposed || current.phase === "error") return;
+          report({ phase: "error", errorKind: "chunk", errorDetail: `bloco ${url}: ${String(error)}`, chunkFailures: lost.size });
+        }
+      });
 
       // Sincroniza com o estado atual (eventos podem ter ocorrido antes da inscrição).
       if (viewer.state.loaded) onLoaded(true);
@@ -178,6 +229,7 @@ export default function GaussianViewer({
       const viewer = handle;
       handle = null;
       disposeScale?.();
+      removeRejectionListener?.();
       if (viewer) {
         viewer.destroy();
         viewerRef.current?.(null);

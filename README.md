@@ -268,7 +268,7 @@ permanecem no modo de caminhada.
 | Configurações | **engrenagem** no canto superior direito (Esc fecha) | idem |
 | Voltar ao início | engrenagem → **Voltar à entrada** | idem |
 | Voltar à tela inicial | engrenagem → **Voltar ao menu inicial** | idem |
-| Qualidade | engrenagem → **Qualidade gráfica**: Alto, Médio, Baixo, Muito baixo | idem |
+| Qualidade | engrenagem → **Qualidade gráfica**: Automático (padrão), Alto, Médio, Baixo, Muito baixo | idem |
 | Inspecionar objeto destacado | **E** ou clique no objeto | botão **Inspecionar** |
 
 **Captura do mouse (estilo jogo em primeira pessoa).** No computador, a primeira tecla de
@@ -327,11 +327,52 @@ configurações): fica documentado só aqui.
 
 ### Qualidade
 
-Nas configurações (engrenagem, ou “Configurações” na tela inicial, antes de entrar), quatro modos, em degraus iguais de **resolução de
-renderização** (fração da resolução máxima do viewer, em cada eixo):
+Nas configurações (engrenagem, ou “Configurações” na tela inicial), cinco opções. O padrão para
+quem ainda não escolheu é **Automático (recomendado)**; uma escolha manual salva antes continua
+valendo (`localStorage`, chave `solos:render-quality`).
 
-| Modo | Escala | Pixels desenhados |
+| Modo | Resolução | Orçamento de gaussianas (Streamed SOG) |
 | --- | --- | --- |
+| Automático | 50–100%, ajustada pelo desempenho | 350 mil – 3,0 milhões, ajustado pelo desempenho |
+| Alto | 100% | 3,0 M (a cena inteira no nível mais fino) |
+| Médio | 75% | 1,5 M |
+| Baixo | 50% | 750 mil |
+| Muito baixo | 25% | 350 mil |
+
+Com o Streamed SOG (padrão desde a branch `feature/gaussian-streamed-sog-lod`), cada modo combina
+**resolução de renderização** e **orçamento global de gaussianas** do motor; o motor escolhe, bloco
+a bloco, o nível de detalhe que cabe no orçamento, a partir do que está mais perto do visitante.
+Com o SOG antigo (`?splat=legacy`) o orçamento não tem efeito e só a resolução muda. Detalhes,
+medições e o roteiro de testes: [`docs/lod-streaming.md`](docs/lod-streaming.md).
+
+Resolução ([`renderScale.ts`](src/lib/viewer/renderScale.ts)): o viewer dimensiona o
+backbuffer pelo tamanho CSS do canvas; o canvas passa a ocupar `escala × 100%` do contêiner e é
+ampliado de volta com `transform: scale(1/escala)`, sem alterar o código do viewer. O olhar
+usa deslocamentos e a escolha de um ponto no piso usa `offsetX / clientWidth`, ambos no espaço
+local do canvas, então continuam corretos. O nível nativo do viewer é mantido fora de
+`performance` (que já corta a resolução pela metade nos celulares), para não somar as duas
+reduções.
+
+Orçamento ([`splatBudget.ts`](src/lib/viewer/splatBudget.ts)): o viewer reaplica o próprio
+orçamento (escada de 1–16 M) ao revelar a cena e a cada mudança do “Quality” nativo; a visita
+reforça o seu a cada tick, como já fazia com o ângulo de recálculo de cores. Assim a opção escolhida
+é sempre a que vale, sem controles concorrentes.
+
+Automático ([`adaptiveQuality.ts`](src/lib/viewer/adaptiveQuality.ts), módulo puro testado em
+`tests/adaptiveQuality.test.mjs`): mede o tempo dos quadros durante a caminhada (janela de 4 s,
+ignorando câmera parada, aba oculta, menus, inspeção e quadros de streaming) e busca 60 FPS no
+computador e 30 nos aparelhos de toque (60 nos que sustentam), nunca acima da taxa da tela.
+Reduz um degrau após 4 s abaixo de 85% da meta — orçamento primeiro, resolução só com o orçamento
+no mínimo ou se cortar gaussianas não ajudar — e sobe um degrau após 15 s estáveis perto da meta,
+como teste: se o aumento derrubar o FPS, volta e aquele nível fica bloqueado por um tempo que dobra
+a cada falha. O último nível estável fica salvo (`solos:auto-quality`) como ponto de partida.
+
+**Diagnóstico técnico.** Com `?diag=1` na URL (em qualquer ambiente, inclusive a produção, para os testes em aparelhos; nenhum controle da interface leva a ele),
+a visita mostra um painel com FPS, percentis do tempo de quadro, gaussianas desenhadas, blocos por
+nível de detalhe, rede, tempos de carregamento e o estado do automático; a tecla **P** o esconde.
+Comparação A/B: `?splat=legacy` (SOG único) ou `?splat=streamed`.
+
+--- | --- | --- |
 | Alto | 100% | 100% |
 | Médio | 75% | ≈ 56% |
 | Baixo | 50% | 25% |

@@ -1,0 +1,39 @@
+{
+  "$comment": "Gerado por scripts/lod/finalize-streamed-sog.mjs. Não editar à mão.",
+  "version": "6539a5b05c",
+  "url": "/models/museu_streamed/6539a5b05c/lod-meta.json",
+  "lodLevels": 4,
+  "lodCounts": [
+    2994965,
+    1497483,
+    748741,
+    299497
+  ],
+  "files": 21,
+  "filesByLod": [
+    11,
+    6,
+    3,
+    1
+  ],
+  "leafNodes": 178,
+  "totalBytes": 132964421,
+  "bytesByLod": [
+    71595607,
+    36509855,
+    18120160,
+    6670819
+  ],
+  "largestFileBytes": 6729982,
+  "generator": "splat-transform v3.11.2",
+  "params": {
+    "source": "output60k.ssproj → resource_0.ply, rotação -90° em X",
+    "splatTransform": "3.11.2",
+    "decimation": "uniforme (-d): 50%, 25%, 10%",
+    "lodChunkCount": 64,
+    "lodChunkExtent": 1,
+    "lodChunkMin": 8,
+    "lodFileCount": "256,256,256,512",
+    "sogVersion": 2
+  }
+}

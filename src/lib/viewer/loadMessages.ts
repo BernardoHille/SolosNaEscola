@@ -24,9 +24,14 @@ const megabytes = (bytes: number) =>
 /**
  * Etapa atual do preparo. `walkActive` vem do Walk Mode (colisão pronta); `totalBytes` é o tamanho
  * do SOG, para mostrar quanto já foi baixado. O percentual é o do motor, nunca simulado.
+ *
+ * No Streamed SOG não existe "o arquivo" a baixar: a visita libera quando a sala inteira está no
+ * nível mais leve e a colisão está pronta; o resto chega durante a visita. O percentual mostrado é
+ * a fração dos blocos dessa primeira versão já concluída (contagem do viewer), sem megabytes.
  */
 export function loadingStep(status: LoadStatus, walkActive: boolean, totalBytes: number): LoadingStep {
   const progress = Math.max(0, Math.min(100, Math.round(status.progress)));
+  if (status.streamed) return streamedStep(status.phase, progress, walkActive);
   switch (status.phase) {
     case "downloading":
       return {
@@ -57,6 +62,36 @@ export function loadingStep(status: LoadStatus, walkActive: boolean, totalBytes:
   }
 }
 
+function streamedStep(phase: LoadStatus["phase"], progress: number, walkActive: boolean): LoadingStep {
+  switch (phase) {
+    case "downloading":
+      return {
+        label: "Carregando ambiente inicial…",
+        detail: `Primeira versão leve da sala · ${progress}% dos blocos`,
+        progress,
+        ready: false,
+      };
+    case "processing":
+      return { label: "Carregando ambiente inicial…", detail: "Montando a cena", progress: 100, ready: false };
+    case "ready":
+      return walkActive
+        ? {
+            label: "Pronto para visitar.",
+            detail: "Os detalhes continuam chegando durante a visita.",
+            progress: 100,
+            ready: true,
+          }
+        : { label: "Preparando navegação…", detail: "Carregando o espaço para caminhar", progress: 100, ready: false };
+    default:
+      return {
+        label: "Preparando exposição…",
+        detail: "Verificando o navegador e iniciando o visualizador 3D",
+        progress: null,
+        ready: false,
+      };
+  }
+}
+
 export type LoadFailure = { title: string; message: string; canRetry: boolean };
 
 /** Mensagem compreensível para cada tipo de falha (download, servidor, motor, colisão, navegador). */
@@ -75,6 +110,13 @@ export function describeFailure(status: LoadStatus): LoadFailure {
         title: "Não foi possível preparar a visita",
         message:
           "A exposição foi carregada, mas os dados que permitem caminhar pelo ambiente não ficaram disponíveis. Tente novamente.",
+        canRetry: true,
+      };
+    case "chunk":
+      return {
+        title: "Parte da exposição não chegou",
+        message:
+          "Alguns blocos da reconstrução 3D não puderam ser baixados mesmo após novas tentativas. Verifique sua conexão e tente novamente.",
         canRetry: true,
       };
     case "network":

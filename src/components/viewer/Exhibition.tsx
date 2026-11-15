@@ -29,6 +29,7 @@ import { useWalkVisit } from "@/components/viewer/useWalkVisit";
 import { AVAILABLE_MODULES, EXHIBITION_MODULES, GUIDED_ROUTE } from "@/data/exhibitionModules";
 import { buildExperienceSettings, EXPERIENCE_SETTINGS, MODEL } from "@/data/experience";
 import { INTERACTION_VOLUMES, type InteractionVolume } from "@/data/interactions";
+import { parseSplatSource, SPLAT_SOURCES, type SplatSourceId } from "@/data/splatSources";
 import { MOVEMENT } from "@/data/visit";
 import { resetNarrationSettings, unlockNarrationAudio } from "@/lib/audio/narration";
 import type { InteractionManager } from "@/lib/interaction/interactionManager";
@@ -36,6 +37,24 @@ import { describeFailure, loadingStep } from "@/lib/viewer/loadMessages";
 import { INITIAL_STATUS, type LoadStatus } from "@/lib/viewer/loadStatus";
 import type { VisitMode } from "@/lib/visit/visitProgress";
 import { IS_DEV, readSpawnOverride } from "@/lib/viewer/spawnOverride";
+import SplatDiagnostics, { type LoadTimings } from "@/components/dev/SplatDiagnostics";
+
+/**
+ * Painel técnico de desempenho: só com `?diag=1` na URL, em qualquer ambiente (inclusive a
+ * produção, para os testes em aparelhos reais). Nenhum controle da interface leva a ele, e ele não
+ * altera a visita: só lê o estado do motor.
+ */
+const readDiagnostics = () => {
+  try {
+    return new URLSearchParams(window.location.search).get("diag") === "1";
+  } catch {
+    return false;
+  }
+};
+
+/** Fonte do Gaussian: `?splat=legacy|streamed`, ou o padrão (ver `splatSources.ts`). */
+const readSource = (): { id: SplatSourceId; forced: boolean } =>
+  typeof window === "undefined" ? { id: "streamed", forced: false } : parseSplatSource(window.location.search);
 
 /**
  * Opções do viewer para a visita pública:
@@ -85,6 +104,13 @@ export default function Exhibition() {
   // Módulo escolhido ao abrir o painel do mapa pelo minimapa.
   const [mapSelection, setMapSelection] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
+  // Fonte do Gaussian. Se o Streamed SOG falhar antes de a cena ficar pronta (índice ou bloco
+  // inacessível, erro do motor), a exposição recua uma vez para o SOG único, sem intervenção.
+  const [sourceChoice, setSourceChoice] = useState(readSource);
+  const source = SPLAT_SOURCES[sourceChoice.id];
+  const [diagnostics] = useState(() => typeof window !== "undefined" && readDiagnostics());
+  // Tempos de carregamento desde a abertura da página (diagnóstico). Ref: só o painel os lê.
+  const timingsRef = useRef<LoadTimings>({ readyMs: null, navigableMs: null });
 
   // Em desenvolvimento, uma entrada de teste salva pela calibração substitui a
   // configurada. Em produção `readSpawnOverride()` sempre retorna null.
@@ -116,17 +142,43 @@ export default function Exhibition() {
     captureAllowed: exploring && !panelOpen && !inspecting,
     suspended: !exploring || panelOpen || inspecting,
   });
-  const quality = useRenderQuality(viewer, walk.inputMode);
   const fullscreen = useFullscreen(mainRef);
   const ready = status.phase === "ready" && walk.walkActive && !failed;
   const visiting = ready && started;
-  const step = loadingStep(status, walk.walkActive, MODEL.sizeBytes);
+  // O automático só mede durante a caminhada: menus, painéis e inspeção não representam o custo da
+  // navegação.
+  const quality = useRenderQuality(viewer, walk.inputMode, {
+    budgetEffective: source.streamed,
+    evaluating: visiting && !panelOpen && !inspecting,
+  });
+  const step = loadingStep(status, walk.walkActive, source.totalBytes);
+
+  // Recuo automático para o SOG único (uma vez), exceto quando a URL forçou o streamed.
+  useEffect(() => {
+    if (status.phase !== "error" || sourceChoice.id !== "streamed" || sourceChoice.forced) return;
+    if (status.errorKind === "collision") return;
+    console.warn(`Streamed SOG falhou (${status.errorKind}: ${status.errorDetail}); usando o SOG único.`);
+    const id = window.setTimeout(() => {
+      setSourceChoice({ id: "legacy", forced: true });
+      setStatus(INITIAL_STATUS);
+      setAttempt((n) => n + 1);
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [status, sourceChoice]);
+
+  const sceneReady = status.phase === "ready";
+  useEffect(() => {
+    if (sceneReady) timingsRef.current.readyMs ??= performance.now();
+    if (ready) timingsRef.current.navigableMs ??= performance.now();
+  }, [sceneReady, ready]);
 
   const orientation = useVisitOrientation(viewer);
   const { markExplored, startGuided: beginGuided, endGuided, forget, orientTo: setOrientTarget } = orientation;
 
-  // Contador de FPS: oculto; a tecla P mostra e esconde durante a visita (não divulgada).
+  // Contador de FPS: oculto; a tecla P mostra e esconde durante a visita (não divulgada). Com
+  // `?diag=1`, a mesma tecla esconde e mostra o painel de diagnóstico (aberto de início).
   const fpsVisible = useKeyToggle("KeyP", visiting);
+  const diagnosticsShown = diagnostics && !fpsVisible;
 
   // Um módulo conta como explorado quando a inspeção dele é aberta (tecla E, clique ou toque:
   // todas passam por aqui).
@@ -271,8 +323,8 @@ export default function Exhibition() {
         <div ref={setStage} className="absolute inset-0">
           <GaussianViewer
             key={attempt}
-            contentUrl={MODEL.url}
-            contentFilename={MODEL.filename}
+            contentUrl={source.url}
+            contentFilename={source.filename}
             settings={settings}
             collisionUrl={MODEL.collisionUrl}
             sceneScale={MODEL.scale}
@@ -288,7 +340,7 @@ export default function Exhibition() {
           {/* Interface mínima da visita; na inspeção ela sai de cena (a inspeção tem a sua). */}
           {visiting && !inspecting && (
             <>
-              {fpsVisible && <FpsCounter viewer={viewer} />}
+              {fpsVisible && !diagnostics && <FpsCounter viewer={viewer} />}
               <SettingsButton open={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")} />
               {!panelOpen && (
                 <MiniMapDock
@@ -325,6 +377,17 @@ export default function Exhibition() {
                 />
               )}
             </>
+          )}
+          {visiting && diagnosticsShown && viewer && (
+            <SplatDiagnostics
+              viewer={viewer}
+              source={source}
+              qualityLevel={quality.level}
+              applied={quality.applied}
+              auto={quality.auto}
+              timings={timingsRef}
+              chunkFailures={status.chunkFailures ?? 0}
+            />
           )}
           {/* Montada com a cena pronta, mas só ativa durante a visita: na tela inicial nenhum
               objeto pode ser mirado ou aberto. */}
