@@ -991,8 +991,9 @@ ponto, a transcrição ouviu “E este escoamento” em vez de “E esse”. A l
 
 ### Módulo 15 · Solo Urbano e Solo Rural
 
-As duas maquetes em caixa ficam na mesa das maquetes, à esquerda da maquete 14: a urbana em x −3,00 a −2,52 e a rural
-em x −2,49 a −1,99, ambas em z 0,88 a 1,23, do tampo (y ≈ 0,76) ao alto das árvores e dos prédios (≈ 1,16). Cada uma
+As duas maquetes em caixa ficam na mesa das maquetes, à esquerda da maquete 14: a urbana em x −2,94 a −2,41 e a rural
+em x −2,41 a −1,85, ambas em z 0,87 a 1,27 (medidas de cima, em 16/11/2026: os volumes antigos estavam uns 10 cm à
+esquerda), do tampo (y ≈ 0,75) ao alto das árvores e dos prédios (≈ 1,09). Cada uma
 tem um volume (`maquete-15-urbano`, `maquete-15-rural`), de frente para +Z, o lado do puxador. Os dois abrem o
 mesmo menu (`solo-urbano-e-solo-rural`, grupo único, sem texto geral), com a rural primeiro, como no roteiro.
 
@@ -1214,6 +1215,8 @@ exposição. Os scripts ficam com o material do processo, fora do repositório (
 - **Experimentos sem narração (25 a 27):** texto escrito a partir do roteiro, sem áudio. Sem narração, a animação
   começa quando o modelo aparece e repete em ciclo (fim do clipe + 5 s, `AUTOPLAY_HOLD_S`). As gotas do 26 ficam fora
   do enquadramento (`fitIgnore`). Os volumes ficam ao lado da caixa do 24, baixos (16 cm), para não tamparem a caixa.
+  O volume das Cores do Solo cobre as três bandejas (0,78 × 0,36 m, medidas de cima); o primeiro deixava a bandeja da
+  esquerda de fora.
 - **Vidros:** o alfa dos vidros do acervo (0,09) quase some no WebGL, como nos módulos 04 e 07.
 - **Correções gerais:** o menu de grupos mostra o nome da peça do acervo (`stepNoun`), não mais sempre “rochas”. O
   painel de descrição aparece também em itens que só têm descrição nas marcações (etapas da cerâmica). O volume da
