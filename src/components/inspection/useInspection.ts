@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { InspectionCatalog, InspectionItem, InspectionSet } from "@/data/inspection";
 import { INSPECTION_SETS } from "@/data/inspectionSets";
 import { INSPECTION_CATALOGS } from "@/data/inspectionCatalogs";
+import { stepPlural } from "@/lib/inspection/stepLabels";
 
 /** Cartão de um menu de acervo (grupo ou peça). */
 export type InspectionMenuCard = {
@@ -88,7 +89,8 @@ export function useInspection(): InspectionState {
           cards: catalog.groups.map((g) => ({
             id: g.id,
             title: g.title,
-            subtitle: `${g.items.length} ${g.items.length === 1 ? "rocha" : "rochas"}`,
+            // "5 rochas", "1 item": o nome da peça do acervo (`stepNoun`).
+            subtitle: `${g.items.length} ${(g.items.length === 1 ? catalog.stepNoun : stepPlural(catalog.stepNoun)).toLowerCase()}`,
             thumbnails: g.items.map((it) => it.thumbnail),
             onSelect: () => selectGroup(g.id),
           })),

@@ -48,6 +48,9 @@ type InspectionOverlayProps = {
 /** Duração das transições (ms). O CSS usa os mesmos valores. */
 const FADE_MS = 260;
 
+/** Experimento animado sem narração: segundos parado no resultado antes de recomeçar. */
+const AUTOPLAY_HOLD_S = 5;
+
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 const isTyping = (target: EventTarget | null) =>
@@ -160,6 +163,9 @@ export default function InspectionOverlay({
   useEffect(() => {
     itemRef.current = item;
   }, [item]);
+  // Relógio dos experimentos sem narração (início = modelo na tela) e instante em que a narração acabou.
+  const animationStartRef = useRef<number | null>(null);
+  const endedAtRef = useRef<number | null>(null);
   // Abrir a tampa: a narração salta para o fim do trecho da caixa fechada (1º par de `sync`) e toca
   // dali; a tampa abre junto, conduzida por ela.
   const openLid = useCallback(() => {
@@ -183,7 +189,11 @@ export default function InspectionOverlay({
   // com o espaço todo, e a narração continua, com a legenda.
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
-  const hasDescriptionPanel = !!(set.overview || set.items.some((it) => it.description));
+  // Também os itens só com estágios narrados (`markers` com `description`, sem texto próprio): o painel
+  // traz a narração e a lista dos estágios.
+  const hasDescriptionPanel = !!(
+    set.overview || set.items.some((it) => it.description || it.markers?.some((m) => m.description))
+  );
   const [descriptionSize, setDescriptionSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -236,10 +246,26 @@ export default function InspectionOverlay({
         // A animação segue a narração do item: parada antes do play, pausada com ela e, depois do
         // fim (ou com a narração já ouvida numa visita anterior, sem tocar de novo), no último quadro.
         viewer.setNarrationClock(() => {
+          const it = itemRef.current;
           const audio = narrationAudioRef.current;
-          const url = itemRef.current?.narration?.audioUrl;
-          if (!audio || !url || audio.src !== new URL(url, window.location.href).href) return null;
-          if (audio.ended) return Infinity;
+          const url = it?.narration?.audioUrl;
+          // Experimento sem narração gravada: o clipe corre sozinho desde que o modelo aparece e
+          // recomeça depois de alguns segundos parado no resultado.
+          if (!url) {
+            const start = animationStartRef.current;
+            const end = it?.animation?.sync.at(-1)?.[0];
+            if (start === null || end === undefined) return null;
+            return ((performance.now() - start) / 1000) % (end + AUTOPLAY_HOLD_S);
+          }
+          if (!audio || audio.src !== new URL(url, window.location.href).href) return null;
+          // Depois do fim, o relógio segue em tempo real: pares de `sync` além da duração da narração
+          // continuam o clipe com o painel em silêncio (ex.: a segunda leitura do módulo 24).
+          if (audio.ended) {
+            endedAtRef.current ??= performance.now();
+            if (!Number.isFinite(audio.duration)) return Infinity;
+            return audio.duration + (performance.now() - endedAtRef.current) / 1000;
+          }
+          endedAtRef.current = null;
           // A caixa com tampa volta fechada numa nova visita: abre-se de novo pelo clique.
           const reopen = !!itemRef.current?.animation?.openOnClick;
           if (audio.paused && audio.currentTime === 0) return narrationHeard(url) && !reopen ? Infinity : 0;
@@ -266,10 +292,12 @@ export default function InspectionOverlay({
     if (!item || item.microscope) return;
     let current = true;
     const key = `${item.id}#${retry}`;
+    animationStartRef.current = null;
     viewer
       .show(item)
       .then(() => {
         if (!current) return;
+        animationStartRef.current = performance.now();
         setLoaded({ key, error: null });
         const next = set.items[index + 1];
         if (next && !next.microscope) viewer.preload(next);

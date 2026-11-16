@@ -89,6 +89,42 @@
     "vida-no-solo": [
       -3.95,
       1.65
+    ],
+    "ciclo-do-nitrogenio": [
+      1.45,
+      1.65
+    ],
+    "ciclo-do-calcio": [
+      0.25,
+      1.75
+    ],
+    "vermicompostagem": [
+      -3.95,
+      3.65
+    ],
+    "cores-do-solo": [
+      -3.25,
+      -3.05
+    ],
+    "objetos-e-artes-feitos-com-solo": [
+      -1.75,
+      -3.75
+    ],
+    "temperatura-do-solo": [
+      -4.05,
+      2.25
+    ],
+    "solo-como-filtro": [
+      -3.95,
+      2.25
+    ],
+    "impacto-da-gota-da-chuva": [
+      -3.85,
+      2.85
+    ],
+    "compactacao-do-solo-e-infiltracao": [
+      -3.85,
+      3.25
     ]
   }
 }

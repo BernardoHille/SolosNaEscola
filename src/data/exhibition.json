@@ -70,11 +70,13 @@
     {
       "number": 12,
       "title": "Ciclo do Nitrogênio",
+      "setId": "ciclo-do-nitrogenio",
       "summary": "O nitrogênio é um elemento essencial para a vida, pois faz parte das proteínas, fundamentais para o crescimento dos seres vivos."
     },
     {
       "number": 13,
       "title": "Ciclo do Cálcio",
+      "setId": "ciclo-do-calcio",
       "summary": "O cálcio presente no solo pode vir do calcário, uma rocha rica nesse elemento."
     },
     {
@@ -122,36 +124,43 @@
     {
       "number": 21,
       "title": "Vermicompostagem",
+      "setId": "vermicompostagem",
       "summary": "A vermicompostagem é um processo de transformação de resíduos orgânicos realizado principalmente por minhocas e outros organismos do solo."
     },
     {
       "number": 22,
       "title": "Cores do Solo",
+      "setId": "cores-do-solo",
       "summary": "Os solos apresentam diferentes cores, que estão relacionadas à composição mineral e à presença de matéria orgânica."
     },
     {
       "number": 23,
       "title": "Objetos e Artes Feitos com Solo",
+      "setId": "objetos-e-artes-feitos-com-solo",
       "summary": "Além de sua importância para a agricultura e para os ecossistemas, o solo também é utilizado como matéria-prima para a produção de diversos objetos presentes no cotidiano."
     },
     {
       "number": 24,
       "title": "Temperatura do Solo",
+      "setId": "temperatura-do-solo",
       "summary": "A temperatura do solo não é igual à temperatura da atmosfera, podendo ser afetada por fatores como umidade, composição mineralógica e orgânica, insolação e cobertura da superfície."
     },
     {
       "number": 25,
       "title": "Solo como Filtro",
+      "setId": "solo-como-filtro",
       "summary": "Uma das funções menos lembradas do solo é o seu papel como filtro natural de poluentes."
     },
     {
       "number": 26,
       "title": "Impacto da Gota da Chuva no Solo",
+      "setId": "impacto-da-gota-da-chuva",
       "summary": "O processo erosivo começa muito antes da formação de sulcos ou mesmo de uma voçoroca."
     },
     {
       "number": 27,
       "title": "Compactação do Solo e Infiltração da Água",
+      "setId": "compactacao-do-solo-e-infiltracao",
       "summary": "Essencialmente há dois caminhos para a água da chuva ou de irrigação: escorrer pela superfície do terreno ou se infiltrar no solo."
     }
   ],
@@ -167,12 +176,21 @@
     "compactacao-do-solo",
     "solo-ampliado",
     "colecao-de-perfis-de-solo",
+    "ciclo-do-nitrogenio",
+    "ciclo-do-calcio",
     "solo-na-paisagem",
     "solo-urbano-e-solo-rural",
     "erosao-hidrica-do-solo",
     "erosao-eolica-do-solo",
     "deslizamento-e-inundacao",
     "maquete-da-vocoroca",
-    "vida-no-solo"
+    "vida-no-solo",
+    "vermicompostagem",
+    "cores-do-solo",
+    "objetos-e-artes-feitos-com-solo",
+    "temperatura-do-solo",
+    "solo-como-filtro",
+    "impacto-da-gota-da-chuva",
+    "compactacao-do-solo-e-infiltracao"
   ]
 }

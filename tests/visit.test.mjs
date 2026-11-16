@@ -145,14 +145,8 @@ test("módulos: 27 tópicos, volumes agrupados por conjunto, disponíveis só os
   assert.ok(formation.volumeIds.length > 1);
   const profiles = all.find((m) => m.setId === "colecao-de-perfis-de-solo");
   assert.ok(profiles.volumeIds.length > 10);
-  // Sem conjunto: indisponível, sem ação possível (sem setId, posição ou parada).
-  for (const n of [12, 13, 21, 22, 23, 24, 25, 26, 27]) {
-    const m = all.find((t) => t.number === n);
-    assert.equal(m.available, false, `módulo ${n}`);
-    assert.equal(m.setId, null);
-    assert.equal(m.stop, null);
-    assert.equal(m.position, null);
-  }
+  // Todos os 27 tópicos têm conjunto e volume (os módulos 12, 13 e 21 a 27 entraram por último).
+  assert.equal(available.length, 27);
   for (const m of all) assert.ok(m.title && m.summary.endsWith("."), `módulo ${m.number}`);
 });
 
@@ -246,7 +240,7 @@ test("progresso: abrir conta uma vez, só módulos disponíveis, total da versã
   const p = progressOf(explored, ids);
   assert.deepEqual(p, { count: 1, total: ids.length });
   assert.equal(progressLabel(p), `1 de ${ids.length} módulos explorados`);
-  assert.equal(ids.length, 18);
+  assert.equal(ids.length, 27);
 });
 
 test("progresso salvo: leitura segura, ids antigos descartados, etapa dentro do percurso", () => {

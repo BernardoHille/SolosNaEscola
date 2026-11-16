@@ -755,9 +755,9 @@
       "setId": "maquete-da-vocoroca",
       "order": 35,
       "position": [
-        -2.51,
-        0.9,
-        -0.72
+        -2.48,
+        0.91,
+        -0.725
       ],
       "rotationDeg": [
         0,
@@ -765,9 +765,9 @@
         0
       ],
       "size": [
-        0.62,
-        0.26,
-        0.84
+        0.58,
+        0.24,
+        0.76
       ],
       "maxDistance": 2.5
     },
@@ -790,6 +790,226 @@
         0.72,
         0.24,
         0.6
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "ciclo-do-nitrogenio",
+      "label": "Ciclo do nitrogênio",
+      "setId": "ciclo-do-nitrogenio",
+      "order": 37,
+      "position": [
+        1.484,
+        0.906,
+        1.039
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.94,
+        0.34,
+        0.36
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "ciclo-do-calcio",
+      "label": "Ciclo do cálcio",
+      "setId": "ciclo-do-calcio",
+      "order": 38,
+      "position": [
+        0.297,
+        0.835,
+        1.077
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.97,
+        0.2,
+        0.47
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "vermicompostagem-bandeja",
+      "label": "Vermicompostagem",
+      "setId": "vermicompostagem",
+      "order": 39,
+      "position": [
+        -4.842,
+        0.865,
+        3.013
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.63,
+        0.27,
+        0.24
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "vermicompostagem-caixas",
+      "label": "Vermicompostagem",
+      "setId": "vermicompostagem",
+      "order": 40,
+      "position": [
+        -4.579,
+        1.017,
+        3.631
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.38,
+        0.56,
+        0.41
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "cores-do-solo",
+      "label": "Cores do solo",
+      "setId": "cores-do-solo",
+      "order": 41,
+      "position": [
+        -3.58,
+        0.905,
+        -3.557
+      ],
+      "rotationDeg": [
+        0,
+        27.4,
+        0
+      ],
+      "size": [
+        0.66,
+        0.12,
+        0.32
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "objetos-e-artes",
+      "label": "Objetos e artes feitos com solo",
+      "setId": "objetos-e-artes-feitos-com-solo",
+      "order": 42,
+      "position": [
+        -1.715,
+        1.0,
+        -4.405
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1.18,
+        1.9,
+        0.48
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "temperatura-do-solo",
+      "label": "Temperatura do solo",
+      "setId": "temperatura-do-solo",
+      "order": 43,
+      "position": [
+        -4.77,
+        0.885,
+        2.22
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.39,
+        0.31,
+        0.33
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "solo-como-filtro",
+      "label": "Solo como filtro",
+      "setId": "solo-como-filtro",
+      "order": 44,
+      "position": [
+        -4.46,
+        0.815,
+        2.25
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.4,
+        0.16,
+        0.18
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "impacto-da-gota-da-chuva",
+      "label": "Impacto da gota da chuva",
+      "setId": "impacto-da-gota-da-chuva",
+      "order": 45,
+      "position": [
+        -4.5,
+        0.815,
+        2.89
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.32,
+        0.16,
+        0.3
+      ],
+      "maxDistance": 2.5
+    },
+    {
+      "id": "compactacao-e-infiltracao",
+      "label": "Compactação e infiltração",
+      "setId": "compactacao-do-solo-e-infiltracao",
+      "order": 46,
+      "position": [
+        -4.5,
+        0.815,
+        3.235
+      ],
+      "rotationDeg": [
+        0,
+        90,
+        0
+      ],
+      "size": [
+        0.32,
+        0.16,
+        0.3
       ],
       "maxDistance": 2.5
     }

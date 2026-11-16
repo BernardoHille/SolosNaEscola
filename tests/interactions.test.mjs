@@ -122,7 +122,7 @@ test("casco convexo descarta pontos internos", () => {
 test("dados: volumes apontam para conjuntos e itens existentes", () => {
   const { volumes } = json("src/data/interactions.json");
   const source = readFileSync(resolve(root, "src/data/inspection.ts"), "utf8");
-  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts", "deslizamentoEInundacao.ts", "maqueteDaVocoroca.ts", "vidaNoSolo.ts"]
+  const catalog = ["materialDeOrigem.ts", "horizontesDoSolo.ts", "atracaoDoIma.ts", "texturaDoSolo.ts", "porosidadeDoSolo.ts", "arNoSolo.ts", "densidadeDoSolo.ts", "compactacaoDoSolo.ts", "soloAmpliado.ts", "colecaoDePerfisDeSolo.ts", "soloNaPaisagem.ts", "soloUrbanoESoloRural.ts", "erosaoHidricaDoSolo.ts", "erosaoEolicaDoSolo.ts", "deslizamentoEInundacao.ts", "maqueteDaVocoroca.ts", "vidaNoSolo.ts", "cicloDoNitrogenio.ts", "cicloDoCalcio.ts", "vermicompostagem.ts", "coresDoSolo.ts", "objetosEArtesFeitosComSolo.ts", "temperaturaDoSolo.ts", "soloComoFiltro.ts", "impactoDaGotaDaChuva.ts", "compactacaoEInfiltracao.ts"]
     .map((f) => readFileSync(resolve(root, "src/data", f), "utf8"))
     .join("\n");
   const ids = new Set();
@@ -149,6 +149,15 @@ test("dados: volumes apontam para conjuntos e itens existentes", () => {
         "deslizamento-e-inundacao",
         "maquete-da-vocoroca",
         "vida-no-solo",
+        "ciclo-do-nitrogenio",
+        "ciclo-do-calcio",
+        "vermicompostagem",
+        "cores-do-solo",
+        "objetos-e-artes-feitos-com-solo",
+        "temperatura-do-solo",
+        "solo-como-filtro",
+        "impacto-da-gota-da-chuva",
+        "compactacao-do-solo-e-infiltracao",
       ].includes(v.setId),
       `${v.id}: ${v.setId}`,
     );

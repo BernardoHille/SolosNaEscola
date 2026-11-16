@@ -37,7 +37,12 @@ computadores e dispositivos móveis.
 > fim da fileira do meio) abre como a maquete 14, com os rótulos da pastagem, da área urbana e do rio acesos pela
 > narração. A mesa da **Vida no Solo** (módulo 20, na parede esquerda, na frente da sala) abre um menu com a caixa de
 > insetos e os frascos, o cupinzeiro (que sai da bandeja com um clique) e as placas de Petri (que perdem as tampas).
-> As demais estantes serão desenvolvidas nas próximas etapas.
+> Os **Ciclos do Nitrogênio e do Cálcio** (módulos 12 e 13), a **Vermicompostagem** (módulo 21, com dois destaques:
+> a bandeja e as caixas), as **Cores do Solo** (módulo 22) e os **Objetos e Artes Feitos com Solo** (módulo 23, menu
+> com grupos) abrem acervos com menu, como a Vida no Solo. Os experimentos da **Temperatura do Solo** (módulo 24, a
+> animação segue a narração), do **Solo como Filtro**, do **Impacto da Gota da Chuva** e da **Compactação e
+> Infiltração** (módulos 25 a 27, ao lado da caixa do 24, sem narração) tocam a animação em ciclo. Os 27 módulos do
+> roteiro estão na exposição.
 >
 > Ao abrir o site, a **tela inicial** mostra a logo do Programa Solo na Escola, a apresentação e o botão **Iniciar
 > visita**, enquanto a exposição é baixada e preparada ao fundo; ao iniciar, a visita entra em tela cheia. Durante a
@@ -1186,6 +1191,33 @@ acervo partiu da tampa de 73 mm (hipótese, 24,8 × 40,9 cm por bandeja); no spl
 nem o viewer do museu: o teclado de movimento ignora as teclas, o movimento acumulado é zerado, a
 captura do mouse é liberada e o joystick some. Ao fechar, o visitante está exatamente onde estava
 e continua em Walk.
+
+### Módulos 12, 13 e 21 a 27
+
+Feitos de uma vez, a partir dos objetos 3D do acervo, da mesma gravação de 15/11/2026 (só o áudio) e do roteiro da
+exposição. Os scripts ficam com o material do processo, fora do repositório (`modulos12a27_*.py`,
+`narracao_modulos12a24.py`).
+
+- **Acervos (`InspectionCatalog`, passo “Item”):** `ciclo-do-nitrogenio` (12), `ciclo-do-calcio` (13),
+  `vermicompostagem` (21), `cores-do-solo` (22) e `objetos-e-artes-feitos-com-solo` (23, menu com grupos). Cada um
+  tem a explicação geral narrada e um item por parte do roteiro. Itens que a narração apresenta juntos viraram um
+  GLB só, com o segundo objeto à direita do primeiro (ex.: bola e molécula do 12, boneca e boi do 23). Os banners do
+  12 e do 13 usam a vista frontal, como o do módulo 05. Itens com marcações acendem os rótulos pela narração: vaca e
+  planta (13), potes vermelho e amarelo e pregos (22), etapas da cerâmica (23).
+- **Narração:** cortes do AAC, sem recodificar, como nos módulos 19 e 20. A gravação pula os módulos 19 e 20 no
+  meio do 21, então a busca começa depois deles. Em quatro partes, o começo foi medido na energia do áudio, porque o
+  título lido encostava na fala. **Os textos devem ser revisados pela equipe.**
+- **Temperatura do Solo (24):** um arquivo de narração (40,8 s, 9 cues). A animação segue a narração por
+  `animation.sync`, e os pares depois do fim do áudio continuam o clipe: o relógio passa a ser a duração do áudio
+  mais o tempo desde o fim, e assim o segundo termômetro termina de subir. As leituras dos termômetros são
+  ilustrativas.
+- **Experimentos sem narração (25 a 27):** texto escrito a partir do roteiro, sem áudio. Sem narração, a animação
+  começa quando o modelo aparece e repete em ciclo (fim do clipe + 5 s, `AUTOPLAY_HOLD_S`). As gotas do 26 ficam fora
+  do enquadramento (`fitIgnore`). Os volumes ficam ao lado da caixa do 24, baixos (16 cm), para não tamparem a caixa.
+- **Vidros:** o alfa dos vidros do acervo (0,09) quase some no WebGL, como nos módulos 04 e 07.
+- **Correções gerais:** o menu de grupos mostra o nome da peça do acervo (`stepNoun`), não mais sempre “rochas”. O
+  painel de descrição aparece também em itens que só têm descrição nas marcações (etapas da cerâmica). O volume da
+  maquete 19 foi refeito sobre a tábua medida no splat (estava torto e deslocado).
 
 ### Como o destaque funciona sobre o Gaussian Splat
 
